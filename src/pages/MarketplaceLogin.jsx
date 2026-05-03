@@ -104,7 +104,7 @@ export default function MarketplaceLogin() {
       Swal.fire({
         icon: "error",
         title: "Login",
-        text: "Please enter email and password.",
+        text: "Please enter your email or username and password.",
         confirmButtonColor: BRAND.gold,
       });
       return;
@@ -127,6 +127,19 @@ export default function MarketplaceLogin() {
         });
         return;
       }
+      const expectedRole = roleTab === 0 ? "parent" : "student";
+      if (user.role !== expectedRole) {
+        Swal.fire({
+          icon: "warning",
+          title: "Wrong login tab",
+          text:
+            expectedRole === "parent"
+              ? "This email belongs to a student account. Switch to the Student login tab."
+              : "This email belongs to a parent account. Switch to the Parent login tab.",
+          confirmButtonColor: BRAND.gold,
+        });
+        return;
+      }
       localStorage.setItem("marketplace_token", token);
       localStorage.setItem("marketplace_user", JSON.stringify(user));
       localStorage.setItem(
@@ -140,7 +153,7 @@ export default function MarketplaceLogin() {
         showConfirmButton: false,
         confirmButtonColor: BRAND.gold,
       });
-      navigate("/", { replace: true });
+      navigate("/portal", { replace: true });
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -491,8 +504,8 @@ export default function MarketplaceLogin() {
               <TextField
                 fullWidth
                 type="email"
-                label="Email"
-                placeholder="you@family.com"
+                label="Email or username"
+                placeholder="you@family.com or your username"
                 value={emailOrPhone}
                 onChange={(e) => setEmailOrPhone(e.target.value)}
                 InputProps={{

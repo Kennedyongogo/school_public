@@ -18,6 +18,7 @@ const Team = lazy(() => import("./pages/Team"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
 const MeetOurTeam = lazy(() => import("./pages/MeetOurTeam"));
 const MarketplaceLogin = lazy(() => import("./pages/MarketplaceLogin"));
+const PortalProfilePage = lazy(() => import("./pages/PortalProfilePage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -31,7 +32,8 @@ function ScrollToTop() {
 
 function AppLayout() {
   const location = useLocation();
-  const hideHeader = location.pathname === "/marketplace";
+  const hideHeader =
+    location.pathname === "/marketplace" || location.pathname.startsWith("/portal");
 
   return (
     <>
@@ -191,6 +193,7 @@ function AppLayout() {
               }
             />
             <Route path="/marketplace" element={<MarketplaceLogin />} />
+            <Route path="/portal" element={<PortalProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

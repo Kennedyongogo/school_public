@@ -160,14 +160,20 @@ export async function registerMarketplaceUser(body) {
 }
 
 /**
- * Login marketplace user (email, password).
+ * Parent/student login for the public school site (same `users` table as admin).
+ * POST /api/users/login with portal restriction on the server.
  */
 export async function loginMarketplaceUser(body) {
   const base = getBaseUrl();
-  const res = await fetch(`${base}/api/marketplace/auth/login`, {
+  const res = await fetch(`${base}/api/users/login`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      email: body.email,
+      password: body.password,
+      portal: "public",
+    }),
   });
   const data = await res.json();
   if (!res.ok) {
@@ -177,6 +183,52 @@ export async function loginMarketplaceUser(body) {
     throw err;
   }
   return data;
+}
+
+/** Absolute URL for profile images when API is on another origin (`VITE_API_URL`). */
+export function schoolPortalMediaUrl(path) {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = getBaseUrl();
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return base ? `${base}${p}` : p;
+}
+
+export async function fetchSchoolPortalUser() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/users/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Session expired. Please sign in again.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalParentProfile() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/parents/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load parent profile.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalStudentProfile() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/students/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load student profile.");
+  return data.data;
+}
+
+export function clearSchoolPortalSession() {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem("marketplace_token");
+  localStorage.removeItem("marketplace_user");
+  localStorage.removeItem("portal_login_role");
 }
 
 /**
