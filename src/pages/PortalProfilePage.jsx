@@ -191,9 +191,27 @@ export default function PortalProfilePage() {
                   </Typography>
                   <Stack divider={<Divider flexItem />}>
                     <Field label="Admission number" value={detail.row.admission_number} />
-                    <Field label="Class" value={detail.row.current_class} />
-                    <Field label="Section" value={detail.row.section} />
-                    <Field label="Roll number" value={detail.row.roll_number} />
+                    <Field label="Curriculum" value={detail.row.curriculum?.name} />
+                    <Field
+                      label="Class"
+                      value={
+                        detail.row.curriculum_class
+                          ? `${detail.row.curriculum_class.name}${
+                              detail.row.curriculum_class.code ? ` (${detail.row.curriculum_class.code})` : ""
+                            }`
+                          : undefined
+                      }
+                    />
+                    <Field
+                      label="Homeroom teacher"
+                      value={
+                        detail.row.class_teacher?.full_name ||
+                        detail.row.class_teacher?.username ||
+                        detail.row.class_teacher?.email ||
+                        detail.row.class_teacher?.user?.full_name ||
+                        detail.row.class_teacher?.user?.username
+                      }
+                    />
                     <Field label="Gender" value={detail.row.gender} />
                     <Field label="Date of birth" value={detail.row.date_of_birth} />
                     <Box sx={{ py: 1 }}>
