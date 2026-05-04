@@ -224,6 +224,84 @@ export async function fetchSchoolPortalStudentProfile() {
   return data.data;
 }
 
+/** Portal bell: unread count + recent rows (same JWT as `/api/users/me`). */
+export async function fetchSchoolPortalNotifications() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/notifications`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load notifications.");
+  return data.data;
+}
+
+export async function markSchoolPortalNotificationRead(id) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/notifications/${encodeURIComponent(id)}/read`, {
+    method: "PATCH",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not update notification.");
+  return data.data;
+}
+
+export async function markAllSchoolPortalNotificationsRead() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/notifications/mark-all-read`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not clear notifications.");
+  return data.data;
+}
+
+/** Records timetable live attendance when a student opens the meeting link from the portal (student JWT). */
+export async function postSchoolPortalLiveSessionJoin(join_url) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/live-session/join`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ join_url }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not record session join.");
+  return data;
+}
+
+/** Marks leave/duration when the student ends the meeting (student JWT). */
+export async function postSchoolPortalLiveSessionLeave(join_url) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/live-session/leave`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ join_url }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not record session leave.");
+  return data;
+}
+
+/**
+ * Same as leave POST, for `pagehide` / tab close (`keepalive` so the request can finish after unload).
+ * Does not throw; ignores response.
+ */
+export function beaconSchoolPortalLiveSessionLeave(join_url) {
+  const base = getBaseUrl();
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  void fetch(`${base}/api/school-portal/live-session/leave`, {
+    method: "POST",
+    keepalive: true,
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ join_url }),
+  }).catch(() => {});
+}
+
 export function clearSchoolPortalSession() {
   if (typeof localStorage === "undefined") return;
   localStorage.removeItem("marketplace_token");

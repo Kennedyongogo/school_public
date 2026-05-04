@@ -19,6 +19,7 @@ const Portfolio = lazy(() => import("./pages/Portfolio"));
 const MeetOurTeam = lazy(() => import("./pages/MeetOurTeam"));
 const MarketplaceLogin = lazy(() => import("./pages/MarketplaceLogin"));
 const PortalProfilePage = lazy(() => import("./pages/PortalProfilePage"));
+const PortalLiveMeetingPage = lazy(() => import("./pages/PortalLiveMeetingPage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -193,6 +194,7 @@ function AppLayout() {
               }
             />
             <Route path="/marketplace" element={<MarketplaceLogin />} />
+            <Route path="/portal/live-meeting" element={<PortalLiveMeetingPage />} />
             <Route path="/portal" element={<PortalProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

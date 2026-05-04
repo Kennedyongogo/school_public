@@ -1,6 +1,17 @@
 import React from "react";
-import { AppBar, Toolbar, Box, Typography, Button, Avatar } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  Box,
+  Typography,
+  Button,
+  Avatar,
+  IconButton,
+  Tooltip,
+  Badge,
+} from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import { schoolPortalMediaUrl } from "../../api";
 
 const BRAND = {
@@ -11,9 +22,16 @@ const BRAND = {
 };
 
 /**
- * Private portal chrome: avatar + name (left), logout (right).
+ * Private portal chrome: avatar + name (left), notifications + logout (right).
  */
-export default function PortalPrivateHeader({ displayName, profileImageUrl, portalRoleLabel, onLogout }) {
+export default function PortalPrivateHeader({
+  displayName,
+  profileImageUrl,
+  portalRoleLabel,
+  onLogout,
+  notificationCount = 0,
+  onNotificationsClick,
+}) {
   const imgSrc = profileImageUrl ? schoolPortalMediaUrl(profileImageUrl) : null;
   const initial = (displayName || "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -73,26 +91,52 @@ export default function PortalPrivateHeader({ displayName, profileImageUrl, port
           </Box>
         </Box>
 
-        <Button
-          variant="contained"
-          size="medium"
-          startIcon={<LogoutIcon />}
-          onClick={onLogout}
-          sx={{
-            flexShrink: 0,
-            fontWeight: 700,
-            textTransform: "none",
-            background: `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`,
-            color: BRAND.navyDeep,
-            boxShadow: "0 4px 14px rgba(201, 162, 39, 0.35)",
-            "&:hover": {
-              background: `linear-gradient(145deg, ${BRAND.gold}, ${BRAND.goldMuted})`,
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
+          <Tooltip title="Notifications">
+            <IconButton
+              color="inherit"
+              aria-label="Notifications"
+              onClick={onNotificationsClick || (() => {})}
+              sx={{
+                color: "rgba(255,255,255,0.92)",
+                "&:hover": { bgcolor: "rgba(230, 207, 106, 0.12)" },
+              }}
+            >
+              <Badge
+                color="warning"
+                overlap="circular"
+                invisible={!notificationCount || notificationCount <= 0}
+                badgeContent={
+                  notificationCount > 99 ? "99+" : notificationCount > 0 ? notificationCount : undefined
+                }
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                <NotificationsOutlinedIcon sx={{ fontSize: 26 }} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+
+          <Button
+            variant="contained"
+            size="medium"
+            startIcon={<LogoutIcon />}
+            onClick={onLogout}
+            sx={{
+              flexShrink: 0,
+              fontWeight: 700,
+              textTransform: "none",
+              background: `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`,
               color: BRAND.navyDeep,
-            },
-          }}
-        >
-          Log out
-        </Button>
+              boxShadow: "0 4px 14px rgba(201, 162, 39, 0.35)",
+              "&:hover": {
+                background: `linear-gradient(145deg, ${BRAND.gold}, ${BRAND.goldMuted})`,
+                color: BRAND.navyDeep,
+              },
+            }}
+          >
+            Log out
+          </Button>
+        </Box>
       </Toolbar>
     </AppBar>
   );
