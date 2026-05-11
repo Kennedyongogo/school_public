@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -9,15 +9,7 @@ import {
   Stack,
   Chip,
   Avatar,
-  Drawer,
-  Divider,
-  Button,
-  List,
-  ListItemButton,
-  ListItemText,
-  IconButton,
 } from "@mui/material";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import {
   Person as PersonIcon,
   Email as EmailIcon,
@@ -28,14 +20,10 @@ import {
   Phone as PhoneIcon,
   FactCheck as FactCheckIcon,
 } from "@mui/icons-material";
-import PortalPrivateHeader from "../components/Portal/PortalPrivateHeader";
 import {
   fetchSchoolPortalUser,
   fetchSchoolPortalParentProfile,
   fetchSchoolPortalStudentProfile,
-  fetchSchoolPortalNotifications,
-  markSchoolPortalNotificationRead,
-  markAllSchoolPortalNotificationsRead,
   clearSchoolPortalSession,
   schoolPortalMediaUrl,
 } from "../api";
@@ -45,34 +33,6 @@ const accent = "#DC2626";
 const accentDark = "#B91C1C";
 const accentLight = "#FEE2E2";
 const backgroundLight = "#FEF2F2";
-
-/** Short audible cue when new unread portal notifications arrive (browser must allow audio). */
-function playPortalChime() {
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const ding = (freq, when, dur) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = freq;
-      o.connect(g);
-      g.connect(ctx.destination);
-      const t = ctx.currentTime + when;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.08, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.start(t);
-      o.stop(t + dur + 0.03);
-    };
-    ding(784, 0, 0.11);
-    ding(988, 0.13, 0.14);
-    setTimeout(() => ctx.close().catch(() => {}), 450);
-  } catch (_) {
-    /* ignore */
-  }
-}
 
 function formatDdMmYyyy(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -203,10 +163,6 @@ export default function PortalProfilePage() {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
   const [detail, setDetail] = useState(null);
-  const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
-  const [portalUnreadCount, setPortalUnreadCount] = useState(0);
-  const [portalNotifications, setPortalNotifications] = useState([]);
-  const lastUnreadRef = useRef(null);
 
   const load = useCallback(async () => {
     const token =
@@ -257,68 +213,10 @@ export default function PortalProfilePage() {
     load();
   }, [load]);
 
-  useEffect(() => {
-    if (!user || loading) return undefined;
-
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const data = await fetchSchoolPortalNotifications();
-        if (cancelled) return;
-        const unread = Number(data?.unread_count) || 0;
-        const list = Array.isArray(data?.notifications) ? data.notifications : [];
-        setPortalUnreadCount(unread);
-        setPortalNotifications(list);
-        if (lastUnreadRef.current != null && unread > lastUnreadRef.current) {
-          playPortalChime();
-        }
-        lastUnreadRef.current = unread;
-      } catch {
-        if (!cancelled) {
-          /* silent — portal works without notifications */
-        }
-      }
-    };
-
-    poll();
-    const id = setInterval(poll, 45_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [user, loading]);
-
-  const refreshNotificationsOnly = useCallback(async () => {
-    try {
-      const data = await fetchSchoolPortalNotifications();
-      const unread = Number(data?.unread_count) || 0;
-      const list = Array.isArray(data?.notifications) ? data.notifications : [];
-      setPortalUnreadCount(unread);
-      setPortalNotifications(list);
-      lastUnreadRef.current = unread;
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const handleLogout = () => {
-    clearSchoolPortalSession();
-    navigate("/marketplace", { replace: true });
-  };
-
   const u = user || {};
   const profileImg = u.profile_image;
-  const portalLabel = u.role === "student" ? "Student portal" : u.role === "parent" ? "Parent portal" : "";
-
   const innerUser = detail?.row?.user || {};
   const st = detail?.kind === "student" ? detail.row : null;
-
-  const headerAvatarSrc =
-    st?.profile_picture != null && String(st.profile_picture).trim() !== ""
-      ? schoolPortalMediaUrl(st.profile_picture)
-      : profileImg || innerUser.profile_image
-        ? schoolPortalMediaUrl(profileImg || innerUser.profile_image)
-        : "";
 
   const initials = (name) => {
     const n = String(name || "").trim();
@@ -355,7 +253,6 @@ export default function PortalProfilePage() {
 
   const pageShellSx = () => ({
     minHeight: "100vh",
-    pt: { xs: "56px", sm: "64px" },
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
@@ -382,88 +279,6 @@ export default function PortalProfilePage() {
 
   return (
     <Box sx={pageShellSx}>
-      <PortalPrivateHeader
-        displayName={displayName}
-        profileImageUrl={headerAvatarSrc || undefined}
-        portalRoleLabel={portalLabel}
-        onLogout={handleLogout}
-        notificationCount={portalUnreadCount}
-        onNotificationsClick={() => setNotificationDrawerOpen(true)}
-      />
-
-      <Drawer anchor="right" open={notificationDrawerOpen} onClose={() => setNotificationDrawerOpen(false)}>
-        <Box sx={{ width: { xs: "100vw", sm: 380 }, maxWidth: "100%", p: 2, boxSizing: "border-box" }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Notifications
-            </Typography>
-            <IconButton aria-label="Close notifications" onClick={() => setNotificationDrawerOpen(false)} size="small">
-              <CloseRoundedIcon />
-            </IconButton>
-          </Stack>
-          <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={portalUnreadCount <= 0}
-              onClick={async () => {
-                await markAllSchoolPortalNotificationsRead();
-                await refreshNotificationsOnly();
-              }}
-            >
-              Mark all read
-            </Button>
-          </Stack>
-          <Divider sx={{ mb: 1 }} />
-          {portalNotifications.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              No alerts yet. When your teacher notifies your class about an online lesson, it will appear here.
-            </Typography>
-          ) : (
-            <List dense disablePadding>
-              {portalNotifications.map((n) => (
-                <ListItemButton
-                  key={n.id}
-                  alignItems="flex-start"
-                  sx={{
-                    borderRadius: 1,
-                    mb: 0.5,
-                    bgcolor: n.is_read ? "transparent" : "action.hover",
-                  }}
-                  onClick={async () => {
-                    try {
-                      if (!n.is_read) {
-                        await markSchoolPortalNotificationRead(n.id);
-                        await refreshNotificationsOnly();
-                      }
-                      const url = n.action_url && String(n.action_url).trim();
-                      if (url && /^https?:\/\//i.test(url)) {
-                        if (user?.role === "student") {
-                          setNotificationDrawerOpen(false);
-                          navigate(`/portal/live-meeting?target=${encodeURIComponent(url)}`);
-                          return;
-                        }
-                        window.location.assign(url);
-                      }
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                >
-                  <ListItemText
-                    primary={n.title || "Notice"}
-                    secondary={`${n.message || ""}${n.created_at ? `\n${new Date(n.created_at).toLocaleString()}` : ""}`}
-                    secondaryTypographyProps={{
-                      sx: { whiteSpace: "pre-wrap", display: "block", mt: 0.25 },
-                    }}
-                  />
-                </ListItemButton>
-              ))}
-            </List>
-          )}
-        </Box>
-      </Drawer>
-
       <Box sx={{ flex: "1 1 auto", width: "100%", minHeight: 0 }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>

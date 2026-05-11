@@ -224,6 +224,120 @@ export async function fetchSchoolPortalStudentProfile() {
   return data.data;
 }
 
+export async function fetchSchoolPortalStudentTimetableLessons() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/student/timetable-lessons`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load class lessons.");
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function fetchSchoolPortalStudentExamSchedules() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/student/exam-schedules`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load exam schedules.");
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function createSchoolPortalExamSubmission(examId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/submissions`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not start exam.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalMyExamSubmission(examId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/submissions/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load exam paper.");
+  return data.data;
+}
+
+export async function saveSchoolPortalExamAnswers(submissionId, answers) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exams/submissions/${encodeURIComponent(submissionId)}/answers`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ answers }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not save answers.");
+  return data.data;
+}
+
+export async function submitSchoolPortalExam(submissionId, payload = null) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exams/submissions/${encodeURIComponent(submissionId)}/submit`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not submit exam.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalMyExamAttemptsForSchedule(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/exam-attempts?exam_schedule_id=${encodeURIComponent(examScheduleId)}`,
+    {
+      headers: getMarketplaceAuthHeaders(),
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load exam attempts.");
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function createSchoolPortalExamAttempt(payload) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exam-attempts`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not start exam attempt.");
+  return data.data;
+}
+
+export async function updateSchoolPortalExamAttempt(attemptId, patch) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exam-attempts/${encodeURIComponent(attemptId)}`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify(patch),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not update exam attempt.");
+  return data.data;
+}
+
+export async function createSchoolPortalExamSessionLog(payload) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exam-session-logs`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not create session log.");
+  return data.data;
+}
+
 /** Portal bell: unread count + recent rows (same JWT as `/api/users/me`). */
 export async function fetchSchoolPortalNotifications() {
   const base = getBaseUrl();
