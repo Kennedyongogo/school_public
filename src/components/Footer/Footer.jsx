@@ -12,12 +12,12 @@ import {
 } from "@mui/material";
 import { Facebook, LinkedIn } from "@mui/icons-material";
 
-/** Matches PublicHeader — Carlvyne crest navy & gold */
+/** Matches PublicHeader — elimu plus crest navy & red */
 const BRAND = {
   navy: "#0c2340",
   navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
+  gold: "#c92727",
+  goldMuted: "#e66a6a",
 };
 
 const FOOTER_LOGO_SRC =
@@ -85,7 +85,7 @@ export default function Footer() {
     <Box
       component="footer"
       sx={{
-        background: `linear-gradient(165deg, ${BRAND.navyDeep} 0%, ${BRAND.navy} 45%, #0e3058 100%)`,
+        background: "#F5F5DC",
         pt: { xs: 0, sm: 0, md: 0 },
         pb: 0.4,
         mt: "auto",
@@ -130,7 +130,7 @@ export default function Footer() {
                         <Box
                           component="img"
                           src={FOOTER_LOGO_SRC}
-                          alt="Carlvyne International School"
+                          alt="elimu plus"
                           sx={{
                             height: { xs: 44, sm: 48 },
                             width: "auto",
@@ -146,24 +146,12 @@ export default function Footer() {
                               fontFamily: '"Cormorant Garamond", serif',
                               fontWeight: 700,
                               fontSize: { xs: "1.2rem", sm: "1.45rem" },
-                              color: "#ffffff",
+                              color: BRAND.navy,
                               lineHeight: 1.05,
                               letterSpacing: "0.03em",
                             }}
                           >
-                            Carlvyne
-                          </Typography>
-                          <Typography
-                            sx={{
-                              fontFamily: '"Open Sans", sans-serif',
-                              fontWeight: 600,
-                              fontSize: { xs: "0.65rem", sm: "0.75rem" },
-                              color: BRAND.goldMuted,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            International School
+                            elimu plus
                           </Typography>
                         </Box>
                       </Box>
@@ -185,12 +173,12 @@ export default function Footer() {
                           variant="body1"
                           sx={{
                             lineHeight: 1.65,
-                            color: "rgba(255, 255, 255, 0.82)",
+                            color: "rgba(0, 0, 0, 0.82)",
                             fontSize: { xs: "0.95rem", sm: "1.05rem" },
                           }}
                         >
                           Where young minds discover their potential and build tomorrow&apos;s legacy.
-                          Explore admissions, programs, and life at Carlvyne International School.
+                          Explore admissions, programs, and life at elimu plus.
                         </Typography>
                       </Box>
 
@@ -213,7 +201,7 @@ export default function Footer() {
                           sx={{
                             mb: { xs: 0.5, sm: 1 },
                             fontWeight: 700,
-                            color: "#ffffff",
+                            color: BRAND.navy,
                             fontSize: { xs: "1rem", sm: "1.15rem" },
                           }}
                         >
@@ -225,22 +213,22 @@ export default function Footer() {
                               key={index}
                               aria-label={social.label}
                               onClick={() => handleSocialClick(social.url)}
-                              sx={{
-                                color: "rgba(255, 255, 255, 0.9)",
-                                background: "rgba(255, 255, 255, 0.06)",
-                                border: `1px solid rgba(201, 162, 39, 0.25)`,
-                                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                                outline: "none",
-                                "&:focus": { outline: "none" },
-                                "&:focus-visible": { outline: "none" },
-                                "&:hover": {
-                                  background: social.color,
-                                  color: "white",
-                                  border: `1px solid ${social.color}`,
-                                  transform: "translateY(-3px) scale(1.08)",
-                                  boxShadow: `0 8px 25px ${social.color}55`,
-                                },
-                              }}
+                            sx={{
+                              color: "rgba(0, 0, 0, 0.9)",
+                              background: "rgba(255, 255, 255, 0.8)",
+                              border: `1px solid rgba(201, 39, 39, 0.25)`,
+                              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                              outline: "none",
+                              "&:focus": { outline: "none" },
+                              "&:focus-visible": { outline: "none" },
+                              "&:hover": {
+                                background: social.color,
+                                color: "white",
+                                border: `1px solid ${social.color}`,
+                                transform: "translateY(-3px) scale(1.08)",
+                                boxShadow: `0 8px 25px ${social.color}55`,
+                              },
+                            }}
                             >
                               {social.icon}
                             </IconButton>
@@ -282,22 +270,22 @@ export default function Footer() {
                             key={index}
                             aria-label={social.label}
                             onClick={() => handleSocialClick(social.url)}
-                            sx={{
-                              color: "rgba(255, 255, 255, 0.9)",
-                              background: "rgba(255, 255, 255, 0.06)",
-                              border: `1px solid rgba(201, 162, 39, 0.25)`,
-                              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                              outline: "none",
-                              "&:focus": { outline: "none" },
-                              "&:focus-visible": { outline: "none" },
-                              "&:hover": {
-                                background: social.color,
-                                color: "white",
-                                border: `1px solid ${social.color}`,
-                                transform: "translateY(-3px) scale(1.08)",
-                                boxShadow: `0 8px 25px ${social.color}55`,
-                              },
-                            }}
+                             sx={{
+                               color: "rgba(0, 0, 0, 0.9)",
+                               background: "rgba(255, 255, 255, 0.8)",
+                               border: `1px solid rgba(201, 39, 39, 0.25)`,
+                               transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                               outline: "none",
+                               "&:focus": { outline: "none" },
+                               "&:focus-visible": { outline: "none" },
+                               "&:hover": {
+                                 background: social.color,
+                                 color: "white",
+                                 border: `1px solid ${social.color}`,
+                                 transform: "translateY(-3px) scale(1.08)",
+                                 boxShadow: `0 8px 25px ${social.color}55`,
+                               },
+                             }}
                           >
                             {social.icon}
                           </IconButton>
@@ -313,9 +301,9 @@ export default function Footer() {
                   <Divider
                     sx={{
                       my: 1,
-                      borderColor: "rgba(201, 162, 39, 0.25)",
+                      borderColor: "rgba(201, 39, 39, 0.25)",
                       "&::before, &::after": {
-                        borderColor: "rgba(201, 162, 39, 0.12)",
+                        borderColor: "rgba(201, 39, 39, 0.12)",
                       },
                     }}
                   />
@@ -334,12 +322,12 @@ export default function Footer() {
                     <Typography
                       variant="body1"
                       sx={{
-                        color: "rgba(255, 255, 255, 0.75)",
+                        color: "rgba(0, 0, 0, 0.75)",
                         fontWeight: 500,
                         fontSize: { xs: "0.85rem", sm: "0.95rem" },
                       }}
                     >
-                      © {new Date().getFullYear()} Carlvyne International School. All rights reserved.
+                      © {new Date().getFullYear()} elimu plus. All rights reserved.
                     </Typography>
                     <Box
                       sx={{
@@ -347,7 +335,7 @@ export default function Footer() {
                         px: { xs: 0.45, sm: 0.5 },
                         background: "rgba(255, 255, 255, 0.08)",
                         backdropFilter: "blur(10px)",
-                        border: `1px solid rgba(201, 162, 39, 0.2)`,
+                        border: `1px solid rgba(201, 39, 39, 0.2)`,
                         borderRadius: "12px",
                         textAlign: "center",
                         boxShadow: "0 6px 24px rgba(0, 0, 0, 0.2)",
@@ -355,7 +343,7 @@ export default function Footer() {
                         transition: "all 0.25s ease",
                         "&:hover": {
                           background: "rgba(255, 255, 255, 0.12)",
-                          borderColor: "rgba(230, 207, 106, 0.35)",
+                          borderColor: "rgba(230, 106, 106, 0.35)",
                           transform: "translateY(-2px)",
                         },
                       }}

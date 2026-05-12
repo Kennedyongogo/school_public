@@ -246,16 +246,16 @@ export default function HeroSection() {
                     px: "clamp(12px, 2.5vmin, 22px)",
                     py: "clamp(6px, 1vmin, 10px)",
                     borderRadius: "999px",
-                    background: "rgba(255, 215, 0, 0.22)",
+                    background: "rgba(255, 0, 0, 0.22)",
                     backdropFilter: "blur(8px)",
-                    border: "1px solid rgba(255, 230, 120, 0.45)",
+                    border: "1px solid rgba(255, 0, 0, 0.45)",
                   }}
                 >
                   <Typography
                     sx={{
                       fontSize: "clamp(0.62rem, 1.55vmin, 0.8125rem)",
                       fontWeight: 600,
-                      color: "#FFEB99",
+                      color: "#FF0000",
                       letterSpacing: "0.07em",
                       textTransform: "uppercase",
                       fontFamily: "'Inter', 'Segoe UI', sans-serif",
@@ -264,7 +264,7 @@ export default function HeroSection() {
                       textShadow: "0 1px 3px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.65)",
                     }}
                   >
-                    Excellence in Education Since 2024
+                    Public Portal Excellence in Education Since 2024
                   </Typography>
                 </Box>
               </Box>
@@ -293,17 +293,7 @@ export default function HeroSection() {
                       "0 1px 2px rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,0.85), 0 4px 28px rgba(0,0,0,0.55)",
                   }}
                 >
-                  Welcome to Carlvyne <br />
-                  <Box
-                    component="span"
-                    sx={{
-                      color: "#FFD700",
-                      textShadow:
-                        "0 1px 2px rgba(0,0,0,1), 0 2px 10px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.45)",
-                    }}
-                  >
-                    International School
-                  </Box>
+                  Welcome to elimu plus
                 </Typography>
 
                 <Typography
@@ -424,13 +414,13 @@ export default function HeroSection() {
                     fontSize: "clamp(0.78rem, 1.75vmin, 0.875rem)",
                     fontWeight: 700,
                     borderRadius: "999px",
-                    background: "linear-gradient(135deg, #FFD700 0%, #FFA500 100%)",
+                    background: "linear-gradient(135deg, #FF0000 0%, #FF4444 100%)",
                     color: "#0a1a2a",
                     textTransform: "none",
-                    boxShadow: "0 4px 14px rgba(255, 215, 0, 0.28)",
+                    boxShadow: "0 4px 14px rgba(255, 0, 0, 0.28)",
                     lineHeight: 1.2,
                     "&:hover": {
-                      background: "linear-gradient(135deg, #FFE44D 0%, #FFB347 100%)",
+                      background: "linear-gradient(135deg, #FF3333 0%, #FF6666 100%)",
                     },
                     "&:focus": { outline: "none", boxShadow: "none" },
                   }}
