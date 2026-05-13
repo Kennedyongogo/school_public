@@ -102,7 +102,7 @@ const SchoolPortfolio = ({ embedded = false }) => {
         currentRole: "AI Research Lead at Google",
         image: "https://randomuser.me/api/portraits/women/68.jpg",
         testimonial:
-          "Carlvyne gave me the foundation to dream big. The critical thinking skills I learned here are invaluable.",
+          "Elimu Plus gave me the foundation to dream big. The critical thinking skills I learned here are invaluable.",
       },
       {
         id: 9,
@@ -111,7 +111,7 @@ const SchoolPortfolio = ({ embedded = false }) => {
         achievement: "Founded EdTech startup valued at $50M",
         currentRole: "CEO at LearnSmart",
         image: "https://randomuser.me/api/portraits/men/32.jpg",
-        testimonial: "The entrepreneurial spirit at Carlvyne shaped my career path.",
+        testimonial: "The entrepreneurial spirit at Elimu Plus shaped my career path.",
       },
       {
         id: 10,
@@ -120,7 +120,7 @@ const SchoolPortfolio = ({ embedded = false }) => {
         achievement: "UNESCO Young Scientist Award 2023",
         currentRole: "Professor at Cambridge University",
         image: "https://randomuser.me/api/portraits/women/45.jpg",
-        testimonial: "The research opportunities at Carlvyne were exceptional.",
+        testimonial: "The research opportunities at Elimu Plus were exceptional.",
       },
     ],
     parentTestimonials: [
@@ -147,14 +147,14 @@ const SchoolPortfolio = ({ embedded = false }) => {
       {
         id: 13,
         outlet: "Education Today Magazine",
-        headline: "Carlvyne International: Setting New Standards in STEM Education",
+        headline: "Elimu Plus International: Setting New Standards in STEM Education",
         date: "March 15, 2024",
         image: "https://images.unsplash.com/photo-1586333112964-c3bd1822ac08?w=600",
       },
       {
         id: 14,
         outlet: "National News Channel",
-        headline: "Special Feature: How Carlvyne is Preparing Students for AI Era",
+        headline: "Special Feature: How Elimu Plus is Preparing Students for AI Era",
         date: "February 10, 2024",
         image: "https://images.unsplash.com/photo-1598550882865-9b51210b105b?w=600",
       },

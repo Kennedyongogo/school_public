@@ -406,7 +406,7 @@ export default function HeroSection() {
               >
                 <Button
                   variant="contained"
-                  onClick={() => navigate("/marketplace")}
+                  onClick={() => navigate("/admission/apply")}
                   sx={{
                     minWidth: 0,
                     py: "clamp(8px, 1.5vmin, 12px)",

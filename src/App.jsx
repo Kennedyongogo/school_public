@@ -24,6 +24,12 @@ const PortalExamsPage = lazy(() => import("./pages/PortalExamsPage"));
 const PortalExamTakePage = lazy(() => import("./pages/PortalExamTakePage"));
 const PortalLiveMeetingPage = lazy(() => import("./pages/PortalLiveMeetingPage"));
 const PortalPrivateLayout = lazy(() => import("./components/Portal/PortalPrivateLayout"));
+const AdmissionApplication = lazy(() => import("./pages/AdmissionApplication"));
+const AdmissionApplicationBritish = lazy(() => import("./pages/AdmissionApplicationBritish"));
+const AdmissionForm = lazy(() => import("./pages/AdmissionForm"));
+const AdmissionSuccess = lazy(() => import("./pages/AdmissionSuccess"));
+const CurriculumSelection = lazy(() => import("./pages/CurriculumSelection"));
+const FeeStructureView = lazy(() => import("./pages/FeeStructureView"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -79,7 +85,7 @@ function AppLayout() {
                 <Box
                   component="img"
                   src="/images/0437ecf6-7509-45a2-af0b-f514ef208228-removebg-preview.png"
-                  alt="Carlvyne International School"
+                  alt="Elimu Plus"
                   sx={{
                     height: { xs: 72, sm: 88 },
                     width: "auto",
@@ -102,7 +108,7 @@ function AppLayout() {
                     fontFamily: '"Cormorant Garamond", serif',
                   }}
                 >
-                  Carlvyne International School
+                  Elimu Plus
                 </Typography>
                 <Typography
                   variant="h6"
@@ -205,6 +211,12 @@ function AppLayout() {
               <Route path="exams" element={<PortalExamsPage />} />
               <Route path="exams/:scheduleId" element={<PortalExamTakePage />} />
             </Route>
+            <Route path="/admission/apply" element={<AdmissionApplication />} />
+            <Route path="/admission/british" element={<AdmissionApplicationBritish />} />
+            <Route path="/admission/select" element={<CurriculumSelection />} />
+            <Route path="/admission/form" element={<AdmissionForm />} />
+            <Route path="/admission/fee-structure/:curriculumId" element={<FeeStructureView />} />
+            <Route path="/admission/success" element={<AdmissionSuccess />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

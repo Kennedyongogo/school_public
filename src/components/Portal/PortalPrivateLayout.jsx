@@ -144,8 +144,10 @@ export default function PortalPrivateLayout() {
             : "profile"
         }
         onGoProfile={() => navigate("/portal")}
-        onGoClasses={() => navigate("/portal/classes")}
-        onGoExams={() => navigate("/portal/exams")}
+        {...(user?.role === "student" && {
+          onGoClasses: () => navigate("/portal/classes"),
+          onGoExams: () => navigate("/portal/exams"),
+        })}
       />
 
       <Drawer anchor="right" open={notificationDrawerOpen} onClose={() => setNotificationDrawerOpen(false)}>

@@ -244,6 +244,16 @@ export async function fetchSchoolPortalStudentExamSchedules() {
   return Array.isArray(data.data) ? data.data : [];
 }
 
+export async function fetchSchoolPortalStudentExamResult(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/student/exam-results/${encodeURIComponent(examScheduleId)}`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load exam result.");
+  return data.data;
+}
+
 export async function createSchoolPortalExamSubmission(examId) {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/submissions`, {
@@ -466,6 +476,26 @@ export async function uploadMarketplaceProfilePhoto(file) {
   return data;
 }
 
+export async function uploadAdmissionDocuments(files) {
+  const base = getBaseUrl();
+  const formData = new FormData();
+  if (files.studentPicture) formData.append("student_picture", files.studentPicture);
+  if (files.studentReportcard) formData.append("student_reportcard", files.studentReportcard);
+  if (files.studentBirthcertificate) formData.append("student_birthcertificate", files.studentBirthcertificate);
+  const res = await fetch(`${base}/api/admission-applications/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to upload documents");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
 /**
  * Complete marketplace profile (role + common + role-specific). Requires token.
  */
@@ -659,4 +689,101 @@ export async function deleteListing(id) {
     throw err;
   }
   return data;
+}
+
+export async function fetchPublicTeachers(page = 1, limit = 10) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/public/teachers?page=${page}&limit=${limit}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch teachers");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return {
+    data: Array.isArray(data.data) ? data.data : [],
+    pagination: data.pagination || { total: 0, page, limit, totalPages: 1 },
+  };
+}
+
+export async function fetchPublicCurricula() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/curricula/public/all`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch curricula");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function fetchPublicFeeStructures(curriculumId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/fee-structures/public/curriculum/${curriculumId}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch fee structures");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function fetchPublicCurriculumClasses(curriculumId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/curricula/public/${curriculumId}/classes`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch classes");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function fetchPublicCurriculumClassLevels(curriculumId, classId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/curricula/public/${curriculumId}/classes/${classId}/levels`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch class levels");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function fetchPublicCurriculumById(curriculumId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/public/curricula/${curriculumId}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch curriculum");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return data.data;
+}
+
+export async function fetchPublicSchoolAdmins(page = 1, limit = 10) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/public/school-admins?page=${page}&limit=${limit}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Failed to fetch school admins");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return {
+    data: Array.isArray(data.data) ? data.data : [],
+    pagination: data.pagination || { total: 0, page, limit, totalPages: 1 },
+  };
 }

@@ -19,7 +19,7 @@ import {
 import { Home, Menu as MenuIcon, Close, Groups, Collections } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
-/** Carlvyne International School — navy & gold derived from crest */
+/** Elimu Plus — navy & gold derived from crest */
 const BRAND = {
   navy: "#0c2340",
   navyDeep: "#08162b",
@@ -353,7 +353,7 @@ export default function PublicHeader() {
                   <Box
                     component="img"
                     src={HEADER_LOGO_SRC}
-                    alt="Carlvyne International School"
+                    alt="Elimu Plus"
                     sx={{
                       height: { xs: 38, sm: 42, md: 46 },
                       width: "auto",
@@ -384,29 +384,7 @@ export default function PublicHeader() {
                         letterSpacing: "0.04em",
                       }}
                     >
-                      Carlvyne
-                    </Typography>
-                    <Typography
-                      component="span"
-                      sx={{
-                        fontFamily: '"Open Sans", "Segoe UI", sans-serif',
-                        fontWeight: 600,
-                        fontSize: "clamp(0.52rem, 0.35vw + 0.48rem, 0.72rem)",
-                        color:
-                          isHeaderTransparent && isHeaderVisible
-                            ? "rgba(255,255,255,0.92)"
-                            : BRAND.navy,
-                        lineHeight: 1.15,
-                        transition: "color 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-                        textShadow:
-                          isHeaderTransparent && isHeaderVisible
-                            ? "0 1px 3px rgba(0,0,0,0.8)"
-                            : "none",
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      International School
+                      Elimu Plus
                     </Typography>
                   </Box>
                 </Box>

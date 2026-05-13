@@ -93,7 +93,7 @@ export default function HomeReviewsSection() {
             fontSize: "0.95rem",
           }}
         >
-          Voices from our community — thank you for sharing your experience with Carlvyne International School.
+          Voices from our community — thank you for sharing your experience with Elimu Plus.
         </Typography>
 
         {loading ? (

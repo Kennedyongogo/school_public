@@ -27,7 +27,7 @@ import {
 import Swal from "sweetalert2";
 import { loginMarketplaceUser } from "../api";
 
-/** Carlvyne palette — matches header Login button */
+/** Elimu Plus palette — matches header Login button */
 const BRAND = {
   navy: "#0c2340",
   navyDeep: "#08162b",
@@ -225,7 +225,7 @@ export default function MarketplaceLogin() {
             <Box
               component="img"
               src={HEADER_LOGO}
-              alt="Carlvyne International School"
+              alt="Elimu Plus"
               sx={{
                 height: "clamp(36px, 4.5vh, 48px)",
                 width: "auto",
@@ -243,7 +243,7 @@ export default function MarketplaceLogin() {
                 lineHeight: 1.15,
               }}
             >
-              Carlvyne International School
+Elimu Plus
             </Typography>
           </Box>
         </Box>
@@ -342,7 +342,7 @@ export default function MarketplaceLogin() {
 
         <Box sx={{ position: "relative", zIndex: 2, p: "clamp(0.5rem, 1vh, 1rem)", flexShrink: 0 }}>
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.8rem, 1.2vh, 0.95rem)" }}>
-            © {new Date().getFullYear()} Carlvyne International School. Learn • Lead • Succeed.
+            © {new Date().getFullYear()} Elimu Plus. Learn • Lead • Succeed.
           </Typography>
         </Box>
       </Box>
@@ -416,7 +416,7 @@ export default function MarketplaceLogin() {
               fontSize: "clamp(1rem, 2vh, 1.25rem)",
             }}
           >
-            Carlvyne International School
+            Elimu Plus
           </Typography>
         </Box>
 

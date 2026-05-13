@@ -143,40 +143,44 @@ export default function PortalPrivateHeader({
             >
               Profile
             </Button>
-            <Button
-              variant={currentNav === "classes" ? "contained" : "text"}
-              size="small"
-              onClick={onGoClasses}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                color: currentNav === "classes" ? BRAND.navyDeep : "#fff",
-                bgcolor: currentNav === "classes" ? BRAND.goldMuted : "transparent",
-                minWidth: 96,
-                "&:hover": {
-                  bgcolor: currentNav === "classes" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                },
-              }}
-            >
-              Classes
-            </Button>
-            <Button
-              variant={currentNav === "exams" ? "contained" : "text"}
-              size="small"
-              onClick={onGoExams}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                color: currentNav === "exams" ? BRAND.navyDeep : "#fff",
-                bgcolor: currentNav === "exams" ? BRAND.goldMuted : "transparent",
-                minWidth: 96,
-                "&:hover": {
-                  bgcolor: currentNav === "exams" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                },
-              }}
-            >
-              Exams
-            </Button>
+            {typeof onGoClasses === "function" && (
+              <Button
+                variant={currentNav === "classes" ? "contained" : "text"}
+                size="small"
+                onClick={onGoClasses}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: currentNav === "classes" ? BRAND.navyDeep : "#fff",
+                  bgcolor: currentNav === "classes" ? BRAND.goldMuted : "transparent",
+                  minWidth: 96,
+                  "&:hover": {
+                    bgcolor: currentNav === "classes" ? BRAND.gold : "rgba(255,255,255,0.12)",
+                  },
+                }}
+              >
+                Classes
+              </Button>
+            )}
+            {typeof onGoExams === "function" && (
+              <Button
+                variant={currentNav === "exams" ? "contained" : "text"}
+                size="small"
+                onClick={onGoExams}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: currentNav === "exams" ? BRAND.navyDeep : "#fff",
+                  bgcolor: currentNav === "exams" ? BRAND.goldMuted : "transparent",
+                  minWidth: 96,
+                  "&:hover": {
+                    bgcolor: currentNav === "exams" ? BRAND.gold : "rgba(255,255,255,0.12)",
+                  },
+                }}
+              >
+                Exams
+              </Button>
+            )}
           </Box>
 
           <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 0.5, flexShrink: 0 }}>
@@ -268,12 +272,16 @@ export default function PortalPrivateHeader({
             <ListItemButton onClick={goProfile} selected={currentNav === "profile"} sx={{ borderRadius: 1 }}>
               <ListItemText primary="Profile" />
             </ListItemButton>
-            <ListItemButton onClick={goClasses} selected={currentNav === "classes"} sx={{ borderRadius: 1 }}>
-              <ListItemText primary="Classes" />
-            </ListItemButton>
-            <ListItemButton onClick={goExams} selected={currentNav === "exams"} sx={{ borderRadius: 1 }}>
-              <ListItemText primary="Exams" />
-            </ListItemButton>
+            {typeof onGoClasses === "function" && (
+              <ListItemButton onClick={goClasses} selected={currentNav === "classes"} sx={{ borderRadius: 1 }}>
+                <ListItemText primary="Classes" />
+              </ListItemButton>
+            )}
+            {typeof onGoExams === "function" && (
+              <ListItemButton onClick={goExams} selected={currentNav === "exams"} sx={{ borderRadius: 1 }}>
+                <ListItemText primary="Exams" />
+              </ListItemButton>
+            )}
             <ListItemButton onClick={openNotifications} sx={{ borderRadius: 1 }}>
               <ListItemText primary={`Notifications${notificationCount > 0 ? ` (${notificationCount > 99 ? "99+" : notificationCount})` : ""}`} />
             </ListItemButton>

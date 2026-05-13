@@ -220,7 +220,7 @@ export default function Team() {
                         key={src}
                         component="img"
                         src={src}
-                        alt="Carlvyne International School"
+                        alt="Elimu Plus"
                         sx={{
                           position: "absolute",
                           inset: 0,
@@ -263,7 +263,7 @@ export default function Team() {
                       border: `1px solid rgba(201, 162, 39, 0.35)`,
                     }}
                   >
-                    About Carlvyne
+                    About Elimu Plus
                   </Box>
                   <Typography
                     variant="h1"
@@ -292,7 +292,7 @@ export default function Team() {
                       lineHeight: 1.75,
                     }}
                   >
-                    Carlvyne International School offers a nurturing, rigorous education that blends
+                    Elimu Plus offers a nurturing, rigorous education that blends
                     academic excellence with character development and a global outlook. Our learners
                     are encouraged to discover their strengths, respect diverse perspectives, and
                     prepare for university and life beyond the classroom.
@@ -520,7 +520,7 @@ export default function Team() {
                 Our Core Values
               </Typography>
               <Typography sx={{ color: "rgba(8, 22, 43, 0.85)", mt: 1, fontSize: "2rem" }}>
-                The principles that shape daily life at Carlvyne
+                The principles that shape daily life at Elimu Plus
               </Typography>
             </Box>
             <Box
@@ -597,7 +597,7 @@ export default function Team() {
                   Our Leadership & Faculty
                 </Typography>
                 <Typography sx={{ fontSize: "1.25rem", color: "rgba(8, 22, 43, 0.92)", lineHeight: 1.75, mb: 3 }}>
-                  Carlvyne is led by experienced educators and administrators who are passionate about student wellbeing
+                  Elimu Plus is led by experienced educators and administrators who are passionate about student wellbeing
                   and academic rigor. Our teachers bring diverse backgrounds and ongoing professional development to the
                   classroom every day.
                 </Typography>
@@ -684,7 +684,7 @@ export default function Team() {
                           overflow: "hidden",
                         }}
                         role="img"
-                        aria-label={`Carlvyne campus life ${index + 1}`}
+                        aria-label={`Elimu Plus campus life ${index + 1}`}
                       />
                     ))}
                   </Box>
@@ -719,15 +719,15 @@ export default function Team() {
                     color: "white",
                   }}
                 >
-                  Ready to explore Carlvyne?
+                  Ready to explore Elimu Plus?
                 </Typography>
                 <Typography sx={{ fontSize: "1.125rem", opacity: 0.92, mb: 4, maxWidth: "42rem", mx: "auto" }}>
-                  Ask about admissions, campus visits, or how we can support your child&apos;s journey.
+                  Ready to apply for admission? Let us guide you through the process.
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
                   <Button
                     variant="contained"
-                    onClick={handleOpenDialog}
+                    onClick={() => navigate("/admission/apply")}
                     sx={{
                       background: LOGIN_BTN_GRAD,
                       color: BRAND.navyDeep,
@@ -739,7 +739,7 @@ export default function Team() {
                       "&:hover": { background: BRAND.goldMuted },
                     }}
                   >
-                    Contact Admissions
+                    Apply for Admission
                   </Button>
                   <Button
                     variant="outlined"
