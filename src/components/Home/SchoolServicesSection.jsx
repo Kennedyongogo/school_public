@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Typography,
   Box,
-  Button,
   Container,
   Fade,
   Grid,
@@ -16,6 +14,25 @@ import ScienceIcon from "@mui/icons-material/Science";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import ComputerIcon from "@mui/icons-material/Computer";
+import SchoolIcon from "@mui/icons-material/School";
+
+const getBaseUrl = () => {
+  const env = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL;
+  return env ? String(env).replace(/\/$/, "") : "";
+};
+
+const ICON_BY_KEY = {
+  MenuBook: MenuBookIcon,
+  SportsSoccer: SportsSoccerIcon,
+  Science: ScienceIcon,
+  Psychology: PsychologyIcon,
+  DirectionsBus: DirectionsBusIcon,
+  Computer: ComputerIcon,
+};
+
+function resolveIcon(iconKey) {
+  return ICON_BY_KEY[iconKey] || SchoolIcon;
+}
 
 /** Matches header / footer / hero accents */
 const BRAND = {
@@ -24,85 +41,60 @@ const BRAND = {
   gold: "#c9a227",
   goldMuted: "#e6cf6a",
 };
-const LOGIN_BTN_GRAD = `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`;
 
 const ROTATE_MS = 3200;
 
-/**
- * action: scroll target id without #, or "marketplace"
- */
-const SCHOOL_SERVICES = [
-  {
-    Icon: MenuBookIcon,
-    name: "Academic Programs",
-    description: "Rigorous programmes from early years through secondary — inquiry, literacy, and examination readiness.",
-    action: "school-news-events-section",
-  },
-  {
-    Icon: SportsSoccerIcon,
-    name: "Sports & Activities",
-    description: "Team sports, swimming, athletics, and clubs that build teamwork, discipline, and wellbeing.",
-    action: "reviews-section",
-  },
-  {
-    Icon: ScienceIcon,
-    name: "STEM & Innovation",
-    description: "Hands-on science, computing, and projects that spark curiosity and problem-solving.",
-    action: "school-news-events-section",
-  },
-  {
-    Icon: PsychologyIcon,
-    name: "Student Support",
-    description: "Pastoral care, learning support, and guidance so every learner thrives socially and academically.",
-    action: "reviews-section",
-  },
-  {
-    Icon: DirectionsBusIcon,
-    name: "Transportation",
-    description: "Planned routes and supervised travel options designed with learner safety first.",
-    action: "reviews-section",
-  },
-  {
-    Icon: ComputerIcon,
-    name: "Digital Learning",
-    description: "Secure portals and blended tools that keep families informed and students connected.",
-    action: "marketplace",
-  },
-];
+async function fetchPublicSchoolServices() {
+  try {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/api/school-services/public`);
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data)) {
+      return data.data;
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
 
 export default function SchoolServicesSection() {
-  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const [activeService, setActiveService] = useState(0);
+  const [schoolServices, setSchoolServices] = useState([]);
 
-  const serviceCount = SCHOOL_SERVICES.length;
+  const serviceCount = schoolServices.length;
 
   useEffect(() => {
     setIsVisible(true);
+    let cancelled = false;
+    fetchPublicSchoolServices().then((list) => {
+      if (!cancelled) {
+        setSchoolServices(list);
+        setActiveService(0);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (serviceCount < 2) return undefined;
     const interval = window.setInterval(() => {
       setActiveService((prev) => (prev + 1) % serviceCount);
     }, ROTATE_MS);
     return () => window.clearInterval(interval);
   }, [serviceCount]);
 
-  const active = useMemo(() => SCHOOL_SERVICES[activeService], [activeService]);
+  const active = useMemo(
+    () => schoolServices[activeService] || schoolServices[0],
+    [schoolServices, activeService]
+  );
 
-  const handleLearnMore = () => {
-    const { action } = active;
-    if (action === "marketplace") {
-      navigate("/marketplace");
-      return;
-    }
-    document.getElementById(action)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  };
-
-  const ActiveIcon = active.Icon;
+  const ActiveIcon = resolveIcon(active?.icon_key);
+  const hasServices = serviceCount > 0;
 
   return (
     <Box
@@ -130,7 +122,6 @@ export default function SchoolServicesSection() {
       >
         <Fade in={isVisible} timeout={700}>
           <Grid container spacing={{ xs: 2.5, md: 3 }} sx={{ width: "100%" }}>
-            {/* Full-width intro */}
             <Grid item xs={12} sx={{ width: "100%", maxWidth: "100%" }}>
               <Box
                 sx={{
@@ -188,14 +179,14 @@ export default function SchoolServicesSection() {
                   A balanced school experience: strong academics, enriching activities, and support
                   systems — all within a safe, welcoming community aligned with our{" "}
                   <Box component="span" sx={{ fontWeight: 700, color: BRAND.navy }}>
-                    Learn • Lead • Succeed
+                    Learn • Grow • Excel
                   </Box>{" "}
                   motto.
                 </Typography>
               </Box>
             </Grid>
 
-            {/* Full-width service card */}
+            {hasServices && (
             <Grid item xs={12} sx={{ width: "100%", maxWidth: "100%" }}>
               <Box
                 sx={{
@@ -283,69 +274,48 @@ export default function SchoolServicesSection() {
                           {active.description}
                         </Typography>
                       </Box>
-
-                      <Button
-                        onClick={handleLearnMore}
-                        sx={{
-                          px: 3,
-                          py: 1.25,
-                          fontWeight: 700,
-                          textTransform: "none",
-                          borderRadius: 2,
-                          whiteSpace: "nowrap",
-                          background: LOGIN_BTN_GRAD,
-                          color: BRAND.navyDeep,
-                          border: "1px solid rgba(255,255,255,0.35)",
-                          boxShadow: "0 4px 14px rgba(12, 35, 64, 0.15)",
-                          alignSelf: { xs: "center", sm: "center" },
-                          flexShrink: 0,
-                          "&:hover": {
-                            bgcolor: BRAND.goldMuted,
-                            boxShadow: "0 6px 18px rgba(12, 35, 64, 0.2)",
-                          },
-                        }}
-                      >
-                        Learn more
-                      </Button>
                     </Box>
                   </CardContent>
                 </Card>
 
-                <Box
-                  sx={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    gap: 1,
-                    alignItems: "center",
-                  }}
-                >
-                  {SCHOOL_SERVICES.map((_, idx) => (
-                    <Box
-                      key={idx}
-                      component="button"
-                      type="button"
-                      aria-label={`Show service ${idx + 1}`}
-                      onClick={() => setActiveService(idx)}
-                      sx={{
-                        width: activeService === idx ? 22 : 8,
-                        height: 8,
-                        p: 0,
-                        border: "none",
-                        borderRadius: "999px",
-                        cursor: "pointer",
-                        transition: "all 0.25s ease",
-                        bgcolor:
-                          activeService === idx ? BRAND.gold : "rgba(12, 35, 64, 0.2)",
-                        "&:hover": { bgcolor: BRAND.goldMuted },
-                      }}
-                    />
-                  ))}
-                </Box>
+                {serviceCount > 1 && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      display: "flex",
+                      gap: 1,
+                      alignItems: "center",
+                    }}
+                  >
+                    {schoolServices.map((_, idx) => (
+                      <Box
+                        key={idx}
+                        component="button"
+                        type="button"
+                        aria-label={`Show service ${idx + 1}`}
+                        onClick={() => setActiveService(idx)}
+                        sx={{
+                          width: activeService === idx ? 22 : 8,
+                          height: 8,
+                          p: 0,
+                          border: "none",
+                          borderRadius: "999px",
+                          cursor: "pointer",
+                          transition: "all 0.25s ease",
+                          bgcolor:
+                            activeService === idx ? BRAND.gold : "rgba(12, 35, 64, 0.2)",
+                          "&:hover": { bgcolor: BRAND.goldMuted },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
               </Box>
             </Grid>
+            )}
           </Grid>
         </Fade>
       </Container>

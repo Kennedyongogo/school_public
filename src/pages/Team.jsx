@@ -304,7 +304,7 @@ export default function Team() {
                       lineHeight: 1.75,
                     }}
                   >
-                    Guided by our motto — Learn • Lead • Succeed — we partner closely with families
+                    Guided by our motto — Learn • Grow • Excel — we partner closely with families
                     and educators to create a safe, inspiring environment where every child can thrive.
                   </Typography>
                   <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>

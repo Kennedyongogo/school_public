@@ -3,8 +3,11 @@ import { Drawer, Box, Stack, Typography, IconButton, Button, Divider, List, List
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import PortalPrivateHeader from "./PortalPrivateHeader";
+import PortalReviewPromptDialog from "./PortalReviewPromptDialog";
+import { portalAnchoredDrawerPaperSx } from "./portalAnchoredDrawerSx";
 import {
   clearSchoolPortalSession,
+  fetchMyPortalReviewStatus,
   fetchSchoolPortalNotifications,
   fetchSchoolPortalStudentProfile,
   fetchSchoolPortalUser,
@@ -48,6 +51,7 @@ export default function PortalPrivateLayout() {
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
   const [portalUnreadCount, setPortalUnreadCount] = useState(0);
   const [portalNotifications, setPortalNotifications] = useState([]);
+  const [reviewPromptOpen, setReviewPromptOpen] = useState(false);
   const lastUnreadRef = useRef(null);
 
   useEffect(() => {
@@ -77,6 +81,24 @@ export default function PortalPrivateLayout() {
     };
     void load();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await fetchMyPortalReviewStatus();
+        if (!cancelled && status && !status.has_review) {
+          setReviewPromptOpen(true);
+        }
+      } catch {
+        // ignore — no prompt if status check fails
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return undefined;
@@ -150,8 +172,15 @@ export default function PortalPrivateLayout() {
         })}
       />
 
-      <Drawer anchor="right" open={notificationDrawerOpen} onClose={() => setNotificationDrawerOpen(false)}>
-        <Box sx={{ width: { xs: "100vw", sm: 380 }, maxWidth: "100%", p: 2, boxSizing: "border-box" }}>
+      <Drawer
+        anchor="right"
+        open={notificationDrawerOpen}
+        onClose={() => setNotificationDrawerOpen(false)}
+        sx={{
+          "& .MuiDrawer-paper": portalAnchoredDrawerPaperSx,
+        }}
+      >
+        <Box sx={{ p: 1.5, width: "100%", boxSizing: "border-box" }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
               Notifications
@@ -224,6 +253,14 @@ export default function PortalPrivateLayout() {
           )}
         </Box>
       </Drawer>
+
+      <PortalReviewPromptDialog
+        open={reviewPromptOpen}
+        onClose={() => setReviewPromptOpen(false)}
+        onSubmitted={() => setReviewPromptOpen(false)}
+        user={user}
+        student={student}
+      />
 
       <Outlet />
     </Box>

@@ -18,19 +18,15 @@ import {
 } from "@mui/material";
 import { Home, Menu as MenuIcon, Close, Groups, Collections } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
+import BrandLogoMark from "../common/BrandLogoMark";
+import { BRAND as BRAND_SHARED } from "../../brand";
 
 /** Elimu Plus — navy & gold derived from crest */
 const BRAND = {
-  navy: "#0c2340",
-  navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
+  ...BRAND_SHARED,
   surface: "rgba(240, 246, 252, 0.94)",
   surfaceBorder: "rgba(12, 35, 64, 0.2)",
 };
-
-const HEADER_LOGO_SRC =
-  "/images/0437ecf6-7509-45a2-af0b-f514ef208228-removebg-preview.png";
 
 export default function PublicHeader() {
   const navigate = useNavigate();
@@ -324,7 +320,7 @@ export default function PublicHeader() {
               gap: { md: 1, lg: 2 },
             }}
           >
-            {/* Left — crest logo + school name */}
+            {/* Left — Elimu Plus wordmark */}
             <Box
               sx={{
                 display: "flex",
@@ -349,44 +345,19 @@ export default function PublicHeader() {
                     },
                   }}
                   onClick={() => navigate("/")}
+                  aria-label="Elimu Plus home"
                 >
-                  <Box
-                    component="img"
-                    src={HEADER_LOGO_SRC}
-                    alt="Elimu Plus"
+                  <BrandLogoMark
+                    size={52}
                     sx={{
-                      height: { xs: 38, sm: 42, md: 46 },
-                      width: "auto",
-                      maxHeight: 46,
-                      objectFit: "contain",
-                      flexShrink: 0,
+                      height: { xs: 40, sm: 44, md: 48 },
+                      maxWidth: { xs: "min(200px, 46vw)", sm: 220, md: 240 },
                       filter:
                         isHeaderTransparent && isHeaderVisible
                           ? "drop-shadow(0 2px 8px rgba(0,0,0,0.45))"
                           : "none",
                     }}
                   />
-                  <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                    <Typography
-                      component="span"
-                      sx={{
-                        fontFamily: '"Cormorant Garamond", "Times New Roman", serif',
-                        fontWeight: 700,
-                        fontSize: "clamp(0.72rem, 0.55vw + 0.62rem, 1.05rem)",
-                        color:
-                          isHeaderTransparent && isHeaderVisible ? "#ffffff" : BRAND.navy,
-                        lineHeight: 1.05,
-                        transition: "color 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-                        textShadow:
-                          isHeaderTransparent && isHeaderVisible
-                            ? "0 1px 4px rgba(0,0,0,0.85), 0 2px 14px rgba(0,0,0,0.5)"
-                            : "none",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Elimu Plus
-                    </Typography>
-                  </Box>
                 </Box>
               </Fade>
             </Box>

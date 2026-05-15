@@ -20,6 +20,7 @@ import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { schoolPortalMediaUrl } from "../../api";
+import { portalAnchoredDrawerPaperSx } from "./portalAnchoredDrawerSx";
 
 const BRAND = {
   navy: "#0c2340",
@@ -58,10 +59,6 @@ export default function PortalPrivateHeader({
   const goExams = () => {
     setMobileOpen(false);
     if (typeof onGoExams === "function") onGoExams();
-  };
-  const openNotifications = () => {
-    setMobileOpen(false);
-    if (typeof onNotificationsClick === "function") onNotificationsClick();
   };
   const logout = () => {
     setMobileOpen(false);
@@ -230,17 +227,41 @@ export default function PortalPrivateHeader({
             </Button>
           </Box>
 
-          <IconButton
-            onClick={() => setMobileOpen(true)}
-            sx={{
-              display: { xs: "inline-flex", md: "none" },
-              color: "#fff",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.14)" },
-            }}
-            aria-label="Open menu"
-          >
-            <MenuIcon />
-          </IconButton>
+          <Box sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", gap: 0.25, flexShrink: 0 }}>
+            <IconButton
+              onClick={() => setMobileOpen(true)}
+              sx={{
+                color: "#fff",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.14)" },
+              }}
+              aria-label="Open menu"
+            >
+              <MenuIcon />
+            </IconButton>
+            <Tooltip title="Notifications">
+              <IconButton
+                color="inherit"
+                aria-label="Notifications"
+                onClick={onNotificationsClick || (() => {})}
+                sx={{
+                  color: "rgba(255,255,255,0.92)",
+                  "&:hover": { bgcolor: "rgba(230, 207, 106, 0.12)" },
+                }}
+              >
+                <Badge
+                  color="warning"
+                  overlap="circular"
+                  invisible={!notificationCount || notificationCount <= 0}
+                  badgeContent={
+                    notificationCount > 99 ? "99+" : notificationCount > 0 ? notificationCount : undefined
+                  }
+                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                >
+                  <NotificationsOutlinedIcon sx={{ fontSize: 26 }} />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -249,15 +270,7 @@ export default function PortalPrivateHeader({
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         sx={{
-          "& .MuiDrawer-paper": {
-            width: { xs: "260px", sm: "300px" },
-            marginRight: { xs: 2, sm: 3 },
-            top: { xs: "64px", sm: "72px" },
-            height: "auto",
-            maxHeight: { xs: "calc(100vh - 72px)", sm: "calc(100vh - 80px)" },
-            bgcolor: "#f5f8fc",
-            overflowY: "auto",
-          },
+          "& .MuiDrawer-paper": portalAnchoredDrawerPaperSx,
         }}
       >
         <Box sx={{ p: 1.5 }}>
@@ -282,9 +295,6 @@ export default function PortalPrivateHeader({
                 <ListItemText primary="Exams" />
               </ListItemButton>
             )}
-            <ListItemButton onClick={openNotifications} sx={{ borderRadius: 1 }}>
-              <ListItemText primary={`Notifications${notificationCount > 0 ? ` (${notificationCount > 99 ? "99+" : notificationCount})` : ""}`} />
-            </ListItemButton>
           </List>
           <Divider sx={{ my: 1 }} />
           <Button

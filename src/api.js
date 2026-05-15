@@ -865,3 +865,51 @@ export async function fetchPublicSchoolAdmins(page = 1, limit = 10) {
     pagination: data.pagination || { total: 0, page, limit, totalPages: 1 },
   };
 }
+
+/** Approved parent/student reviews for the public home page (paginated). */
+export async function fetchApprovedPortalReviews(page = 1, limit = 5) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/portal-reviews/public/approved?page=${page}&limit=${limit}`
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Failed to load reviews");
+  return {
+    data: Array.isArray(data.data) ? data.data : [],
+    pagination: data.pagination || {
+      total: 0,
+      page,
+      limit,
+      totalPages: 1,
+    },
+  };
+}
+
+/** Whether the logged-in portal user has submitted their one review. */
+export async function fetchMyPortalReviewStatus() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/portal-reviews/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load review status");
+  return data.data;
+}
+
+/** Submit a single review (parent or student). */
+export async function submitPortalReview({ rating, comment }) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/portal-reviews/me`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ rating, comment }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Could not submit review");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return data.data;
+}

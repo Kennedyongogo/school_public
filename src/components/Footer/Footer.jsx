@@ -11,6 +11,7 @@ import {
   Slide,
 } from "@mui/material";
 import { Facebook, LinkedIn } from "@mui/icons-material";
+import BrandLogoMark from "../common/BrandLogoMark";
 
 /** Matches PublicHeader — elimu plus crest navy & red */
 const BRAND = {
@@ -19,9 +20,6 @@ const BRAND = {
   gold: "#c92727",
   goldMuted: "#e66a6a",
 };
-
-const FOOTER_LOGO_SRC =
-  "/images/0437ecf6-7509-45a2-af0b-f514ef208228-removebg-preview.png";
 
 const LOGIN_BUTTON_GRADIENT = `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`;
 
@@ -127,33 +125,14 @@ export default function Footer() {
                           mb: { xs: 0.75, sm: 1 },
                         }}
                       >
-                        <Box
-                          component="img"
-                          src={FOOTER_LOGO_SRC}
-                          alt="elimu plus"
+                        <BrandLogoMark
+                          size={56}
                           sx={{
-                            height: { xs: 44, sm: 48 },
-                            width: "auto",
-                            maxHeight: 52,
-                            objectFit: "contain",
+                            height: { xs: 44, sm: 52 },
+                            maxWidth: { xs: "min(240px, 70vw)", sm: 260 },
                             filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.35))",
-                            flexShrink: 0,
                           }}
                         />
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography
-                            sx={{
-                              fontFamily: '"Cormorant Garamond", serif',
-                              fontWeight: 700,
-                              fontSize: { xs: "1.2rem", sm: "1.45rem" },
-                              color: BRAND.navy,
-                              lineHeight: 1.05,
-                              letterSpacing: "0.03em",
-                            }}
-                          >
-                            elimu plus
-                          </Typography>
-                        </Box>
                       </Box>
 
                       <Box sx={{ mb: { xs: 1, sm: 1.5 } }}>

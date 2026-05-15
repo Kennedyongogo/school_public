@@ -246,16 +246,16 @@ export default function HeroSection() {
                     px: "clamp(12px, 2.5vmin, 22px)",
                     py: "clamp(6px, 1vmin, 10px)",
                     borderRadius: "999px",
-                    background: "rgba(255, 0, 0, 0.22)",
+                    background: "rgba(230, 207, 106, 0.28)",
                     backdropFilter: "blur(8px)",
-                    border: "1px solid rgba(255, 0, 0, 0.45)",
+                    border: "1px solid rgba(201, 162, 39, 0.5)",
                   }}
                 >
                   <Typography
                     sx={{
                       fontSize: "clamp(0.62rem, 1.55vmin, 0.8125rem)",
                       fontWeight: 600,
-                      color: "#FF0000",
+                      color: "#e6cf6a",
                       letterSpacing: "0.07em",
                       textTransform: "uppercase",
                       fontFamily: "'Inter', 'Segoe UI', sans-serif",

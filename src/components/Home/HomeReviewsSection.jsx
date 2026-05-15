@@ -3,13 +3,14 @@ import {
   Box,
   Container,
   Typography,
-  Paper,
   Rating,
   Avatar,
   CircularProgress,
   Chip,
-  Divider,
+  Card,
+  CardContent,
 } from "@mui/material";
+import { fetchApprovedPortalReviews, schoolPortalMediaUrl } from "../../api";
 
 const BRAND = {
   navy: "#0c2340",
@@ -18,22 +19,12 @@ const BRAND = {
   goldMuted: "#e6cf6a",
 };
 
-const REVIEWS_API = "/api/reviews/approved";
+const CARD_WIDTH = { xs: 260, sm: 280, md: 300 };
 
-async function fetchApprovedReviews() {
-  try {
-    const res = await fetch(`${REVIEWS_API}?limit=100`);
-    if (!res.ok) throw new Error(String(res.status));
-    const ct = res.headers.get("content-type");
-    if (!ct || !ct.includes("application/json")) throw new Error("Not JSON");
-    const text = await res.text();
-    if (!text?.trim()) throw new Error("Empty");
-    const data = JSON.parse(text);
-    if (data.success && Array.isArray(data.data)) return data.data;
-    return [];
-  } catch {
-    return [];
-  }
+function roleLabel(role) {
+  if (role === "student") return "Student";
+  if (role === "parent") return "Parent";
+  return null;
 }
 
 export default function HomeReviewsSection() {
@@ -42,11 +33,17 @@ export default function HomeReviewsSection() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchApprovedReviews().then((list) => {
-      if (!cancelled) setReviews(list);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await fetchApprovedPortalReviews(1, 100);
+        if (!cancelled) setReviews(data);
+      } catch {
+        if (!cancelled) setReviews([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -81,7 +78,7 @@ export default function HomeReviewsSection() {
             mb: 1,
           }}
         >
-          Parents & Teachers Reviews
+          Parents & Students Reviews
         </Typography>
         <Typography
           sx={{
@@ -102,102 +99,149 @@ export default function HomeReviewsSection() {
           </Box>
         ) : reviews.length === 0 ? (
           <Typography sx={{ textAlign: "center", color: "text.secondary", py: 4 }}>
-            No reviews yet. Be the first to share feedback on our Reviews page.
+            No published reviews yet. Sign in to the portal to be the first to share feedback.
           </Typography>
         ) : (
-          <Paper
-            elevation={0}
+          <Box
             sx={{
-              border: `1px solid rgba(12, 35, 64, 0.12)`,
-              borderRadius: 2,
-              overflow: "hidden",
-              bgcolor: "#fafcfe",
+              display: "flex",
+              gap: { xs: 2, md: 2.5 },
+              overflowX: "auto",
+              overflowY: "hidden",
+              pb: 2,
+              mx: { xs: -0.5, sm: 0 },
+              px: { xs: 0.5, sm: 0 },
+              scrollSnapType: "x mandatory",
+              WebkitOverflowScrolling: "touch",
+              "&::-webkit-scrollbar": { height: 8 },
+              "&::-webkit-scrollbar-thumb": {
+                bgcolor: "rgba(12, 35, 64, 0.25)",
+                borderRadius: 4,
+              },
             }}
           >
-            <Box
-              sx={{
-                maxHeight: { xs: 380, sm: 440, md: 520 },
-                overflowY: "auto",
-                px: { xs: 1.5, sm: 2 },
-                py: 2,
-                "&::-webkit-scrollbar": { width: 8 },
-                "&::-webkit-scrollbar-thumb": {
-                  bgcolor: "rgba(12, 35, 64, 0.25)",
-                  borderRadius: 4,
-                },
-              }}
-            >
-              {reviews.map((review, idx) => (
-                <Box key={review.id || idx}>
+            {reviews.map((review) => {
+              const avatarSrc = review.profile_picture
+                ? schoolPortalMediaUrl(review.profile_picture)
+                : null;
+              const label = roleLabel(review.reviewer_role);
+
+              return (
+                <Card
+                  key={review.id}
+                  elevation={0}
+                  sx={{
+                    flex: "0 0 auto",
+                    width: CARD_WIDTH,
+                    minHeight: 320,
+                    scrollSnapAlign: "start",
+                    borderRadius: 2.5,
+                    border: `2px solid rgba(201, 162, 39, 0.35)`,
+                    background: `linear-gradient(165deg, #ffffff 0%, #f8fafc 45%, rgba(230, 207, 106, 0.12) 100%)`,
+                    boxShadow: "0 12px 28px rgba(8, 22, 43, 0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    "&:hover": {
+                      transform: "translateY(-6px)",
+                      boxShadow: "0 18px 36px rgba(8, 22, 43, 0.16)",
+                    },
+                  }}
+                >
                   <Box
                     sx={{
+                      height: 6,
+                      background: `linear-gradient(90deg, ${BRAND.navyDeep}, ${BRAND.gold})`,
+                      borderRadius: "10px 10px 0 0",
+                    }}
+                  />
+                  <CardContent
+                    sx={{
+                      flex: 1,
                       display: "flex",
-                      gap: 2,
-                      py: 1.75,
-                      alignItems: "flex-start",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      textAlign: "center",
+                      p: 2.5,
+                      pt: 2,
+                      "&:last-child": { pb: 2.5 },
                     }}
                   >
                     <Avatar
+                      src={avatarSrc || undefined}
                       alt={review.name || ""}
+                      imgProps={{ referrerPolicy: "no-referrer" }}
                       sx={{
+                        width: 72,
+                        height: 72,
+                        mb: 1.5,
+                        border: `3px solid ${BRAND.gold}`,
                         bgcolor: BRAND.navy,
                         color: BRAND.goldMuted,
-                        width: 48,
-                        height: 48,
-                        fontWeight: 700,
+                        fontWeight: 800,
+                        fontSize: "1.5rem",
+                        boxShadow: "0 4px 14px rgba(12, 35, 64, 0.2)",
                       }}
                     >
                       {(review.name || "?").charAt(0)}
                     </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                          gap: 1,
-                          mb: 0.5,
-                        }}
-                      >
-                        <Typography sx={{ fontWeight: 700, color: BRAND.navyDeep }}>
-                          {review.name || "Anonymous"}
-                        </Typography>
-                        {review.location ? (
-                          <Chip
-                            label={review.location}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontSize: "0.7rem",
-                              bgcolor: "rgba(201, 162, 39, 0.12)",
-                              color: BRAND.navy,
-                            }}
-                          />
-                        ) : null}
-                      </Box>
-                      <Rating
-                        value={Number(review.rating) || 0}
-                        readOnly
+
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        color: BRAND.navyDeep,
+                        fontSize: "1.05rem",
+                        lineHeight: 1.25,
+                        mb: 0.5,
+                      }}
+                    >
+                      {review.name || "Community member"}
+                    </Typography>
+
+                    {label ? (
+                      <Chip
+                        label={label}
                         size="small"
-                        sx={{ color: BRAND.gold, mb: 1 }}
-                      />
-                      <Typography
-                        variant="body2"
                         sx={{
-                          color: "text.primary",
-                          lineHeight: 1.6,
-                          whiteSpace: "pre-wrap",
+                          height: 22,
+                          mb: 1,
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          bgcolor: "rgba(201, 162, 39, 0.15)",
+                          color: BRAND.navyDeep,
+                          border: `1px solid rgba(201, 162, 39, 0.35)`,
                         }}
-                      >
-                        {review.comment || ""}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  {idx < reviews.length - 1 && <Divider />}
-                </Box>
-              ))}
-            </Box>
-          </Paper>
+                      />
+                    ) : null}
+
+                    <Rating
+                      value={Number(review.rating) || 0}
+                      readOnly
+                      size="small"
+                      sx={{ color: BRAND.gold, mb: 1.5 }}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "rgba(8, 22, 43, 0.88)",
+                        lineHeight: 1.55,
+                        flex: 1,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 6,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textAlign: "left",
+                        width: "100%",
+                      }}
+                    >
+                      {review.comment || ""}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Box>
         )}
       </Container>
     </Box>

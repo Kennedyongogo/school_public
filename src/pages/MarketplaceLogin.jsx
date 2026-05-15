@@ -26,6 +26,7 @@ import {
 } from "@mui/icons-material";
 import Swal from "sweetalert2";
 import { loginMarketplaceUser } from "../api";
+import BrandLogoMark from "../components/common/BrandLogoMark";
 
 /** Elimu Plus palette — navy + red accent */
 const BRAND = {
@@ -48,8 +49,6 @@ const HERO_IMAGE_CANDIDATES = [
 function heroPublicUrl(filename) {
   return `/images/${encodeURIComponent(filename)}`;
 }
-
-const HEADER_LOGO = "/images/0437ecf6-7509-45a2-af0b-f514ef208228-removebg-preview.png";
 
 const FEATURE_ITEMS = [
   {
@@ -223,29 +222,14 @@ export default function MarketplaceLogin() {
 
         <Box sx={{ position: "relative", zIndex: 2, p: "clamp(0.75rem, 1.5vh, 1.5rem)", flexShrink: 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              component="img"
-              src={HEADER_LOGO}
-              alt="Elimu Plus"
+            <BrandLogoMark
+              size={52}
               sx={{
-                height: "clamp(36px, 4.5vh, 48px)",
-                width: "auto",
-                objectFit: "contain",
+                height: { xs: 44, sm: 52 },
+                maxWidth: "min(260px, 85vw)",
                 filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.35))",
               }}
             />
-            <Typography
-              variant="h6"
-              sx={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontWeight: 700,
-                color: "white",
-                fontSize: "clamp(1rem, 1.6vh, 1.35rem)",
-                lineHeight: 1.15,
-              }}
-            >
-Elimu Plus
-            </Typography>
           </Box>
         </Box>
 
@@ -274,9 +258,9 @@ Elimu Plus
               fontSize: "clamp(1.25rem, 2.8vh, 1.85rem)",
             }}
           >
-            Learn • Lead •{" "}
+            Learn • Grow •{" "}
             <Box component="span" sx={{ color: BRAND.redLight }}>
-              Succeed
+              Excel
             </Box>
           </Typography>
           <Typography
@@ -343,7 +327,7 @@ Elimu Plus
 
         <Box sx={{ position: "relative", zIndex: 2, p: "clamp(0.5rem, 1vh, 1rem)", flexShrink: 0 }}>
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.8rem, 1.2vh, 0.95rem)" }}>
-            © {new Date().getFullYear()} Elimu Plus. Learn • Lead • Succeed.
+            © {new Date().getFullYear()} Elimu Plus. Learn • Grow • Excel.
           </Typography>
         </Box>
       </Box>
@@ -397,28 +381,15 @@ Elimu Plus
             flexShrink: 0,
           }}
         >
-          <Box
-            component="img"
-            src={HEADER_LOGO}
-            alt=""
+          <BrandLogoMark
+            size={56}
             sx={{
-              height: "clamp(44px, 5vh, 52px)",
-              width: "auto",
+              mx: "auto",
               mb: 0.5,
-              objectFit: "contain",
+              height: { xs: 48, sm: 56 },
+              maxWidth: "min(280px, 90vw)",
             }}
           />
-          <Typography
-            variant="h6"
-            sx={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontWeight: 700,
-              color: BRAND.navyDeep,
-              fontSize: "clamp(1rem, 2vh, 1.25rem)",
-            }}
-          >
-            Elimu Plus
-          </Typography>
         </Box>
 
         <Paper
