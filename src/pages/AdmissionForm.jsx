@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -14,18 +14,148 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  FormHelperText,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { uploadAdmissionDocuments, fetchPublicCurriculumClasses, fetchPublicCurriculumClassLevels } from "../api";
 import UploadIcon from "@mui/icons-material/Upload";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import DescriptionIcon from "@mui/icons-material/Description";
+import CloseIcon from "@mui/icons-material/Close";
+import Swal from "sweetalert2";
+import {
+  uploadAdmissionDocuments,
+  submitAdmissionApplication,
+  fetchPublicCurriculumClasses,
+  fetchPublicCurriculumClassLevels,
+} from "../api";
 
 const NAVY = "#16213e";
 const NAVY_DEEP = "#1a1a2e";
 const GOLD = "#FFD700";
 const RED = "#FF0000";
 const CREAM = "#FFF8F0";
+
+const FILE_FIELDS = [
+  { name: "studentPicture", label: "Student Picture", accept: "image/*" },
+  { name: "studentReportcard", label: "Student Report Card", accept: ".pdf,.doc,.docx" },
+  { name: "studentBirthcertificate", label: "Student Birth Certificate", accept: ".pdf,.jpg,.jpeg,.png" },
+];
+
+function getPreviewKind(file) {
+  if (!(file instanceof File)) return null;
+  const type = (file.type || "").toLowerCase();
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  if (type.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) return "image";
+  if (type === "application/pdf" || ext === "pdf") return "pdf";
+  return "document";
+}
+
+function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
+  if (!(file instanceof File) || !previewUrl) return null;
+
+  const kind = getPreviewKind(file);
+  const sizeKb = Math.max(1, Math.round(file.size / 1024));
+
+  return (
+    <Box
+      sx={{
+        mt: 1.5,
+        p: 1.5,
+        borderRadius: 2,
+        border: "1px solid rgba(22, 33, 62, 0.15)",
+        bgcolor: "rgba(255,255,255,0.7)",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1, gap: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: NAVY }}>
+          Preview — {label}
+        </Typography>
+        <Button
+          type="button"
+          size="small"
+          startIcon={<CloseIcon sx={{ fontSize: "1rem !important" }} />}
+          onClick={onClear}
+          sx={{ textTransform: "none", color: "#666", minWidth: 0 }}
+        >
+          Remove
+        </Button>
+      </Box>
+      <Typography variant="caption" sx={{ color: "#666", display: "block", mb: 1 }}>
+        {file.name} ({sizeKb} KB)
+      </Typography>
+
+      {kind === "image" && (
+        <Box
+          component="img"
+          src={previewUrl}
+          alt={`${label} preview`}
+          sx={{
+            display: "block",
+            maxWidth: "100%",
+            maxHeight: 220,
+            borderRadius: 1,
+            border: "1px solid rgba(0,0,0,0.08)",
+            objectFit: "contain",
+            bgcolor: "#fff",
+          }}
+        />
+      )}
+
+      {kind === "pdf" && (
+        <Box
+          component="iframe"
+          src={previewUrl}
+          title={`${label} preview`}
+          sx={{
+            width: "100%",
+            height: { xs: 240, sm: 320 },
+            border: "1px solid rgba(0,0,0,0.1)",
+            borderRadius: 1,
+            bgcolor: "#fff",
+          }}
+        />
+      )}
+
+      {kind === "document" && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            p: 2,
+            borderRadius: 1,
+            bgcolor: "#fff",
+            border: "1px dashed rgba(22, 33, 62, 0.25)",
+          }}
+        >
+          <DescriptionIcon sx={{ fontSize: 40, color: NAVY }} />
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Document selected
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Word files cannot be previewed in the browser. The file will be uploaded on submit.
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
+      {kind === "pdf" && (
+        <Button
+          type="button"
+          size="small"
+          href={previewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          startIcon={<PictureAsPdfIcon />}
+          sx={{ mt: 1, textTransform: "none" }}
+        >
+          Open full preview
+        </Button>
+      )}
+    </Box>
+  );
+}
 
 export default function AdmissionForm() {
   const navigate = useNavigate();
@@ -44,13 +174,17 @@ export default function AdmissionForm() {
   const [selectedCurriculum, setSelectedCurriculum] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
   const [classes, setClasses] = useState([]);
   const [allLevels, setAllLevels] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedTerm, setSelectedTerm] = useState(null);
   const [terms, setTerms] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [fileInputKeys, setFileInputKeys] = useState({
+    studentPicture: 0,
+    studentReportcard: 0,
+    studentBirthcertificate: 0,
+  });
 
   useEffect(() => {
     const stored = localStorage.getItem("selectedCurriculum");
@@ -114,9 +248,36 @@ export default function AdmissionForm() {
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     if (files && files[0]) {
-      setUploadedFiles(prev => ({ ...prev, [name]: files[0] }));
+      setUploadedFiles((prev) => ({ ...prev, [name]: files[0] }));
     }
   };
+
+  const clearFile = (name) => {
+    setUploadedFiles((prev) => ({ ...prev, [name]: null }));
+    setFileInputKeys((prev) => ({ ...prev, [name]: (prev[name] || 0) + 1 }));
+  };
+
+  const previewUrls = useMemo(() => {
+    const urls = {};
+    for (const { name } of FILE_FIELDS) {
+      const file = uploadedFiles[name];
+      if (file instanceof File) {
+        urls[name] = URL.createObjectURL(file);
+      }
+    }
+    return urls;
+  }, [uploadedFiles]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  const filePath = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
+
+  const hasFileObjects = (files) =>
+    Object.values(files).some((file) => file instanceof File);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -124,47 +285,63 @@ export default function AdmissionForm() {
     setError(null);
 
     try {
-      let finalFiles = uploadedFiles;
-      if (!uploadedFiles.studentPicture || !uploadedFiles.studentReportcard || !uploadedFiles.studentBirthcertificate) {
+      let documentPaths = {
+        studentPicture: filePath(uploadedFiles.studentPicture),
+        studentReportcard: filePath(uploadedFiles.studentReportcard),
+        studentBirthcertificate: filePath(uploadedFiles.studentBirthcertificate),
+      };
+
+      if (hasFileObjects(uploadedFiles)) {
         setUploading(true);
         const uploadResult = await uploadAdmissionDocuments(uploadedFiles);
-        finalFiles = uploadResult.files;
+        documentPaths = {
+          studentPicture: uploadResult.files?.studentPicture ?? documentPaths.studentPicture,
+          studentReportcard: uploadResult.files?.studentReportcard ?? documentPaths.studentReportcard,
+          studentBirthcertificate:
+            uploadResult.files?.studentBirthcertificate ?? documentPaths.studentBirthcertificate,
+        };
         setUploading(false);
       }
 
-      const response = await fetch("/api/admission-applications/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          curriculum_level: selectedCurriculum?.level,
-          curriculum_class: selectedClass?.name,
-          curriculum: selectedCurriculum?.name,
-          applicant_name: formData.applicantName,
-          applicant_phone: formData.applicantPhone,
-          applicant_email: formData.applicantEmail,
-          student_name: formData.studentName,
-          student_picture: finalFiles.studentPicture || null,
-          student_reportcard: finalFiles.studentReportcard || null,
-          student_birthcertificate: finalFiles.studentBirthcertificate || null,
-        }),
+      const result = await submitAdmissionApplication({
+        curriculum: selectedCurriculum?.name,
+        curriculum_class: selectedClass?.name,
+        curriculum_level: selectedTerm?.name,
+        applicant_name: formData.applicantName.trim(),
+        applicant_phone: formData.applicantPhone.trim() || null,
+        applicant_email: formData.applicantEmail.trim() || null,
+        student_name: formData.studentName.trim(),
+        student_picture: documentPaths.studentPicture,
+        student_reportcard: documentPaths.studentReportcard,
+        student_birthcertificate: documentPaths.studentBirthcertificate,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Application failed");
-      }
-
-      setSuccess(true);
       localStorage.removeItem("selectedCurriculum");
-      setTimeout(() => navigate("/admission/success"), 2000);
+
+      const applicationNumber = result?.data?.application_number;
+      await Swal.fire({
+        icon: "success",
+        title: "Application Submitted!",
+        html: applicationNumber
+          ? `Your admission application has been received.<br/><strong>Reference: ${applicationNumber}</strong>`
+          : "Your admission application has been received. We will contact you soon.",
+        confirmButtonText: "Continue",
+        confirmButtonColor: NAVY,
+      });
+
+      navigate("/admission/success");
     } catch (e) {
-      setError(e.message || "Failed to submit application");
+      const message = e.message || "Failed to submit application";
+      setError(message);
+      Swal.fire({
+        icon: "error",
+        title: "Submission Failed",
+        text: message,
+        confirmButtonColor: NAVY,
+      });
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -173,63 +350,69 @@ export default function AdmissionForm() {
   }
 
   return (
-    <Box sx={{ py: 4, bgcolor: "#f5f7fa", minWidth: "100vw", width: "100%", maxWidth: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, pl: 1 }}>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon sx={{ fontSize: "0.95rem !important" }} />}
-          onClick={() => navigate("/admission/apply")}
+    <Box sx={{ pt: 0, pb: 0, mb: 0, bgcolor: "#f5f7fa", width: "100%", maxWidth: "100%" }}>
+        <Paper
           sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            fontSize: "0.9375rem",
-            letterSpacing: "0.02em",
-            px: 1.5,
-            py: 0.5,
-            borderRadius: "999px",
-            borderWidth: 2,
-            borderColor: NAVY,
-            color: "black",
-            bgcolor: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(8px)",
-            boxShadow: `0 4px 18px rgba(22, 33, 62, 0.12), inset 0 1px 0 rgba(255,255,255,0.85)`,
-            transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-            "& .MuiButton-startIcon": { mr: 1 },
-            "&:focus": { outline: "none" },
-            "&:hover": {
-              borderWidth: 2,
-              borderColor: RED,
-              bgcolor: NAVY_DEEP,
-              color: "white",
-              boxShadow: `0 10px 28px rgba(26, 26, 46, 0.35), 0 0 0 1px rgba(255, 215, 0, 0.35)`,
-              transform: "translateY(-2px)",
-              "& .MuiSvgIcon-root": { color: GOLD },
-            },
+            pt: 2,
+            px: 4,
+            pb: 3,
+            mb: 0,
+            borderRadius: "20px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+            bgcolor: CREAM,
+            width: "100%",
           }}
         >
-          Back
-        </Button>
-      </Box>
-      <Box sx={{ width: "100%" }}>
-        <Paper sx={{ p: 4, borderRadius: "20px", boxShadow: "0 10px 40px rgba(0,0,0,0.1) ", bgcolor: CREAM, width: "100%" }}>
-          <Box sx={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            mb: 3,
-            pl: 0,
-            pr: 3,
-          }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, pl: 3 }}>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: NAVY, fontSize: "1.8rem" }}>
-                Admission Application
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography variant="caption" sx={{ bgcolor: RED, color: "black", px: 1.5, borderRadius: 1, fontSize: "0.85rem", fontWeight: 700 }}>
-                  {selectedCurriculum.name}
-                </Typography>
-              </Box>
-            </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "wrap",
+              mb: 2,
+            }}
+          >
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon sx={{ fontSize: "0.95rem !important" }} />}
+              onClick={() => navigate("/admission/apply")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.9375rem",
+                letterSpacing: "0.02em",
+                px: 1.5,
+                py: 0.5,
+                borderRadius: "999px",
+                borderWidth: 2,
+                borderColor: NAVY,
+                color: "black",
+                bgcolor: "rgba(255,255,255,0.92)",
+                backdropFilter: "blur(8px)",
+                boxShadow: `0 4px 18px rgba(22, 33, 62, 0.12), inset 0 1px 0 rgba(255,255,255,0.85)`,
+                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                flexShrink: 0,
+                "& .MuiButton-startIcon": { mr: 1 },
+                "&:focus": { outline: "none" },
+                "&:hover": {
+                  borderWidth: 2,
+                  borderColor: RED,
+                  bgcolor: NAVY_DEEP,
+                  color: "white",
+                  boxShadow: `0 10px 28px rgba(26, 26, 46, 0.35), 0 0 0 1px rgba(255, 215, 0, 0.35)`,
+                  transform: "translateY(-2px)",
+                  "& .MuiSvgIcon-root": { color: GOLD },
+                },
+              }}
+            >
+              Back
+            </Button>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: NAVY, fontSize: "1.8rem" }}>
+              Admission Application
+            </Typography>
+            <Typography variant="caption" sx={{ bgcolor: RED, color: "black", px: 1.5, borderRadius: 1, fontSize: "0.85rem", fontWeight: 700 }}>
+              {selectedCurriculum.name}
+            </Typography>
           </Box>
 
           {error && (
@@ -238,16 +421,10 @@ export default function AdmissionForm() {
             </Alert>
           )}
 
-          {success && (
-            <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
-              Application submitted successfully!
-            </Alert>
-          )}
-
           <Box component="form" onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
+            <Grid container spacing={2} sx={{ mb: 0 }}>
               <Grid size={12}>
-                <FormControl sx={{ mb: 3 }}>
+                <FormControl fullWidth sx={{ mb: 0 }}>
                   <FormLabel sx={{ fontWeight: 700, color: NAVY, mb: 1 }}>Select Class *</FormLabel>
                   {loadingOptions ? (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -275,7 +452,7 @@ export default function AdmissionForm() {
               </Grid>
 
               <Grid size={12}>
-                <FormControl sx={{ mb: 3 }}>
+                <FormControl fullWidth sx={{ mb: 0 }}>
                   <FormLabel sx={{ fontWeight: 700, color: NAVY, mb: 1 }}>Select Term/Level *</FormLabel>
                   {loadingOptions ? (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -363,63 +540,38 @@ export default function AdmissionForm() {
                   size="small"
                 />
               </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Student Picture"
-                  name="studentPicture"
-                  type="file"
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><UploadIcon /></InputAdornment>,
-                  }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  onChange={handleFileChange}
-                  variant="outlined"
-                  size="small"
-                  inputProps={{ accept: "image/*" }}
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Student Report Card"
-                  name="studentReportcard"
-                  type="file"
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><UploadIcon /></InputAdornment>,
-                  }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  onChange={handleFileChange}
-                  variant="outlined"
-                  size="small"
-                  inputProps={{ accept: ".pdf,.doc,.docx" }}
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Student Birth Certificate"
-                  name="studentBirthcertificate"
-                  type="file"
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><UploadIcon /></InputAdornment>,
-                  }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  onChange={handleFileChange}
-                  variant="outlined"
-                  size="small"
-                  inputProps={{ accept: ".pdf,.jpg,.jpeg,.png" }}
-                />
-              </Grid>
+              {FILE_FIELDS.map(({ name, label, accept }) => (
+                <Grid key={name} size={12}>
+                  <TextField
+                    key={`${name}-${fileInputKeys[name]}`}
+                    fullWidth
+                    label={label}
+                    name={name}
+                    type="file"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <UploadIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                    onChange={handleFileChange}
+                    variant="outlined"
+                    size="small"
+                    inputProps={{ accept }}
+                  />
+                  <AdmissionDocumentPreview
+                    file={uploadedFiles[name]}
+                    label={label}
+                    previewUrl={previewUrls[name]}
+                    onClear={() => clearFile(name)}
+                  />
+                </Grid>
+              ))}
             </Grid>
 
-            <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+            <Box sx={{ display: "flex", gap: 2, mt: 2, mb: 0 }}>
               <Button
                 type="submit"
                 variant="contained"
@@ -439,7 +591,6 @@ export default function AdmissionForm() {
             </Box>
           </Box>
         </Paper>
-      </Box>
     </Box>
   );
 }

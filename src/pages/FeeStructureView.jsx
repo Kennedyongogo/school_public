@@ -45,7 +45,7 @@ export default function FeeStructureView() {
   }, [curriculumId]);
 
   return (
-    <Box sx={{ py: 4, bgcolor: "#f5f7fa", minWidth: "100vw", width: "100%", maxWidth: "100%" }}>
+    <Box sx={{ pt: 2, pb: 4, bgcolor: "#f5f7fa", minWidth: "100vw", width: "100%", maxWidth: "100%" }}>
       <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, pl: 2 }}>
         <Button
           variant="outlined"

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -10,6 +11,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import VideoCallRoundedIcon from "@mui/icons-material/VideoCallRounded";
 import SchoolIcon from "@mui/icons-material/School";
 import ClassIcon from "@mui/icons-material/Class";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -20,6 +22,7 @@ import {
   fetchSchoolPortalStudentTimetableLessons,
   fetchSchoolPortalUser,
 } from "../api";
+import { getLessonJoinWindow } from "../utils/liveLessonWindow";
 
 const accent = "#DC2626";
 const accentLight = "#FEE2E2";
@@ -134,6 +137,47 @@ export default function PortalClassesPage() {
                       <MenuBookIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />
                       Attendance: {row.attendance?.status || "Pending"}
                     </Typography>
+                    {row.live_session?.id &&
+                    String(row.delivery_mode || "").toLowerCase() === "online" &&
+                    (row.live_session.session_status === "live" || row.live_session.session_status === "scheduled") ? (
+                      (() => {
+                        const joinWin =
+                          row.live_session.can_join != null
+                            ? {
+                                can_join: row.live_session.can_join,
+                                reason: row.live_session.join_blocked_reason,
+                              }
+                            : getLessonJoinWindow({
+                                lesson_date: row.lesson_date,
+                                starts_at: row.starts_at,
+                                ends_at: row.ends_at,
+                                session_status: row.live_session.session_status,
+                              });
+                        const canJoin = joinWin.can_join;
+                        return (
+                          <Stack spacing={0.5} sx={{ alignSelf: "flex-start", mt: 0.5 }}>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={!canJoin}
+                              startIcon={<VideoCallRoundedIcon />}
+                              onClick={() => navigate(`/portal/live-class/${row.live_session.id}`)}
+                              sx={{
+                                bgcolor: canJoin ? accent : undefined,
+                                "&:hover": canJoin ? { bgcolor: "#B91C1C" } : undefined,
+                              }}
+                            >
+                              Join live class
+                            </Button>
+                            {!canJoin && joinWin.reason ? (
+                              <Typography variant="caption" color="text.secondary">
+                                {joinWin.reason}
+                              </Typography>
+                            ) : null}
+                          </Stack>
+                        );
+                      })()
+                    ) : null}
                   </Stack>
                 </CardContent>
               </Card>

@@ -192,13 +192,21 @@ export default function PortalPrivateLayout() {
                         await refreshNotificationsOnly();
                       }
                       const url = n.action_url && String(n.action_url).trim();
-                      if (url && /^https?:\/\//i.test(url)) {
-                        if (user?.role === "student") {
+                      if (url) {
+                        const webrtcMatch = url.match(/\/portal\/live-class\/([0-9a-f-]{36})/i);
+                        if (webrtcMatch && user?.role === "student") {
                           setNotificationDrawerOpen(false);
-                          navigate(`/portal/live-meeting?target=${encodeURIComponent(url)}`);
+                          navigate(`/portal/live-class/${webrtcMatch[1]}`);
                           return;
                         }
-                        window.location.assign(url);
+                        if (/^https?:\/\//i.test(url)) {
+                          if (user?.role === "student") {
+                            setNotificationDrawerOpen(false);
+                            navigate(`/portal/live-meeting?target=${encodeURIComponent(url)}`);
+                            return;
+                          }
+                          window.location.assign(url);
+                        }
                       }
                     } catch {
                       // ignore

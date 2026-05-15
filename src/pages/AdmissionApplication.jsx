@@ -8,6 +8,7 @@ import {
   Alert,
   Tooltip,
   IconButton,
+  Chip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { fetchPublicCurricula, fetchPublicFeeStructures } from "../api";
@@ -25,8 +26,6 @@ export default function AdmissionApplication() {
   const [curricula, setCurricula] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedCurriculum, setSelectedCurriculum] = useState(null);
-
   useEffect(() => {
     const loadCurricula = async () => {
       try {
@@ -60,7 +59,7 @@ export default function AdmissionApplication() {
   };
 
   return (
-    <Box sx={{ py: 4, bgcolor: "#f5f7fa", minWidth: "100vw", width: "100%", maxWidth: "100%" }}>
+    <Box sx={{ pt: 2, pb: 4, bgcolor: "#f5f7fa", minWidth: "100vw", width: "100%", maxWidth: "100%" }}>
       <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, pl: 1 }}>
         <Button
           variant="outlined"
@@ -167,54 +166,20 @@ px: 1.5,
                   bgcolor: "linear-gradient(135deg, #16213e 0%, #1a1a2e 100%)",
                 }}
               >
-                <Button
-                  variant="contained"
-                  sx={{
-                    bgcolor: RED,
-                    color: "black",
-                    textTransform: "none",
-                    fontWeight: 700,
-                    minWidth: 48,
-                    px: 1.5,
-                    py: 0.5,
-                    fontSize: "0.85rem",
-                    flexShrink: 0,
-                    "&:hover": { bgcolor: "#cc0000" },
-                  }}
-                >
-                  {curriculum.name}
-                </Button>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, pl: 2 }}>
-                  {curriculum.period && (
-                    <Typography variant="caption" sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white", px: 1.5, borderRadius: 1, fontSize: "0.95rem" }}>
-                      {curriculum.period}
-                    </Typography>
-                  )}
+                <Box sx={{ display: "flex", alignItems: "center", pl: 2, minWidth: 0, flex: 1 }}>
+                  <Chip
+                    label={curriculum.name}
+                    sx={{
+                      bgcolor: RED,
+                      color: "black",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      height: "auto",
+                      py: 0.5,
+                      "& .MuiChip-label": { px: 1.5 },
+                    }}
+                  />
                 </Box>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    localStorage.setItem("selectedCurriculum", JSON.stringify({
-                      id: curriculum.id,
-                      name: curriculum.name,
-                    }));
-                    navigate("/admission/british");
-                  }}
-                  sx={{
-                    bgcolor: GOLD,
-                    color: "black",
-                    textTransform: "none",
-                    fontWeight: 700,
-                    minWidth: 48,
-                    px: 1.5,
-                    py: 0.5,
-                    fontSize: "0.85rem",
-                    flexShrink: 0,
-                    "&:hover": { bgcolor: "#e6c900" },
-                  }}
-                >
-                  British System
-                </Button>
                 <Button
                   variant="contained"
                   onClick={() => handleApply(curriculum)}
@@ -234,16 +199,23 @@ px: 1.5,
                   Apply Now
                 </Button>
               </Box>
-              <Box sx={{ px: 3, py: 2 }}>
-                <Typography variant="body2" sx={{ lineHeight: 1.6, color: "black", fontSize: "1.2rem" }}>
-                  {curriculum.description || "No description available"}
-                </Typography>
-              </Box>
-              <Box sx={{ px: 3, py: 1, pt: 0, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
-                <Typography variant="caption" sx={{ color: "#666" }}>
-                  <strong>Period:</strong> {curriculum.period || "N/A"}
-                </Typography>
-              </Box>
+              {(curriculum.description?.trim() || curriculum.period?.trim()) && (
+                <Box sx={{ px: 3, py: 2 }}>
+                  {curriculum.description?.trim() && (
+                    <Typography variant="body2" sx={{ lineHeight: 1.6, color: "black", fontSize: "1.2rem" }}>
+                      {curriculum.description.trim()}
+                    </Typography>
+                  )}
+                  {curriculum.period?.trim() && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "#666", display: "block", mt: curriculum.description?.trim() ? 1.5 : 0 }}
+                    >
+                      {curriculum.period.trim()}
+                    </Typography>
+                  )}
+                </Box>
+              )}
               <Box sx={{ display: "flex", justifyContent: "flex-end", p: 2, pt: 0 }}>
                 <Tooltip title="View fee structure">
                   <IconButton

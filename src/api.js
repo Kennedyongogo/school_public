@@ -381,26 +381,38 @@ export async function markAllSchoolPortalNotificationsRead() {
   return data.data;
 }
 
-/** Records timetable live attendance when a student opens the meeting link from the portal (student JWT). */
-export async function postSchoolPortalLiveSessionJoin(join_url) {
+/** Records timetable live attendance when a student enters the live class room (student JWT). */
+export async function postSchoolPortalLiveSessionJoin(body) {
   const base = getBaseUrl();
+  const payload =
+    typeof body === "string"
+      ? { join_url: body }
+      : body && typeof body === "object"
+      ? body
+      : {};
   const res = await fetch(`${base}/api/school-portal/live-session/join`, {
     method: "POST",
     headers: getMarketplaceAuthHeaders(),
-    body: JSON.stringify({ join_url }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || "Could not record session join.");
   return data;
 }
 
-/** Marks leave/duration when the student ends the meeting (student JWT). */
-export async function postSchoolPortalLiveSessionLeave(join_url) {
+/** Marks leave/duration when the student ends the live class (student JWT). */
+export async function postSchoolPortalLiveSessionLeave(body) {
   const base = getBaseUrl();
+  const payload =
+    typeof body === "string"
+      ? { join_url: body }
+      : body && typeof body === "object"
+      ? body
+      : {};
   const res = await fetch(`${base}/api/school-portal/live-session/leave`, {
     method: "POST",
     headers: getMarketplaceAuthHeaders(),
-    body: JSON.stringify({ join_url }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || "Could not record session leave.");
@@ -409,11 +421,16 @@ export async function postSchoolPortalLiveSessionLeave(join_url) {
 
 /**
  * Same as leave POST, for `pagehide` / tab close (`keepalive` so the request can finish after unload).
- * Does not throw; ignores response.
  */
-export function beaconSchoolPortalLiveSessionLeave(join_url) {
+export function beaconSchoolPortalLiveSessionLeave(body) {
   const base = getBaseUrl();
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const payload =
+    typeof body === "string"
+      ? { join_url: body }
+      : body && typeof body === "object"
+      ? body
+      : {};
   void fetch(`${base}/api/school-portal/live-session/leave`, {
     method: "POST",
     keepalive: true,
@@ -422,8 +439,46 @@ export function beaconSchoolPortalLiveSessionLeave(join_url) {
       Accept: "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ join_url }),
+    body: JSON.stringify(payload),
   }).catch(() => {});
+}
+
+/** Room metadata + ICE servers for in-app WebRTC live class. */
+export async function fetchSchoolPortalLiveClassRoom(liveClassId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/live-class/${encodeURIComponent(liveClassId)}`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not load live class room.");
+  return data.data;
+}
+
+/** Current lobby status for this student (waiting / admitted / none). */
+export async function fetchSchoolPortalMyLobbyStatus(liveClassId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/school-portal/live-class/${encodeURIComponent(liveClassId)}/lobby/me`,
+    { headers: getMarketplaceAuthHeaders() }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not load lobby status.");
+  return data.data;
+}
+
+/** LiveKit access token (after lobby admit for students). */
+export async function fetchSchoolPortalLiveKitToken(liveClassId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/school-portal/live-class/${encodeURIComponent(liveClassId)}/livekit-token`,
+    {
+      method: "POST",
+      headers: getMarketplaceAuthHeaders(),
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not get LiveKit token.");
+  return data.data;
 }
 
 export function clearSchoolPortalSession() {
@@ -479,9 +534,9 @@ export async function uploadMarketplaceProfilePhoto(file) {
 export async function uploadAdmissionDocuments(files) {
   const base = getBaseUrl();
   const formData = new FormData();
-  if (files.studentPicture) formData.append("student_picture", files.studentPicture);
-  if (files.studentReportcard) formData.append("student_reportcard", files.studentReportcard);
-  if (files.studentBirthcertificate) formData.append("student_birthcertificate", files.studentBirthcertificate);
+  if (files.studentPicture instanceof File) formData.append("student_picture", files.studentPicture);
+  if (files.studentReportcard instanceof File) formData.append("student_reportcard", files.studentReportcard);
+  if (files.studentBirthcertificate instanceof File) formData.append("student_birthcertificate", files.studentBirthcertificate);
   const res = await fetch(`${base}/api/admission-applications/upload`, {
     method: "POST",
     body: formData,
@@ -489,6 +544,29 @@ export async function uploadAdmissionDocuments(files) {
   const data = await res.json();
   if (!res.ok) {
     const err = new Error(data.message || "Failed to upload documents");
+    err.response = res;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+/**
+ * Submit a public admission application (JSON). Document fields must be server paths from uploadAdmissionDocuments.
+ */
+export async function submitAdmissionApplication(body) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/admission-applications/submit`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Application failed");
     err.response = res;
     err.data = data;
     throw err;
