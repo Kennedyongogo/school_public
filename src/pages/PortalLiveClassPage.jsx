@@ -42,6 +42,11 @@ export default function PortalLiveClassPage() {
     enabled: !!liveClassId && !!token,
   });
 
+  const leaveLobbyRef = useRef(leaveLobby);
+  useEffect(() => {
+    leaveLobbyRef.current = leaveLobby;
+  }, [leaveLobby]);
+
   const recordLeaveOnce = async () => {
     if (leaveRecordedRef.current || !liveClassId) return;
     leaveRecordedRef.current = true;
@@ -83,24 +88,31 @@ export default function PortalLiveClassPage() {
       }
     })();
 
+    return () => {
+      cancelled = true;
+    };
+  }, [liveClassId, navigate, token]);
+
+  useEffect(() => {
+    if (!liveClassId) return undefined;
+
     const onPageHide = () => {
       if (leaveRecordedRef.current) return;
       leaveRecordedRef.current = true;
-      void leaveLobby();
+      void leaveLobbyRef.current();
       beaconSchoolPortalLiveSessionLeave({ live_class_id: liveClassId });
     };
     window.addEventListener("pagehide", onPageHide);
 
     return () => {
-      cancelled = true;
       window.removeEventListener("pagehide", onPageHide);
-      if (!leaveRecordedRef.current && liveClassId) {
+      if (!leaveRecordedRef.current) {
         leaveRecordedRef.current = true;
-        void leaveLobby();
+        void leaveLobbyRef.current();
         beaconSchoolPortalLiveSessionLeave({ live_class_id: liveClassId });
       }
     };
-  }, [liveClassId, navigate, token, leaveLobby]);
+  }, [liveClassId]);
 
   const handleBack = async () => {
     await recordLeaveOnce();
@@ -147,7 +159,6 @@ export default function PortalLiveClassPage() {
     }
     let cancelled = false;
     setVideoPrep(true);
-    setLiveKitCreds(null);
     (async () => {
       try {
         const data = await fetchSchoolPortalLiveKitToken(liveClassId);
@@ -205,6 +216,7 @@ export default function PortalLiveClassPage() {
               liveClassId={liveClassId}
               userName={displayName}
               role={room.role || "student"}
+              mediaMode={room.media_mode || "optional"}
               onLeave={handleLeave}
               showLobbyPanel={false}
               liveKitCredentials={liveKitCreds}

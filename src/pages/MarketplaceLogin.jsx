@@ -27,14 +27,15 @@ import {
 import Swal from "sweetalert2";
 import { loginMarketplaceUser } from "../api";
 
-/** Elimu Plus palette — matches header Login button */
+/** Elimu Plus palette — navy + red accent */
 const BRAND = {
   navy: "#0c2340",
   navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
+  red: "#DC2626",
+  redDark: "#B91C1C",
+  redLight: "#F87171",
 };
-const LOGIN_BTN_GRAD = `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`;
+const LOGIN_BTN_GRAD = `linear-gradient(145deg, ${BRAND.red}, ${BRAND.redDark})`;
 
 const BG_LIGHT = "#f0f4fa";
 
@@ -105,7 +106,7 @@ export default function MarketplaceLogin() {
         icon: "error",
         title: "Login",
         text: "Please enter your email or username and password.",
-        confirmButtonColor: BRAND.gold,
+        confirmButtonColor: BRAND.red,
       });
       return;
     }
@@ -123,7 +124,7 @@ export default function MarketplaceLogin() {
           icon: "error",
           title: "Login failed",
           text: "Invalid response from server.",
-          confirmButtonColor: BRAND.gold,
+          confirmButtonColor: BRAND.red,
         });
         return;
       }
@@ -136,7 +137,7 @@ export default function MarketplaceLogin() {
             expectedRole === "parent"
               ? "This email belongs to a student account. Switch to the Student login tab."
               : "This email belongs to a parent account. Switch to the Parent login tab.",
-          confirmButtonColor: BRAND.gold,
+          confirmButtonColor: BRAND.red,
         });
         return;
       }
@@ -151,7 +152,7 @@ export default function MarketplaceLogin() {
         title: "Welcome back!",
         timer: 1200,
         showConfirmButton: false,
-        confirmButtonColor: BRAND.gold,
+        confirmButtonColor: BRAND.red,
       });
       navigate("/portal", { replace: true });
     } catch (err) {
@@ -159,7 +160,7 @@ export default function MarketplaceLogin() {
         icon: "error",
         title: "Login failed",
         text: err.message || "Login failed.",
-        confirmButtonColor: BRAND.gold,
+        confirmButtonColor: BRAND.red,
       });
     } finally {
       setLoginLoading(false);
@@ -274,7 +275,7 @@ Elimu Plus
             }}
           >
             Learn • Lead •{" "}
-            <Box component="span" sx={{ color: BRAND.goldMuted }}>
+            <Box component="span" sx={{ color: BRAND.redLight }}>
               Succeed
             </Box>
           </Typography>
@@ -311,7 +312,7 @@ Elimu Plus
               >
                 <Box
                   sx={{
-                    color: BRAND.goldMuted,
+                    color: BRAND.redLight,
                     mb: 0.5,
                     "& .MuiSvgIcon-root": { fontSize: "clamp(22px, 2.5vh, 28px)" },
                   }}
@@ -381,7 +382,7 @@ Elimu Plus
             outline: "none",
             "&:focus": { outline: "none", boxShadow: "none" },
             "&:focus-visible": { outline: "none", boxShadow: "none" },
-            "&:hover": { color: BRAND.gold, backgroundColor: "transparent" },
+            "&:hover": { color: BRAND.red, backgroundColor: "transparent" },
           }}
         >
           Back to Home
@@ -461,9 +462,9 @@ Elimu Plus
                   backgroundColor: "transparent",
                 },
               },
-              "& .Mui-selected": { color: BRAND.gold },
-              "& .MuiTabs-indicator": { backgroundColor: BRAND.gold, height: 3 },
-              "& .MuiTab-root:hover": { color: BRAND.gold, opacity: 0.95 },
+              "& .Mui-selected": { color: BRAND.red },
+              "& .MuiTabs-indicator": { backgroundColor: BRAND.red, height: 3 },
+              "& .MuiTab-root:hover": { color: BRAND.red, opacity: 0.95 },
             }}
           >
             <Tab label="Parent login" disableRipple />
@@ -518,14 +519,14 @@ Elimu Plus
                     fontSize: "1rem",
                     "& .MuiOutlinedInput-notchedOutline": {},
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: BRAND.gold,
+                      borderColor: BRAND.red,
                       borderWidth: 2,
                     },
                   },
                 }}
                 sx={{
                   "& .MuiInputLabel-root": { color: BRAND.navy },
-                  "& label.Mui-focused": { color: BRAND.gold },
+                  "& label.Mui-focused": { color: BRAND.red },
                   "& .MuiInputBase-input": { fontSize: "1rem", color: BRAND.navyDeep },
                 }}
               />
@@ -563,14 +564,14 @@ Elimu Plus
                   sx: {
                     fontSize: "1rem",
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: BRAND.gold,
+                      borderColor: BRAND.red,
                       borderWidth: 2,
                     },
                   },
                 }}
                 sx={{
                   "& .MuiInputLabel-root": { color: BRAND.navy },
-                  "& label.Mui-focused": { color: BRAND.gold },
+                  "& label.Mui-focused": { color: BRAND.red },
                   "& .MuiInputBase-input": { fontSize: "1rem", color: BRAND.navyDeep },
                 }}
               />
@@ -580,7 +581,7 @@ Elimu Plus
                   variant="body2"
                   onClick={(e) => e.preventDefault()}
                   sx={{
-                    color: BRAND.gold,
+                    color: BRAND.red,
                     fontWeight: 600,
                     textDecoration: "none",
                     fontSize: "0.95rem",
@@ -602,21 +603,21 @@ Elimu Plus
                   fontWeight: 700,
                   fontSize: "1.05rem",
                   background: LOGIN_BTN_GRAD,
-                  color: BRAND.navyDeep,
+                  color: "#fff",
                   textTransform: "none",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  boxShadow: "0 10px 25px rgba(12, 35, 64, 0.18)",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  boxShadow: "0 10px 25px rgba(220, 38, 38, 0.28)",
                   outline: "none",
-                  "&:focus": { outline: "none", boxShadow: "0 10px 25px rgba(12, 35, 64, 0.18)" },
-                  "&:focus-visible": { outline: "none", boxShadow: "0 10px 25px rgba(12, 35, 64, 0.18)" },
+                  "&:focus": { outline: "none", boxShadow: "0 10px 25px rgba(220, 38, 38, 0.28)" },
+                  "&:focus-visible": { outline: "none", boxShadow: "0 10px 25px rgba(220, 38, 38, 0.28)" },
                   "&:hover": {
-                    background: BRAND.goldMuted,
-                    boxShadow: "0 12px 28px rgba(12, 35, 64, 0.22)",
+                    background: BRAND.redDark,
+                    boxShadow: "0 12px 28px rgba(185, 28, 28, 0.35)",
                   },
                 }}
               >
                 {loginLoading ? (
-                  <CircularProgress size={24} sx={{ color: BRAND.navyDeep }} />
+                  <CircularProgress size={24} sx={{ color: "#fff" }} />
                 ) : roleTab === 0 ? (
                   "Sign in as parent"
                 ) : (
