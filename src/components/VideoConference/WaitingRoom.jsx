@@ -3,7 +3,13 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import HourglassTopRoundedIcon from "@mui/icons-material/HourglassTopRounded";
 import BlockRoundedIcon from "@mui/icons-material/BlockRounded";
 
-export default function WaitingRoom({ status, subjectName, error, syncing = false }) {
+export default function WaitingRoom({
+  status,
+  subjectName,
+  error,
+  syncing = false,
+  hostNoun = "teacher",
+}) {
   if (status === "denied") {
     return (
       <Box
@@ -23,7 +29,7 @@ export default function WaitingRoom({ status, subjectName, error, syncing = fals
           Request declined
         </Typography>
         <Typography variant="body2" color="grey.400">
-          The teacher did not admit you to this class. Go back and try again later, or contact your teacher.
+          The {hostNoun} did not admit you. Go back and try again later, or contact the school office.
         </Typography>
       </Box>
     );
@@ -52,12 +58,12 @@ export default function WaitingRoom({ status, subjectName, error, syncing = fals
     >
       <HourglassTopRoundedIcon sx={{ fontSize: 56, color: "primary.light", mb: 2 }} />
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-        Waiting for the teacher to admit you
+        Waiting for {hostNoun} to admit you
       </Typography>
       <Typography variant="body2" color="grey.400" sx={{ mb: 3, maxWidth: 360 }}>
         {syncing
           ? "Checking your place in line…"
-          : `${subjectName ? `${subjectName} · ` : ""}You will enter the video room automatically once the teacher admits you.`}
+          : `${subjectName ? `${subjectName} · ` : ""}Stay on this page — you will enter the video room with chat and Q&A as soon as ${hostNoun} admits you.`}
       </Typography>
       <CircularProgress size={36} sx={{ color: "primary.light" }} />
     </Box>

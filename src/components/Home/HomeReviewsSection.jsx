@@ -54,7 +54,8 @@ export default function HomeReviewsSection() {
       id="reviews-section"
       sx={{
         bgcolor: "#ffffff",
-        py: { xs: 4, md: 6 },
+        pt: { xs: 2, md: 3 },
+        pb: { xs: 2, md: 3 },
         borderTop: `1px solid rgba(12, 35, 64, 0.08)`,
       }}
     >
@@ -75,7 +76,7 @@ export default function HomeReviewsSection() {
             fontSize: { xs: "1.75rem", md: "2.25rem" },
             color: BRAND.navyDeep,
             textAlign: "center",
-            mb: 1,
+            mb: 0.5,
           }}
         >
           Parents & Students Reviews
@@ -86,7 +87,7 @@ export default function HomeReviewsSection() {
             color: "text.secondary",
             maxWidth: "min(720px, 100%)",
             mx: "auto",
-            mb: 3,
+            mb: 1.5,
             fontSize: "0.95rem",
           }}
         >
@@ -94,11 +95,11 @@ export default function HomeReviewsSection() {
         </Typography>
 
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
             <CircularProgress sx={{ color: BRAND.gold }} />
           </Box>
         ) : reviews.length === 0 ? (
-          <Typography sx={{ textAlign: "center", color: "text.secondary", py: 4 }}>
+          <Typography sx={{ textAlign: "center", color: "text.secondary", py: 2 }}>
             No published reviews yet. Sign in to the portal to be the first to share feedback.
           </Typography>
         ) : (
@@ -108,7 +109,7 @@ export default function HomeReviewsSection() {
               gap: { xs: 2, md: 2.5 },
               overflowX: "auto",
               overflowY: "hidden",
-              pb: 2,
+              pb: 1,
               mx: { xs: -0.5, sm: 0 },
               px: { xs: 0.5, sm: 0 },
               scrollSnapType: "x mandatory",

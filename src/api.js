@@ -466,6 +466,86 @@ export async function fetchSchoolPortalMyLobbyStatus(liveClassId) {
   return data.data;
 }
 
+/** Live session metadata for a school event (parent / student). */
+export async function fetchEventLiveSession(eventId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/events/${encodeURIComponent(eventId)}/live`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not load event session.");
+  return data.data;
+}
+
+/** Lobby status for the current user on an event. */
+export async function fetchMyEventLobbyStatus(eventId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/events/${encodeURIComponent(eventId)}/lobby/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not load lobby status.");
+  return data.data;
+}
+
+/** Chat + reactions for an event live session. */
+export async function fetchEventInteractions(eventId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/events/${encodeURIComponent(eventId)}/interactions`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not load interactions.");
+  return data.data;
+}
+
+export async function postEventChat(eventId, body) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/events/${encodeURIComponent(eventId)}/chat`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not send message.");
+  return data.data;
+}
+
+export async function postEventReaction(eventId, emoji) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/events/${encodeURIComponent(eventId)}/reaction`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ emoji }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not send reaction.");
+  return data.data;
+}
+
+export async function markEventQuestionAnswered(eventId, messageId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/events/${encodeURIComponent(eventId)}/chat/${encodeURIComponent(messageId)}/answered`,
+    { method: "PATCH", headers: getMarketplaceAuthHeaders() }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not update question.");
+  return data.data;
+}
+
+/** LiveKit token for an admitted event attendee. */
+export async function fetchEventLiveKitToken(eventId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/events/${encodeURIComponent(eventId)}/livekit-token`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not get LiveKit token.");
+  return data.data;
+}
+
 /** LiveKit access token (after lobby admit for students). */
 export async function fetchSchoolPortalLiveKitToken(liveClassId) {
   const base = getBaseUrl();

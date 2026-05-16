@@ -85,7 +85,7 @@ export default function Footer() {
       sx={{
         background: "#F5F5DC",
         pt: { xs: 0, sm: 0, md: 0 },
-        pb: 0.4,
+        pb: 0.2,
         mt: "auto",
         position: "relative",
         overflow: "hidden",
@@ -103,7 +103,7 @@ export default function Footer() {
       >
         <Box
           sx={{
-            py: { xs: 0.75, sm: 0.875, md: 1 },
+            py: { xs: 0.375, sm: 0.4375, md: 0.5 },
             px: { xs: 0.75, sm: 0.75, md: 0.75 },
           }}
         >

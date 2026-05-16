@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -75,6 +75,11 @@ const FEATURE_ITEMS = [
 
 export default function MarketplaceLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo =
+    typeof location.state?.returnTo === "string" && location.state.returnTo.startsWith("/")
+      ? location.state.returnTo
+      : "/portal";
   const [roleTab, setRoleTab] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [emailOrPhone, setEmailOrPhone] = useState("");
@@ -153,7 +158,7 @@ export default function MarketplaceLogin() {
         showConfirmButton: false,
         confirmButtonColor: BRAND.red,
       });
-      navigate("/portal", { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       Swal.fire({
         icon: "error",
