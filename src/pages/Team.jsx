@@ -175,13 +175,13 @@ export default function Team() {
         }}
       >
         <Box sx={{ pt: 0, pb: { xs: 2.5, md: 5 } }}>
-          <Container maxWidth={false} disableGutters sx={{ px: { xs: 2, md: 4 } }}>
             <Box
               sx={{
                 display: "flex",
                 flexDirection: { xs: "column", md: "row" },
-                gap: { xs: 4, md: 0 },
-                alignItems: { xs: "center", md: "stretch" },
+                gap: { xs: 0, md: 0 },
+                alignItems: { xs: "stretch", md: "stretch" },
+                minHeight: { md: 440 },
               }}
             >
               <Box
@@ -189,51 +189,41 @@ export default function Team() {
                   width: { xs: "100%", md: "50%" },
                   flex: { xs: "0 0 auto", md: "0 0 50%" },
                   minWidth: 0,
-                  display: { xs: "flex", md: "block" },
-                  justifyContent: { xs: "center", md: "flex-start" },
+                  alignSelf: "stretch",
+                  position: "relative",
+                  overflow: "hidden",
+                  height: { xs: 280, md: "auto" },
+                  minHeight: { xs: 280, md: "100%" },
                 }}
               >
-                <Card
+                <Box
                   sx={{
+                    position: "absolute",
+                    inset: 0,
                     width: "100%",
-                    maxWidth: { xs: "400px", md: "none" },
-                    aspectRatio: { xs: "4/3", md: "auto" },
-                    height: { xs: "auto", md: "100%" },
-                    minHeight: { xs: "300px", md: "400px" },
-                    borderRadius: { xs: 3, md: "12px 0 0 12px" },
-                    overflow: "hidden",
-                    boxShadow: 6,
-                    mx: { xs: "0.5rem", md: 0 },
-                    position: "relative",
+                    height: "100%",
                   }}
                 >
-                  <Box
-                    sx={{
-                      position: "relative",
-                      width: "100%",
-                      height: "100%",
-                      minHeight: { xs: "300px", md: "400px" },
-                    }}
-                  >
-                    {aboutHeroUrls.map((src, i) => (
-                      <Box
-                        key={src}
-                        component="img"
-                        src={src}
-                        alt="Elimu Plus"
-                        sx={{
-                          position: "absolute",
-                          inset: 0,
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          opacity: i === aboutSlideIndex ? 1 : 0,
-                          transition: "opacity 1.8s ease-in-out",
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Card>
+                  {aboutHeroUrls.map((src, i) => (
+                    <Box
+                      key={src}
+                      component="img"
+                      src={src}
+                      alt="Elimu Plus"
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center",
+                        display: "block",
+                        opacity: i === aboutSlideIndex ? 1 : 0,
+                        transition: "opacity 1.8s ease-in-out",
+                      }}
+                    />
+                  ))}
+                </Box>
               </Box>
 
               <Box
@@ -241,8 +231,8 @@ export default function Team() {
                   width: { xs: "100%", md: "50%" },
                   flex: { xs: "0 0 auto", md: "0 0 50%" },
                   minWidth: 0,
-                  px: { xs: 0, md: 1.5 },
-                  py: { xs: 0, md: 1.5 },
+                  px: { xs: 2, md: 4 },
+                  py: { xs: 3, md: 4 },
                   display: "flex",
                   alignItems: "center",
                 }}
@@ -357,7 +347,6 @@ export default function Team() {
                 </Box>
               </Box>
             </Box>
-          </Container>
         </Box>
 
         <Box sx={{ bgcolor: "white", pt: 2, pb: 4 }}>
