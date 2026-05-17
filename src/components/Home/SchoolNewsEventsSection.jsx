@@ -122,6 +122,22 @@ function isUpcomingEvent(ev) {
   return end >= new Date();
 }
 
+/** Whether parents/students can open the live room (API join_window or local fallback). */
+function canJoinOnlineEvent(ev) {
+  if (!ev || (ev.delivery_mode !== "online" && ev.delivery_mode !== "hybrid")) return false;
+  if (ev.join_window != null) return !!ev.join_window.can_join;
+  if (ev.session_status === "ended" || ev.session_status === "cancelled") return false;
+  return isUpcomingEvent(ev);
+}
+
+function joinClosedMessage(ev) {
+  if (ev?.join_window?.reason) return ev.join_window.reason;
+  if (ev?.session_status === "ended") return "This event has ended.";
+  if (ev?.session_status === "cancelled") return "This event was cancelled.";
+  if (!isUpcomingEvent(ev)) return "This event has ended. The join option is no longer available.";
+  return "Joining is not available right now.";
+}
+
 async function fetchJson(path) {
   const base = getApiBase();
   const res = await fetch(`${base}${path}`);
@@ -365,6 +381,8 @@ function DetailDialog({ open, onClose, item, kind, onJoinEvent, hasPortalToken }
   const isNews = kind === "news";
   const isOnlineEvent =
     !isNews && (item.delivery_mode === "online" || item.delivery_mode === "hybrid");
+  const canJoin = isOnlineEvent && canJoinOnlineEvent(item);
+  const joinClosed = isOnlineEvent && !canJoin;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper">
@@ -417,6 +435,14 @@ function DetailDialog({ open, onClose, item, kind, onJoinEvent, hasPortalToken }
                     ) : undefined
                   }
                 />
+                {isOnlineEvent ? (
+                  <Chip
+                    size="small"
+                    label={canJoin ? "Join open" : "Join closed"}
+                    color={canJoin ? "success" : "default"}
+                    variant={canJoin ? "filled" : "outlined"}
+                  />
+                ) : null}
               </>
             )}
           </Stack>
@@ -463,31 +489,39 @@ function DetailDialog({ open, onClose, item, kind, onJoinEvent, hasPortalToken }
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: BRAND.sky,
+                bgcolor: joinClosed ? "action.hover" : BRAND.sky,
                 border: `1px solid rgba(12, 35, 64, 0.1)`,
               }}
             >
               <Typography variant="body2" sx={{ fontWeight: 700, color: BRAND.navyDeep, mb: 0.5 }}>
                 Online participation
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {hasPortalToken
-                  ? "Join the live video room with chat, reactions, and questions — you will wait in a lobby until staff admits you."
-                  : "Sign in as a parent or student to join the live video room with chat and Q&A."}
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={() => onJoinEvent?.(item)}
-                sx={{
-                  mt: 1.5,
-                  bgcolor: BRAND.gold,
-                  color: BRAND.navyDeep,
-                  fontWeight: 700,
-                  "&:hover": { bgcolor: BRAND.goldMuted },
-                }}
-              >
-                {hasPortalToken ? "Join event" : "Sign in to join"}
-              </Button>
+              {canJoin ? (
+                <>
+                  <Typography variant="body2" color="text.secondary">
+                    {hasPortalToken
+                      ? "Join the live video room with chat, reactions, and questions — you will wait in a lobby until staff admits you."
+                      : "Sign in as a parent or student to join the live video room with chat and Q&A."}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => onJoinEvent?.(item)}
+                    sx={{
+                      mt: 1.5,
+                      bgcolor: BRAND.gold,
+                      color: BRAND.navyDeep,
+                      fontWeight: 700,
+                      "&:hover": { bgcolor: BRAND.goldMuted },
+                    }}
+                  >
+                    {hasPortalToken ? "Join event" : "Sign in to join"}
+                  </Button>
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {joinClosedMessage(item)}
+                </Typography>
+              )}
             </Box>
           ) : null}
         </Stack>
@@ -515,7 +549,7 @@ export default function SchoolNewsEventsSection() {
 
   const handleJoinEvent = useCallback(
     (eventItem) => {
-      if (!eventItem?.id) return;
+      if (!eventItem?.id || !canJoinOnlineEvent(eventItem)) return;
       const path = `/portal/event/${eventItem.id}`;
       if (hasPortalToken) {
         navigate(path);

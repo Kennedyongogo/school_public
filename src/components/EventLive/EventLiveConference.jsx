@@ -7,6 +7,8 @@ import { useSocket } from "../../hooks/useSocket";
 import LiveKitVideoRoom from "../VideoConference/LiveKitVideoRoom";
 import LiveKitMediaControls from "../VideoConference/LiveKitMediaControls";
 import EventLiveAttendeeLayout from "./EventLiveAttendeeLayout";
+import { useEventHostAlerts } from "../../hooks/useEventHostAlerts";
+import { primeAlertAudio } from "../../utils/liveClassAlertSound";
 import { eventLiveVideoSlotSx } from "./eventLiveVideoSlotSx";
 
 function LiveKitConnectionTracker({ wasConnectedRef }) {
@@ -36,9 +38,19 @@ export default function EventLiveConference({
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down("md"));
   const { socket, connected } = useSocket(token);
+  useEventHostAlerts({
+    socket,
+    eventId,
+    token,
+    enabled: isStaff && !!eventId && !!token,
+  });
   const intentionalLeaveRef = useRef(false);
   const sessionEndedRef = useRef(false);
   const wasConnectedRef = useRef(false);
+
+  useEffect(() => {
+    primeAlertAudio();
+  }, []);
 
   useEffect(() => {
     if (liveKitCredentials?.token && liveKitCredentials?.url) {

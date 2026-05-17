@@ -54,11 +54,29 @@ export function playHandRaiseAlert() {
   playTone({ frequency: 600, duration: 0.15, gain: 0.08, type: "triangle" });
 }
 
-export function tryBrowserNotification(title, body) {
+/** New question (distinct from general chat). */
+export function playQuestionAlert() {
+  playTone({ frequency: 880, duration: 0.07, gain: 0.07 });
+  setTimeout(() => playTone({ frequency: 1100, duration: 0.1, gain: 0.06 }), 80);
+}
+
+/** Participant admitted to the event. */
+export function playAdmittedAlert() {
+  playTone({ frequency: 440, duration: 0.1, gain: 0.07 });
+  setTimeout(() => playTone({ frequency: 554, duration: 0.12, gain: 0.06 }), 100);
+}
+
+/** Live reaction emoji. */
+export function playReactionAlert() {
+  playTone({ frequency: 700, duration: 0.06, gain: 0.05 });
+  setTimeout(() => playTone({ frequency: 900, duration: 0.08, gain: 0.05 }), 70);
+}
+
+export function tryBrowserNotification(title, body, tag = "live-class-host") {
   if (typeof window === "undefined" || !document.hidden) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
-    new Notification(title, { body, tag: "live-class-host" });
+    new Notification(title, { body, tag });
   } catch {
     // ignore
   }
