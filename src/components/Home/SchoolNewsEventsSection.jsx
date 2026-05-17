@@ -8,13 +8,14 @@ import {
   Container,
   Dialog,
   DialogContent,
-  Grid,
   IconButton,
   Skeleton,
   Stack,
   Tab,
   Tabs,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
@@ -24,6 +25,8 @@ import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailable";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 
 const BRAND = {
@@ -33,6 +36,35 @@ const BRAND = {
   goldMuted: "#e6cf6a",
   cream: "#f7f5ef",
   sky: "#f0f4fa",
+};
+
+/** Shared gallery card dimensions (news & events). */
+const GALLERY_CARD_HEIGHT = 440;
+const GALLERY_POSTER_HEIGHT = 180;
+
+const galleryCardShellSx = {
+  height: GALLERY_CARD_HEIGHT,
+  display: "flex",
+  flexDirection: "column",
+  cursor: "pointer",
+  borderRadius: 3,
+  overflow: "hidden",
+  bgcolor: "#fff",
+  border: "1px solid rgba(12, 35, 64, 0.1)",
+  boxShadow: "0 8px 28px rgba(12, 35, 64, 0.08)",
+  transition: "box-shadow 0.25s ease",
+  "&:hover": {
+    boxShadow: "0 16px 40px rgba(12, 35, 64, 0.16)",
+  },
+};
+
+const galleryCardBodySx = {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  p: { xs: 2, sm: 2.25 },
+  minHeight: GALLERY_CARD_HEIGHT - GALLERY_POSTER_HEIGHT,
+  boxSizing: "border-box",
 };
 
 const NEWS_CATEGORY_LABELS = {
@@ -181,31 +213,95 @@ function PosterHero({ src, alt, height = 200 }) {
   );
 }
 
+function ArrowCarousel({ items, ariaLabel, renderCard }) {
+  const theme = useTheme();
+  const upSm = useMediaQuery(theme.breakpoints.up("sm"));
+  const upMd = useMediaQuery(theme.breakpoints.up("md"));
+  const visibleCount = upMd ? 3 : upSm ? 2 : 1;
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [items, visibleCount]);
+
+  const maxIndex = Math.max(0, items.length - visibleCount);
+  const canPrev = index > 0;
+  const canNext = index < maxIndex;
+  const visible = items.slice(index, index + visibleCount);
+
+  if (!items.length) return null;
+
+  return (
+    <Box role="region" aria-label={ariaLabel}>
+      <Stack direction="row" alignItems="center" spacing={{ xs: 0.5, sm: 1 }}>
+        <IconButton
+          aria-label="Previous"
+          onClick={() => setIndex((i) => Math.max(0, i - 1))}
+          disabled={!canPrev}
+          sx={{
+            flexShrink: 0,
+            bgcolor: "#fff",
+            border: `1px solid rgba(12, 35, 64, 0.12)`,
+            boxShadow: "0 2px 8px rgba(12, 35, 64, 0.08)",
+            "&:hover": { bgcolor: BRAND.sky },
+            "&.Mui-disabled": { opacity: 0.35 },
+          }}
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+
+        <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2.5,
+              alignItems: "stretch",
+            }}
+          >
+            {visible.map((item) => (
+              <Box
+                key={item.id}
+                sx={{
+                  flex: `1 1 ${100 / visibleCount}%`,
+                  minWidth: 0,
+                  maxWidth: `${100 / visibleCount}%`,
+                }}
+              >
+                {renderCard(item)}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        <IconButton
+          aria-label="Next"
+          onClick={() => setIndex((i) => Math.min(maxIndex, i + 1))}
+          disabled={!canNext}
+          sx={{
+            flexShrink: 0,
+            bgcolor: "#fff",
+            border: `1px solid rgba(12, 35, 64, 0.12)`,
+            boxShadow: "0 2px 8px rgba(12, 35, 64, 0.08)",
+            "&:hover": { bgcolor: BRAND.sky },
+            "&.Mui-disabled": { opacity: 0.35 },
+          }}
+        >
+          <ChevronRightIcon />
+        </IconButton>
+      </Stack>
+    </Box>
+  );
+}
+
 function NewsCard({ item, onClick }) {
   return (
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 380, damping: 28 }}
-      style={{ height: "100%" }}
     >
-      <Box
-        onClick={() => onClick(item)}
-        sx={{
-          height: "100%",
-          cursor: "pointer",
-          borderRadius: 3,
-          overflow: "hidden",
-          bgcolor: "#fff",
-          border: "1px solid rgba(12, 35, 64, 0.1)",
-          boxShadow: "0 8px 28px rgba(12, 35, 64, 0.08)",
-          transition: "box-shadow 0.25s ease",
-          "&:hover": {
-            boxShadow: "0 16px 40px rgba(12, 35, 64, 0.16)",
-          },
-        }}
-      >
-        <Box sx={{ position: "relative" }}>
-          <PosterHero src={item.poster_image} alt={item.title} height={180} />
+      <Box onClick={() => onClick(item)} sx={galleryCardShellSx}>
+        <Box sx={{ position: "relative", flexShrink: 0 }}>
+          <PosterHero src={item.poster_image} alt={item.title} height={GALLERY_POSTER_HEIGHT} />
           <Chip
             size="small"
             label={NEWS_CATEGORY_LABELS[item.category] || item.category || "News"}
@@ -219,7 +315,7 @@ function NewsCard({ item, onClick }) {
             }}
           />
         </Box>
-        <Box sx={{ p: { xs: 2, sm: 2.25 } }}>
+        <Box sx={galleryCardBodySx}>
           <Typography
             variant="caption"
             sx={{ color: BRAND.gold, fontWeight: 700, letterSpacing: 0.4 }}
@@ -235,6 +331,10 @@ function NewsCard({ item, onClick }) {
               color: BRAND.navyDeep,
               mt: 0.5,
               mb: 1,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {item.title}
@@ -244,6 +344,7 @@ function NewsCard({ item, onClick }) {
             sx={{
               color: "text.secondary",
               lineHeight: 1.55,
+              flex: 1,
               display: "-webkit-box",
               WebkitLineClamp: 3,
               WebkitBoxOrient: "vertical",
@@ -252,7 +353,7 @@ function NewsCard({ item, onClick }) {
           >
             {item.summary || excerpt(item.content, 140)}
           </Typography>
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1.5, color: BRAND.navy }}>
+          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: "auto", pt: 1.5, color: BRAND.navy }}>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               Read more
             </Typography>
@@ -272,24 +373,10 @@ function EventCard({ item, onClick }) {
     <motion.div
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 380, damping: 28 }}
-      style={{ height: "100%" }}
     >
-      <Box
-        onClick={() => onClick(item)}
-        sx={{
-          height: "100%",
-          cursor: "pointer",
-          borderRadius: 3,
-          overflow: "hidden",
-          bgcolor: "#fff",
-          border: "1px solid rgba(12, 35, 64, 0.1)",
-          boxShadow: "0 8px 28px rgba(12, 35, 64, 0.08)",
-          transition: "box-shadow 0.25s ease",
-          "&:hover": { boxShadow: "0 16px 40px rgba(12, 35, 64, 0.16)" },
-        }}
-      >
-        <Box sx={{ position: "relative" }}>
-          <PosterHero src={item.poster_image} alt={item.title} height={180} />
+      <Box onClick={() => onClick(item)} sx={galleryCardShellSx}>
+        <Box sx={{ position: "relative", flexShrink: 0 }}>
+          <PosterHero src={item.poster_image} alt={item.title} height={GALLERY_POSTER_HEIGHT} />
           <Stack
             direction="row"
             spacing={0.75}
@@ -323,7 +410,7 @@ function EventCard({ item, onClick }) {
             ) : null}
           </Stack>
         </Box>
-        <Box sx={{ p: { xs: 2, sm: 2.25 } }}>
+        <Box sx={galleryCardBodySx}>
           <Typography variant="caption" sx={{ color: BRAND.gold, fontWeight: 700 }}>
             {EVENT_TYPE_LABELS[item.event_type] || "Event"}
           </Typography>
@@ -335,27 +422,54 @@ function EventCard({ item, onClick }) {
               lineHeight: 1.2,
               color: BRAND.navyDeep,
               mt: 0.5,
-              mb: 1,
+              mb: 0.75,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {item.title}
           </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600, mb: 0.75 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 600,
+              mb: 0.75,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {formatEventRange(item.start_date, item.end_date)}
           </Typography>
           {item.location && item.delivery_mode !== "online" ? (
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
-              <LocationOnOutlinedIcon sx={{ fontSize: 18, color: BRAND.navy, opacity: 0.7 }} />
-              <Typography variant="body2" color="text.secondary">
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.75, minHeight: 24 }}>
+              <LocationOnOutlinedIcon sx={{ fontSize: 18, color: BRAND.navy, opacity: 0.7, flexShrink: 0 }} />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
                 {item.location}
               </Typography>
             </Stack>
-          ) : null}
+          ) : (
+            <Box sx={{ minHeight: 24, mb: 0.75 }} />
+          )}
           <Typography
             variant="body2"
             sx={{
               color: "text.secondary",
               lineHeight: 1.55,
+              flex: 1,
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
@@ -364,7 +478,7 @@ function EventCard({ item, onClick }) {
           >
             {excerpt(item.description, 120)}
           </Typography>
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1.5, color: BRAND.navy }}>
+          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: "auto", pt: 1.5, color: BRAND.navy }}>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               View details
             </Typography>
@@ -530,15 +644,19 @@ function DetailDialog({ open, onClose, item, kind, onJoinEvent, hasPortalToken }
   );
 }
 
-function LoadingGrid({ count = 3 }) {
+function LoadingGallery({ ariaLabel = "Loading" }) {
   return (
-    <Grid container spacing={2.5}>
-      {Array.from({ length: count }).map((_, i) => (
-        <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
-          <Skeleton variant="rounded" height={320} sx={{ borderRadius: 3 }} />
-        </Grid>
-      ))}
-    </Grid>
+    <Stack direction="row" alignItems="center" spacing={1} aria-label={ariaLabel}>
+      <IconButton disabled sx={{ opacity: 0.35 }}>
+        <ChevronLeftIcon />
+      </IconButton>
+      <Box sx={{ flex: 1 }}>
+        <Skeleton variant="rounded" height={GALLERY_CARD_HEIGHT} sx={{ borderRadius: 3 }} />
+      </Box>
+      <IconButton disabled sx={{ opacity: 0.35 }}>
+        <ChevronRightIcon />
+      </IconButton>
+    </Stack>
   );
 }
 
@@ -732,7 +850,7 @@ export default function SchoolNewsEventsSection() {
         </Tabs>
 
         {loading ? (
-          <LoadingGrid />
+          <LoadingGallery ariaLabel={tab === 0 ? "Loading news" : "Loading events"} />
         ) : error ? (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography color="error" sx={{ mb: 2 }}>
@@ -750,13 +868,11 @@ export default function SchoolNewsEventsSection() {
                   No news published yet. Check back soon.
                 </Typography>
               ) : (
-                <Grid container spacing={2.5}>
-                  {sortedNews.map((item) => (
-                    <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                      <NewsCard item={item} onClick={openNews} />
-                    </Grid>
-                  ))}
-                </Grid>
+                <ArrowCarousel
+                  ariaLabel="School news"
+                  items={sortedNews}
+                  renderCard={(item) => <NewsCard item={item} onClick={openNews} />}
+                />
               )
             ) : null}
 
@@ -766,13 +882,11 @@ export default function SchoolNewsEventsSection() {
                   No events published yet.
                 </Typography>
               ) : (
-                <Grid container spacing={2.5}>
-                  {sortedEvents.map((item) => (
-                    <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                      <EventCard item={item} onClick={openEvent} />
-                    </Grid>
-                  ))}
-                </Grid>
+                <ArrowCarousel
+                  ariaLabel="School events"
+                  items={sortedEvents}
+                  renderCard={(item) => <EventCard item={item} onClick={openEvent} />}
+                />
               )
             ) : null}
           </>
