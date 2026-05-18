@@ -153,7 +153,7 @@ export default function Footer() {
                           sx={{
                             lineHeight: 1.65,
                             color: "rgba(0, 0, 0, 0.82)",
-                            fontSize: { xs: "0.95rem", sm: "1.05rem" },
+                            fontSize: { xs: "1.2rem", sm: "1.2rem" },
                           }}
                         >
                           Where young minds discover their potential and build tomorrow&apos;s legacy.
@@ -303,7 +303,7 @@ export default function Footer() {
                       sx={{
                         color: "rgba(0, 0, 0, 0.75)",
                         fontWeight: 500,
-                        fontSize: { xs: "0.85rem", sm: "0.95rem" },
+                        fontSize: { xs: "1.2rem", sm: "1.2rem" },
                       }}
                     >
                       © {new Date().getFullYear()} elimu plus. All rights reserved.

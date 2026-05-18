@@ -52,7 +52,7 @@ const theme = createTheme({
     },
     text: {
       primary: earthTones.brown.dark, // Dark brown for text
-      secondary: earthTones.brown.light, // Lighter brown for secondary text
+      secondary: "#000000", // Body / supporting copy (was earthTones.brown.light)
     },
     success: {
       main: earthTones.green.forest, // Dark forest green for success
@@ -85,6 +85,12 @@ const theme = createTheme({
     },
     button: {
       textTransform: "none",
+    },
+    body1: {
+      fontSize: "1.2rem",
+    },
+    body2: {
+      fontSize: "1.2rem",
     },
   },
 });

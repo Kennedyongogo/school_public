@@ -14,8 +14,6 @@ import {
   Tab,
   Tabs,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
@@ -28,6 +26,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
+import ArrowCarousel from "./ArrowCarousel";
 
 const BRAND = {
   navy: "#0c2340",
@@ -210,86 +209,6 @@ function PosterHero({ src, alt, height = 200 }) {
         display: "block",
       }}
     />
-  );
-}
-
-function ArrowCarousel({ items, ariaLabel, renderCard }) {
-  const theme = useTheme();
-  const upSm = useMediaQuery(theme.breakpoints.up("sm"));
-  const upMd = useMediaQuery(theme.breakpoints.up("md"));
-  const visibleCount = upMd ? 3 : upSm ? 2 : 1;
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [items, visibleCount]);
-
-  const maxIndex = Math.max(0, items.length - visibleCount);
-  const canPrev = index > 0;
-  const canNext = index < maxIndex;
-  const visible = items.slice(index, index + visibleCount);
-
-  if (!items.length) return null;
-
-  return (
-    <Box role="region" aria-label={ariaLabel}>
-      <Stack direction="row" alignItems="center" spacing={{ xs: 0.5, sm: 1 }}>
-        <IconButton
-          aria-label="Previous"
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          disabled={!canPrev}
-          sx={{
-            flexShrink: 0,
-            bgcolor: "#fff",
-            border: `1px solid rgba(12, 35, 64, 0.12)`,
-            boxShadow: "0 2px 8px rgba(12, 35, 64, 0.08)",
-            "&:hover": { bgcolor: BRAND.sky },
-            "&.Mui-disabled": { opacity: 0.35 },
-          }}
-        >
-          <ChevronLeftIcon />
-        </IconButton>
-
-        <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2.5,
-              alignItems: "stretch",
-            }}
-          >
-            {visible.map((item) => (
-              <Box
-                key={item.id}
-                sx={{
-                  flex: `1 1 ${100 / visibleCount}%`,
-                  minWidth: 0,
-                  maxWidth: `${100 / visibleCount}%`,
-                }}
-              >
-                {renderCard(item)}
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        <IconButton
-          aria-label="Next"
-          onClick={() => setIndex((i) => Math.min(maxIndex, i + 1))}
-          disabled={!canNext}
-          sx={{
-            flexShrink: 0,
-            bgcolor: "#fff",
-            border: `1px solid rgba(12, 35, 64, 0.12)`,
-            boxShadow: "0 2px 8px rgba(12, 35, 64, 0.08)",
-            "&:hover": { bgcolor: BRAND.sky },
-            "&.Mui-disabled": { opacity: 0.35 },
-          }}
-        >
-          <ChevronRightIcon />
-        </IconButton>
-      </Stack>
-    </Box>
   );
 }
 
@@ -814,7 +733,7 @@ export default function SchoolNewsEventsSection() {
             sx={{
               maxWidth: 560,
               color: "text.secondary",
-              fontSize: { xs: "1rem", md: "1.125rem" },
+              fontSize: { xs: "1.2rem", md: "1.2rem" },
               lineHeight: 1.6,
             }}
           >

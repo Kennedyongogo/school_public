@@ -321,7 +321,7 @@ export default function MarketplaceLogin() {
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "rgba(255,255,255,0.85)", fontSize: "clamp(0.8rem, 1.3vh, 0.95rem)" }}
+                  sx={{ color: "rgba(255,255,255,0.85)", fontSize: "clamp(0.8rem, 1.3vh, 1.2rem)" }}
                 >
                   {item.text}
                 </Typography>
@@ -331,7 +331,7 @@ export default function MarketplaceLogin() {
         </Box>
 
         <Box sx={{ position: "relative", zIndex: 2, p: "clamp(0.5rem, 1vh, 1rem)", flexShrink: 0 }}>
-          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.8rem, 1.2vh, 0.95rem)" }}>
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.8rem, 1.2vh, 1.2rem)" }}>
             © {new Date().getFullYear()} Elimu Plus. Learn • Grow • Excel.
           </Typography>
         </Box>
@@ -365,7 +365,7 @@ export default function MarketplaceLogin() {
             top: { xs: 12, sm: 16 },
             left: { xs: 12, sm: 16 },
             color: BRAND.navyDeep,
-            fontSize: "0.95rem",
+            fontSize: "1.2rem",
             textTransform: "none",
             fontWeight: 600,
             outline: "none",
@@ -464,7 +464,7 @@ export default function MarketplaceLogin() {
               variant="body2"
               sx={{
                 mb: "clamp(0.5rem, 1.5vh, 1rem)",
-                fontSize: "clamp(0.95rem, 1.8vh, 1.05rem)",
+                fontSize: "clamp(1.2rem, 1.8vh, 1.2rem)",
                 color: "rgba(8, 22, 43, 0.85)",
               }}
             >
@@ -560,7 +560,7 @@ export default function MarketplaceLogin() {
                     color: BRAND.red,
                     fontWeight: 600,
                     textDecoration: "none",
-                    fontSize: "0.95rem",
+                    fontSize: "1.2rem",
                     "&:hover": { textDecoration: "underline" },
                   }}
                 >

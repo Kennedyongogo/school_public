@@ -55,17 +55,24 @@ export default function PortalReviewPromptDialog({
     setSaving(true);
     try {
       await submitPortalReview({ rating, comment: comment.trim() });
+      // Close the MUI dialog before SweetAlert — Dialog z-index (~1300) sits above Swal (~1060).
+      onSubmitted?.();
+      onClose();
+      setSaving(false);
       await Swal.fire({
         icon: "success",
         title: "Thank you!",
         text: "Your review was submitted and will appear on our website after the school approves it.",
         confirmButtonColor: BRAND.red,
+        timer: 4000,
+        timerProgressBar: true,
+        didOpen: () => {
+          const container = Swal.getContainer();
+          if (container) container.style.zIndex = "2000";
+        },
       });
-      onSubmitted?.();
-      onClose();
     } catch (e) {
       setError(e.message || "Could not submit review.");
-    } finally {
       setSaving(false);
     }
   };
