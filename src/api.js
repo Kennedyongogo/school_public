@@ -265,6 +265,38 @@ export async function createSchoolPortalExamSubmission(examId) {
   return data.data;
 }
 
+export async function fetchSchoolPortalExamScheduleRoom(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/exam-schedule/${encodeURIComponent(examScheduleId)}`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load exam invigilation room.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalExamScheduleLiveKitToken(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/exam-schedule/${encodeURIComponent(examScheduleId)}/livekit-token`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not get LiveKit token.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalMyExamLobbyStatus(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/school-portal/exam-schedule/${encodeURIComponent(examScheduleId)}/lobby/me`,
+    { headers: getMarketplaceAuthHeaders() }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.message || "Could not load lobby status.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalMyExamSubmission(examId) {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/submissions/me`, {
@@ -272,6 +304,25 @@ export async function fetchSchoolPortalMyExamSubmission(examId) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || "Could not load exam paper.");
+  return data.data;
+}
+
+/** Upload one file for a file_upload exam question (student JWT). */
+export async function uploadSchoolPortalExamAnswerFile(submissionId, questionId, file) {
+  const base = getBaseUrl();
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const formData = new FormData();
+  formData.append("exam_answer_file", file);
+  const res = await fetch(
+    `${base}/api/exams/submissions/${encodeURIComponent(submissionId)}/answers/${encodeURIComponent(questionId)}/upload`,
+    {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}`, Accept: "application/json" } : { Accept: "application/json" },
+      body: formData,
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not upload file.");
   return data.data;
 }
 

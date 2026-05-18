@@ -13,7 +13,7 @@ import { ConnectionState } from "livekit-client";
 import LiveKitVideoRoom from "./LiveKitVideoRoom";
 import "@livekit/components-styles";
 import { useSocket } from "../../hooks/useSocket";
-import { fetchSchoolPortalLiveKitToken } from "../../api";
+import { fetchSchoolPortalExamScheduleLiveKitToken, fetchSchoolPortalLiveKitToken } from "../../api";
 import LiveClassHostLayout from "./LiveClassHostLayout";
 import LiveKitMediaControls from "./LiveKitMediaControls";
 import Controls from "./Controls";
@@ -30,6 +30,7 @@ function LiveKitConnectionTracker({ wasConnectedRef }) {
 export default function LiveKitConference({
   token,
   liveClassId,
+  examScheduleId,
   userName,
   role = "student",
   onLeave,
@@ -37,6 +38,7 @@ export default function LiveKitConference({
   liveKitCredentials = null,
   mediaMode = "optional",
 }) {
+  const videoContextId = examScheduleId || liveClassId;
   const joinMedia =
     mediaMode === "video" ? { audio: true, video: true } : mediaMode === "audio" ? { audio: true, video: false } : { audio: false, video: false };
   const [lkToken, setLkToken] = useState(liveKitCredentials?.token ?? null);
@@ -60,13 +62,15 @@ export default function LiveKitConference({
       setError("");
       return undefined;
     }
-    if (!token || !liveClassId) return undefined;
+    if (!token || !videoContextId) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError("");
       try {
-        const data = await fetchSchoolPortalLiveKitToken(liveClassId);
+        const data = examScheduleId
+          ? await fetchSchoolPortalExamScheduleLiveKitToken(examScheduleId)
+          : await fetchSchoolPortalLiveKitToken(liveClassId);
         if (cancelled) return;
         setLkToken(data.token);
         setServerUrl(data.url);
@@ -79,23 +83,27 @@ export default function LiveKitConference({
     return () => {
       cancelled = true;
     };
-  }, [token, liveClassId, liveKitCredentials?.token, liveKitCredentials?.url]);
+  }, [token, liveClassId, examScheduleId, videoContextId, liveKitCredentials?.token, liveKitCredentials?.url]);
 
   useEffect(() => {
     wasConnectedRef.current = false;
     intentionalLeaveRef.current = false;
-  }, [liveClassId, lkToken]);
+  }, [videoContextId, lkToken]);
 
   useEffect(() => {
-    if (!socket || !liveClassId) return undefined;
-    const joinRoom = () => socket.emit("join:live-class", liveClassId);
+    if (!socket || !videoContextId) return undefined;
+    const joinRoom = () =>
+      examScheduleId
+        ? socket.emit("join:exam-schedule", examScheduleId)
+        : socket.emit("join:live-class", liveClassId);
     if (socket.connected) joinRoom();
     else socket.on("connect", joinRoom);
     return () => {
       socket.off("connect", joinRoom);
-      socket.emit("leave:live-class", liveClassId);
+      if (examScheduleId) socket.emit("leave:exam-schedule", examScheduleId);
+      else socket.emit("leave:live-class", liveClassId);
     };
-  }, [socket, liveClassId]);
+  }, [socket, liveClassId, examScheduleId, videoContextId]);
 
   const handleRequestLeave = useCallback(() => {
     intentionalLeaveRef.current = true;
@@ -146,7 +154,7 @@ export default function LiveKitConference({
         }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 700, flex: 1 }}>
-          Live class
+          {examScheduleId ? "Exam invigilation" : "Live class"}
         </Typography>
         <Chip size="small" label="LiveKit" color="info" variant="outlined" sx={{ display: { xs: "none", sm: "flex" } }} />
         <Chip
@@ -159,7 +167,7 @@ export default function LiveKitConference({
         {isTeacher ? <Chip size="small" label="Host" color="primary" sx={{ display: { xs: "none", sm: "flex" } }} /> : null}
       </Box>
     ),
-    [connected, isTeacher]
+    [connected, isTeacher, examScheduleId]
   );
 
   if (loading) {

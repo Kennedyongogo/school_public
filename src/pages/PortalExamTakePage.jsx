@@ -22,16 +22,20 @@ import {
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Swal from "sweetalert2";
+import ExamInvigilationVideoDock from "../components/VideoConference/ExamInvigilationVideoDock";
 import {
   createSchoolPortalExamSubmission,
   fetchSchoolPortalMyExamSubmission,
   fetchSchoolPortalMyExamAttemptsForSchedule,
   fetchSchoolPortalStudentExamSchedules,
+  fetchSchoolPortalMyExamLobbyStatus,
   createSchoolPortalExamAttempt,
   updateSchoolPortalExamAttempt,
   createSchoolPortalExamSessionLog,
   saveSchoolPortalExamAnswers,
   submitSchoolPortalExam,
+  uploadSchoolPortalExamAnswerFile,
+  schoolPortalMediaUrl,
 } from "../api";
 
 const accent = "#DC2626";
@@ -42,6 +46,36 @@ const normalizeOptions = (q) => {
   if (typeof q?.options === "string") return q.options.split(",").map((x) => x.trim()).filter(Boolean);
   return [];
 };
+
+const fileUploadConfig = (q) => {
+  const o = q?.options && typeof q.options === "object" && !Array.isArray(q.options) ? q.options : {};
+  const accept = Array.isArray(o.accept) ? o.accept : ["image/*", "application/pdf"];
+  return {
+    accept,
+    maxFiles: Math.min(5, Math.max(1, Number(o.max_files) || 1)),
+    maxSizeMb: Math.min(25, Math.max(1, Number(o.max_size_mb) || 10)),
+    hint: String(o.upload_hint || "").trim(),
+  };
+};
+
+const htmlAcceptFromMimeList = (acceptList) => {
+  const parts = [];
+  (acceptList || []).forEach((pattern) => {
+    const p = String(pattern || "").trim();
+    if (!p) return;
+    if (p === "application/pdf") parts.push(".pdf", "application/pdf");
+    else if (p.includes("wordprocessingml")) parts.push(".docx", p);
+    else if (p === "application/msword") parts.push(".doc", p);
+    else parts.push(p);
+  });
+  return parts.length ? parts.join(",") : "image/*,application/pdf,.pdf";
+};
+
+import {
+  scheduleRequiresInvigilationRoom,
+  hasExamInvigilationPaperAccess,
+  clearExamInvigilationPaperAccess,
+} from "../utils/examInvigilation";
 
 const formatScheduleTime = (value, timezone = "Africa/Nairobi") => {
   if (!value) return "—";
@@ -84,6 +118,7 @@ export default function PortalExamTakePage() {
   const [lockReason, setLockReason] = useState("");
   const [roomOpen, setRoomOpen] = useState(false);
   const [roomConfirmed, setRoomConfirmed] = useState(false);
+  const [uploadingQuestionId, setUploadingQuestionId] = useState("");
   const mediaStreamRef = useRef(null);
   const autoSubmitRef = useRef(false);
   const creatingAttemptRef = useRef(false);
@@ -130,7 +165,16 @@ export default function PortalExamTakePage() {
     return { requiresWebcam, preventTabSwitch, tabSwitchLimit, warningLimit, examAccessPolicy, strictMode };
   }, [schedule]);
 
-  const requiresRoom = rules.examAccessPolicy === "paper_plus_room_required";
+  const isLiveKitInvigilation = useMemo(
+    () =>
+      schedule?.video_mode === "livekit" ||
+      String(schedule?.meeting_provider || "").toLowerCase() === "livekit",
+    [schedule?.video_mode, schedule?.meeting_provider]
+  );
+
+  const requiresRoom = useMemo(() => scheduleRequiresInvigilationRoom(schedule), [schedule]);
+
+  const showPaper = !requiresRoom || roomConfirmed;
 
   useEffect(() => {
     const load = async () => {
@@ -155,6 +199,30 @@ export default function PortalExamTakePage() {
         if (sc?.attendance?.submitted_at) {
           throw new Error("You already submitted this exam. Re-opening is disabled.");
         }
+
+        const needsInvigilation = scheduleRequiresInvigilationRoom(sc);
+        if (needsInvigilation) {
+          let admitted = false;
+          try {
+            const lobby = await fetchSchoolPortalMyExamLobbyStatus(scheduleId);
+            admitted = lobby?.status === "admitted";
+          } catch {
+            admitted = false;
+          }
+          const paperAllowed = admitted && hasExamInvigilationPaperAccess(scheduleId);
+          if (!paperAllowed) {
+            clearExamInvigilationPaperAccess(scheduleId);
+            setSchedule(sc);
+            setLoading(false);
+            navigate(`/portal/exam-schedule/${scheduleId}/invigilation`, {
+              replace: true,
+              state: { freshJoin: !admitted },
+            });
+            return;
+          }
+          setRoomConfirmed(true);
+        }
+
         setSchedule(sc);
         try {
           await createSchoolPortalExamSubmission(sc.exam.id);
@@ -310,6 +378,38 @@ export default function PortalExamTakePage() {
 
   const upsertAnswer = (questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleFileUpload = async (question, file) => {
+    if (!submission?.id || !question?.id || !file) return;
+    const cfg = fileUploadConfig(question);
+    const current = answers[question.id];
+    const files = current && typeof current === "object" && Array.isArray(current.files) ? current.files : [];
+    if (files.length >= cfg.maxFiles) {
+      setError(`Maximum ${cfg.maxFiles} file(s) allowed for this question.`);
+      return;
+    }
+    if (file.size > cfg.maxSizeMb * 1024 * 1024) {
+      setError(`File exceeds maximum size of ${cfg.maxSizeMb} MB.`);
+      return;
+    }
+    setUploadingQuestionId(question.id);
+    setError("");
+    try {
+      const answerRow = await uploadSchoolPortalExamAnswerFile(submission.id, question.id, file);
+      const nextJson =
+        answerRow?.answer_json && typeof answerRow.answer_json === "object" ? answerRow.answer_json : { files: [] };
+      upsertAnswer(question.id, nextJson);
+      setSubmission((s) => {
+        const prev = Array.isArray(s?.answers) ? s.answers : [];
+        const rest = prev.filter((a) => a.question_id !== question.id);
+        return { ...s, answers: [...rest, { question_id: question.id, ...answerRow }] };
+      });
+    } catch (e) {
+      setError(e.message || "Could not upload file.");
+    } finally {
+      setUploadingQuestionId("");
+    }
   };
 
   const logSessionEvent = async (event_type, event_data = {}) => {
@@ -506,7 +606,13 @@ export default function PortalExamTakePage() {
 
   return (
     <Box sx={{ minHeight: "100vh", background: "linear-gradient(180deg, #FEF2F2 0%, #fff 45%)", pb: 3 }}>
-      <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}>
+      <Box
+        sx={{
+          px: { xs: 2, sm: 3 },
+          pt: 2,
+          pb: showPaper && isLiveKitInvigilation && roomConfirmed ? 26 : 0,
+        }}
+      >
         <Card elevation={0} sx={{ border: "1px solid #FEE2E2", mb: 2 }}>
           <CardContent>
             <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
@@ -541,7 +647,11 @@ export default function PortalExamTakePage() {
         {requiresRoom ? (
           <Alert severity={roomConfirmed ? "success" : "info"} sx={{ mb: 1.5 }}>
             {roomConfirmed
-              ? "Invigilation room confirmed for this session."
+              ? isLiveKitInvigilation
+                ? "You were admitted. Keep the invigilation camera open (bottom-right) while you answer."
+                : "Invigilation room confirmed for this session."
+              : isLiveKitInvigilation
+              ? "Join the invigilation room and wait for your teacher to admit you before answering questions."
               : "This exam requires invigilation room first. Open it below to continue."}
           </Alert>
         ) : null}
@@ -561,13 +671,43 @@ export default function PortalExamTakePage() {
           </Alert>
         ) : null}
 
+        {!showPaper ? (
+          <Card elevation={0} sx={{ border: "1px solid #FEE2E2", mb: 2 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                Invigilation required first
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                You cannot view exam questions until your teacher admits you in the invigilation room. The exam timer
+                starts only after you are admitted.
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  clearExamInvigilationPaperAccess(scheduleId);
+                  navigate(`/portal/exam-schedule/${scheduleId}/invigilation`, { state: { freshJoin: true } });
+                }}
+                sx={{ bgcolor: accent, "&:hover": { bgcolor: accentDark } }}
+              >
+                Go to invigilation room
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {showPaper ? (
         <Stack spacing={1.5}>
           {questions.map((q, idx) => {
             const qType = q.question_type || "short_text";
             const opts = normalizeOptions(q);
             const diagramData = q?.options?.diagram_data || "";
             const diagramHotspots = Array.isArray(q?.options?.hotspots) ? q.options.hotspots : [];
-            const v = answers[q.id] ?? (qType === "multi_select" ? [] : qType === "diagram_label" ? {} : "");
+            const v =
+              answers[q.id] ??
+              (qType === "multi_select" ? [] : qType === "diagram_label" ? {} : qType === "file_upload" ? { files: [] } : "");
+            const uploadCfg = qType === "file_upload" ? fileUploadConfig(q) : null;
+            const uploadedFiles =
+              qType === "file_upload" && v && typeof v === "object" && Array.isArray(v.files) ? v.files : [];
             return (
               <Card key={q.id} elevation={0} sx={{ border: "1px solid #f1d5d5" }}>
                 <CardContent>
@@ -668,6 +808,62 @@ export default function PortalExamTakePage() {
                         <Alert severity="info">No label points configured for this diagram.</Alert>
                       )}
                     </Stack>
+                  ) : qType === "file_upload" ? (
+                    <Stack spacing={1}>
+                      {uploadCfg?.hint ? (
+                        <Typography variant="body2" color="text.secondary">
+                          {uploadCfg.hint}
+                        </Typography>
+                      ) : null}
+                      <Typography variant="caption" color="text.secondary">
+                        Upload up to {uploadCfg?.maxFiles || 1} file(s), max {uploadCfg?.maxSizeMb || 10} MB each.
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        disabled={!canAnswer || uploadingQuestionId === q.id || uploadedFiles.length >= (uploadCfg?.maxFiles || 1)}
+                        size="small"
+                        sx={{ alignSelf: "flex-start" }}
+                      >
+                        {uploadingQuestionId === q.id ? "Uploading…" : "Choose file"}
+                        <input
+                          type="file"
+                          hidden
+                          accept={htmlAcceptFromMimeList(uploadCfg?.accept)}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            if (file) void handleFileUpload(q, file);
+                          }}
+                        />
+                      </Button>
+                      {uploadedFiles.length ? (
+                        <Stack spacing={0.5}>
+                          {uploadedFiles.map((f, fi) => (
+                            <Typography key={`${q.id}-file-${fi}`} variant="body2">
+                              <Box
+                                component="a"
+                                href={schoolPortalMediaUrl(f.url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ color: accent, fontWeight: 600 }}
+                              >
+                                {f.name || `File ${fi + 1}`}
+                              </Box>
+                              {f.size ? (
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                  ({Math.round(Number(f.size) / 1024)} KB)
+                                </Typography>
+                              ) : null}
+                            </Typography>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No file uploaded yet.
+                        </Typography>
+                      )}
+                    </Stack>
                   ) : (
                     <TextField
                       fullWidth
@@ -684,21 +880,31 @@ export default function PortalExamTakePage() {
             );
           })}
         </Stack>
+        ) : null}
 
+        {showPaper ? (
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
           <Button variant="outlined" onClick={() => navigate("/portal/exams")}>
             Back
           </Button>
-          {schedule?.meeting_join_url ? (
+          {requiresRoom && (isLiveKitInvigilation || schedule?.meeting_join_url) ? (
             <Button
               variant={roomConfirmed ? "contained" : "outlined"}
               color={roomConfirmed ? "success" : "primary"}
               onClick={() => {
+                if (isLiveKitInvigilation) {
+                  navigate(`/portal/exam-schedule/${scheduleId}/invigilation`);
+                  return;
+                }
                 setRoomOpen(true);
                 setRoomConfirmed(true);
               }}
             >
-              {roomConfirmed ? "Invigilation room opened" : "Open invigilation room"}
+              {roomConfirmed
+                ? isLiveKitInvigilation
+                  ? "Re-open invigilation room"
+                  : "Invigilation room opened"
+                : "Open invigilation room"}
             </Button>
           ) : null}
           <Button variant="outlined" disabled={saving || autoSubmitting} onClick={() => void saveDraft()}>
@@ -713,8 +919,9 @@ export default function PortalExamTakePage() {
             {submitting || autoSubmitting ? "Submitting..." : "Submit exam"}
           </Button>
         </Stack>
+        ) : null}
       </Box>
-      <Dialog open={roomOpen} onClose={() => setRoomOpen(false)} maxWidth="lg" fullWidth>
+      <Dialog open={roomOpen && !isLiveKitInvigilation} onClose={() => setRoomOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ pr: 5 }}>
           Invigilation room
           <IconButton aria-label="Close" onClick={() => setRoomOpen(false)} sx={{ position: "absolute", right: 8, top: 8 }}>
@@ -737,6 +944,13 @@ export default function PortalExamTakePage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {showPaper && isLiveKitInvigilation && roomConfirmed && scheduleId ? (
+        <ExamInvigilationVideoDock
+          examScheduleId={scheduleId}
+          mediaMode={schedule?.requires_webcam === false ? "optional" : "video"}
+        />
+      ) : null}
     </Box>
   );
 }

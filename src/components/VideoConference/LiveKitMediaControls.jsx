@@ -29,7 +29,7 @@ function deviceErrorMessage(kind, error) {
 }
 
 /** Mic / camera / leave bar below the video area (not inside the LiveKit tile). */
-export default function LiveKitMediaControls({ onRequestLeave }) {
+export default function LiveKitMediaControls({ onRequestLeave, showLeave = true }) {
   const room = useRoomContext();
   const connectionState = useConnectionState(room);
   const mediaReady = connectionState === ConnectionState.Connected;
@@ -75,7 +75,8 @@ export default function LiveKitMediaControls({ onRequestLeave }) {
       camButtonProps={camButtonProps}
       mediaDisabled={!mediaReady || micPending || camPending}
       mediaDisabledReason={!mediaReady ? "Connecting to video…" : undefined}
-      onLeave={handleLeave}
+      onLeave={showLeave ? handleLeave : undefined}
+      showLeave={showLeave}
     />
   );
 }

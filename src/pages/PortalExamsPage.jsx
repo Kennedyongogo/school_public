@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -16,27 +16,46 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import SchoolIcon from "@mui/icons-material/School";
-import ClassIcon from "@mui/icons-material/Class";
 import QuizIcon from "@mui/icons-material/Quiz";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PersonIcon from "@mui/icons-material/Person";
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
+import {
+  clearExamInvigilationPaperAccess,
+  scheduleRequiresInvigilationRoom,
+} from "../utils/examInvigilation";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import CloseIcon from "@mui/icons-material/Close";
 import LinearProgress from "@mui/material/LinearProgress";
 import Divider from "@mui/material/Divider";
 import {
+  fetchPublicCurriculumClassLevels,
   fetchSchoolPortalStudentExamSchedules,
   fetchSchoolPortalStudentProfile,
   fetchSchoolPortalUser,
   fetchSchoolPortalStudentExamResult,
 } from "../api";
 
+const TERM_FILTER_ALL = "all";
+const TERM_FILTER_NONE = "none";
+const TERM_FILTER_SUBMITTED = "submitted";
+
 const accent = "#DC2626";
 const accentLight = "#FEE2E2";
+
+function isExamSubmitted(row) {
+  return Boolean(row?.attendance?.submitted_at) || row?.attendance?.status === "Submitted";
+}
+
+function sortExamsLatestFirst(list) {
+  return [...list].sort((a, b) => {
+    const ta = new Date(a?.start_time || a?.end_time || 0).getTime();
+    const tb = new Date(b?.start_time || b?.end_time || 0).getTime();
+    return tb - ta;
+  });
+}
 
 function formatDateTime(iso) {
   if (!iso) return "—";
@@ -49,12 +68,13 @@ export default function PortalExamsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [student, setStudent] = useState(null);
   const [rows, setRows] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState(null);
   const [result, setResult] = useState(null);
   const [resultLoading, setResultLoading] = useState(false);
+  const [classTerms, setClassTerms] = useState([]);
+  const [selectedTermId, setSelectedTermId] = useState(TERM_FILTER_ALL);
 
   useEffect(() => {
     const load = async () => {
@@ -75,8 +95,20 @@ export default function PortalExamsPage() {
           navigate("/portal", { replace: true });
           return;
         }
-        setStudent(profile);
         setRows(exams);
+
+        const curriculumId = profile?.curriculum_id;
+        const classId = profile?.curriculum_class_id;
+        if (curriculumId && classId) {
+          try {
+            const levels = await fetchPublicCurriculumClassLevels(curriculumId, classId);
+            setClassTerms(Array.isArray(levels) ? levels : []);
+          } catch {
+            setClassTerms([]);
+          }
+        } else {
+          setClassTerms([]);
+        }
       } catch (e) {
         setError(e.message || "Could not load exams.");
       } finally {
@@ -98,12 +130,66 @@ export default function PortalExamsPage() {
     }
   }, [dialogOpen, selectedExam]);
 
-  const classLabel = student?.curriculum_class
-    ? `${student.curriculum_class.name || ""}${student.curriculum_class.code ? ` (${student.curriculum_class.code})` : ""}`.trim()
-    : "—";
-  const curriculumLabel = student?.curriculum
-    ? `${student.curriculum.name || ""}${student.curriculum.type ? ` (${student.curriculum.type})` : ""}`.trim()
-    : "—";
+  const sortedRows = useMemo(() => sortExamsLatestFirst(rows), [rows]);
+
+  const openRows = useMemo(() => sortedRows.filter((r) => !isExamSubmitted(r)), [sortedRows]);
+
+  const submittedRows = useMemo(() => sortedRows.filter(isExamSubmitted), [sortedRows]);
+
+  const termChips = useMemo(() => {
+    const byId = new Map();
+    for (const level of classTerms) {
+      if (level?.id) byId.set(level.id, level);
+    }
+    for (const row of sortedRows) {
+      const t = row?.curriculum_class_level;
+      if (t?.id && !byId.has(t.id)) {
+        byId.set(t.id, { id: t.id, name: t.name || "Term" });
+      }
+    }
+    return [...byId.values()].sort((a, b) => {
+      const ao = a.level_order ?? 999;
+      const bo = b.level_order ?? 999;
+      if (ao !== bo) return ao - bo;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+  }, [classTerms, sortedRows]);
+
+  const examsWithoutTerm = useMemo(
+    () => openRows.filter((r) => !r?.curriculum_class_level?.id).length,
+    [openRows]
+  );
+
+  const countForTerm = (termId) => {
+    if (termId === TERM_FILTER_ALL) return openRows.length;
+    if (termId === TERM_FILTER_NONE) return examsWithoutTerm;
+    return openRows.filter((r) => r?.curriculum_class_level?.id === termId).length;
+  };
+
+  const filteredRows = useMemo(() => {
+    if (selectedTermId === TERM_FILTER_SUBMITTED) return submittedRows;
+    if (selectedTermId === TERM_FILTER_ALL) return openRows;
+    if (selectedTermId === TERM_FILTER_NONE) {
+      return openRows.filter((r) => !r?.curriculum_class_level?.id);
+    }
+    return openRows.filter((r) => r?.curriculum_class_level?.id === selectedTermId);
+  }, [openRows, submittedRows, selectedTermId]);
+
+  const showChipBar =
+    !loading &&
+    !error &&
+    (classTerms.length > 0 || termChips.length > 0 || openRows.length > 0 || submittedRows.length > 0);
+
+  const termChipSx = (active) => ({
+    fontWeight: 700,
+    cursor: "pointer",
+    bgcolor: active ? accent : "transparent",
+    color: active ? "#fff" : "text.primary",
+    borderColor: active ? accent : "#e5e7eb",
+    "&:hover": {
+      bgcolor: active ? "#b91c1c" : accentLight,
+    },
+  });
 
   return (
     <Box
@@ -114,14 +200,45 @@ export default function PortalExamsPage() {
       }}
     >
       <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}>
-        <Card elevation={0} sx={{ border: `1px solid ${accentLight}`, mb: 2 }}>
-          <CardContent>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "flex-start", sm: "center" }}>
-              <Chip icon={<SchoolIcon />} label={`Curriculum: ${curriculumLabel}`} sx={{ fontWeight: 700 }} />
-              <Chip icon={<ClassIcon />} label={`Class: ${classLabel}`} sx={{ fontWeight: 700 }} />
+        {showChipBar ? (
+          <Box sx={{ mb: 2, overflowX: "auto", pb: 0.5 }}>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "nowrap", minWidth: "min-content" }}>
+              {termChips.length > 0 ? (
+                <Chip
+                  label={`All terms (${countForTerm(TERM_FILTER_ALL)})`}
+                  variant={selectedTermId === TERM_FILTER_ALL ? "filled" : "outlined"}
+                  onClick={() => setSelectedTermId(TERM_FILTER_ALL)}
+                  sx={termChipSx(selectedTermId === TERM_FILTER_ALL)}
+                />
+              ) : null}
+              {termChips.map((term) => (
+                <Chip
+                  key={term.id}
+                  label={`${term.name || "Term"} (${countForTerm(term.id)})`}
+                  variant={selectedTermId === term.id ? "filled" : "outlined"}
+                  onClick={() => setSelectedTermId(term.id)}
+                  sx={termChipSx(selectedTermId === term.id)}
+                />
+              ))}
+              {examsWithoutTerm > 0 ? (
+                <Chip
+                  label={`No term (${examsWithoutTerm})`}
+                  variant={selectedTermId === TERM_FILTER_NONE ? "filled" : "outlined"}
+                  onClick={() => setSelectedTermId(TERM_FILTER_NONE)}
+                  sx={termChipSx(selectedTermId === TERM_FILTER_NONE)}
+                />
+              ) : null}
+              {submittedRows.length > 0 ? (
+                <Chip
+                  label={`Submitted (${submittedRows.length})`}
+                  variant={selectedTermId === TERM_FILTER_SUBMITTED ? "filled" : "outlined"}
+                  onClick={() => setSelectedTermId(TERM_FILTER_SUBMITTED)}
+                  sx={termChipSx(selectedTermId === TERM_FILTER_SUBMITTED)}
+                />
+              ) : null}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        ) : null}
 
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
@@ -131,9 +248,19 @@ export default function PortalExamsPage() {
           <Alert severity="error">{error}</Alert>
         ) : rows.length === 0 ? (
           <Alert severity="info">No exam schedules found for your class yet.</Alert>
+        ) : filteredRows.length === 0 ? (
+          <Alert severity="info">
+            {selectedTermId === TERM_FILTER_SUBMITTED
+              ? "No submitted exams yet."
+              : selectedTermId === TERM_FILTER_ALL && submittedRows.length > 0
+              ? "No open exams right now. Select Submitted to view completed exams."
+              : selectedTermId === TERM_FILTER_NONE
+              ? "No open exams without a term."
+              : `No open exams in ${termChips.find((t) => t.id === selectedTermId)?.name || "this term"}. Try another filter above.`}
+          </Alert>
         ) : (
           <Stack spacing={1.5}>
-            {rows.map((row, idx) => (
+            {filteredRows.map((row, idx) => (
               <Card key={row.id || idx} elevation={0} sx={{ border: "1px solid #f1d5d5" }}>
                 <CardContent>
                   {(() => {
@@ -171,6 +298,14 @@ export default function PortalExamsPage() {
                         Exam window elapsed. Opening paper is disabled.
                       </Alert>
                     ) : null}
+                    {row.curriculum_class_level?.name ? (
+                      <Chip
+                        size="small"
+                        label={row.curriculum_class_level.name}
+                        variant="outlined"
+                        sx={{ alignSelf: "flex-start", fontWeight: 600 }}
+                      />
+                    ) : null}
                     <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
                       <Typography variant="body2">
                         <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />
@@ -196,11 +331,28 @@ export default function PortalExamsPage() {
                         variant="contained"
                         size="small"
                         startIcon={<PlayArrowRoundedIcon />}
-                        onClick={() => navigate(`/portal/exams/${encodeURIComponent(row.id)}`)}
+                        onClick={() => {
+                          if (scheduleRequiresInvigilationRoom(row)) {
+                            clearExamInvigilationPaperAccess(row.id);
+                            navigate(`/portal/exam-schedule/${encodeURIComponent(row.id)}/invigilation`, {
+                              state: { freshJoin: true },
+                            });
+                            return;
+                          }
+                          navigate(`/portal/exams/${encodeURIComponent(row.id)}`);
+                        }}
                         disabled={!canOpen}
                         sx={{ bgcolor: accent, "&:hover": { bgcolor: "#b91c1c" } }}
                       >
-                        {alreadySubmitted ? "Already submitted" : disqualified ? "Exam closed" : elapsed ? "Window elapsed" : "Open exam paper"}
+                        {alreadySubmitted
+                          ? "Already submitted"
+                          : disqualified
+                          ? "Exam closed"
+                          : elapsed
+                          ? "Window elapsed"
+                          : scheduleRequiresInvigilationRoom(row)
+                          ? "Join invigilation room"
+                          : "Open exam paper"}
                       </Button>
                        <Tooltip title="View Result">
                          <IconButton

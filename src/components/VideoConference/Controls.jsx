@@ -13,6 +13,7 @@ export default function Controls({
   onToggleMic,
   onToggleCam,
   onLeave,
+  showLeave = true,
   micButtonProps,
   camButtonProps,
   mediaDisabled = false,
@@ -87,9 +88,11 @@ export default function Controls({
       >
         {camOn ? "Camera off" : "Camera on"}
       </Button>
-      <Button variant="contained" color="error" onClick={onLeave} startIcon={<CallEndRoundedIcon />} size="small">
-        Leave
-      </Button>
+      {showLeave && onLeave ? (
+        <Button variant="contained" color="error" onClick={onLeave} startIcon={<CallEndRoundedIcon />} size="small">
+          Leave
+        </Button>
+      ) : null}
     </Stack>
   );
 }
