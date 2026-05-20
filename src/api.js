@@ -304,7 +304,7 @@ export async function fetchSchoolPortalMyExamSubmission(examId) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || "Could not load exam paper.");
-  return data.data;
+  return { submission: data.data, access: data.access || null };
 }
 
 /** Upload one file for a file_upload exam question (student JWT). */
@@ -352,8 +352,9 @@ export async function submitSchoolPortalExam(submissionId, payload = null) {
 
 export async function fetchSchoolPortalMyExamAttemptsForSchedule(examScheduleId) {
   const base = getBaseUrl();
+  const examId = examScheduleId;
   const res = await fetch(
-    `${base}/api/exam-attempts?exam_schedule_id=${encodeURIComponent(examScheduleId)}`,
+    `${base}/api/exam-attempts?exam_id=${encodeURIComponent(examId)}`,
     {
       headers: getMarketplaceAuthHeaders(),
     }

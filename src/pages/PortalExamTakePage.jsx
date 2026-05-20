@@ -73,6 +73,9 @@ const htmlAcceptFromMimeList = (acceptList) => {
 
 import {
   scheduleRequiresInvigilationRoom,
+  scheduleUsesLiveKit,
+  isLiveInvigilationMode,
+  isActivityMonitorMode,
   hasExamInvigilationPaperAccess,
   clearExamInvigilationPaperAccess,
 } from "../utils/examInvigilation";
@@ -143,13 +146,9 @@ export default function PortalExamTakePage() {
   const rules = useMemo(() => {
     const cfg = schedule?.proctoring_rules_json && typeof schedule.proctoring_rules_json === "object" ? schedule.proctoring_rules_json : {};
     const strictMode = schedule?.proctoring_mode === "strict_auto";
-    // Effective rules come from schedule override first, then exam defaults, then strict mode fallback.
-    const requiresWebcam =
-      schedule?.effective_requires_webcam === true ||
-      (schedule?.effective_requires_webcam == null && strictMode);
-    const preventTabSwitch =
-      schedule?.effective_prevent_tab_switch === true ||
-      (schedule?.effective_prevent_tab_switch == null && strictMode);
+    const liveInvigilation = isLiveInvigilationMode(schedule);
+    const requiresWebcam = liveInvigilation || schedule?.effective_requires_webcam === true;
+    const preventTabSwitch = schedule?.effective_prevent_tab_switch === true;
     const tabSwitchLimit =
       Number.isFinite(Number(cfg.tabSwitchLimit)) && Number(cfg.tabSwitchLimit) >= 0
         ? Number(cfg.tabSwitchLimit)
@@ -162,15 +161,10 @@ export default function PortalExamTakePage() {
       schedule?.exam_access_policy === "paper_plus_room_required"
         ? "paper_plus_room_required"
         : "paper_only";
-    return { requiresWebcam, preventTabSwitch, tabSwitchLimit, warningLimit, examAccessPolicy, strictMode };
+    return { requiresWebcam, preventTabSwitch, tabSwitchLimit, warningLimit, examAccessPolicy, strictMode, liveInvigilation };
   }, [schedule]);
 
-  const isLiveKitInvigilation = useMemo(
-    () =>
-      schedule?.video_mode === "livekit" ||
-      String(schedule?.meeting_provider || "").toLowerCase() === "livekit",
-    [schedule?.video_mode, schedule?.meeting_provider]
-  );
+  const isLiveKitInvigilation = useMemo(() => scheduleUsesLiveKit(schedule), [schedule]);
 
   const requiresRoom = useMemo(() => scheduleRequiresInvigilationRoom(schedule), [schedule]);
 
@@ -228,26 +222,39 @@ export default function PortalExamTakePage() {
           await createSchoolPortalExamSubmission(sc.exam.id);
         } catch (submissionErr) {
           const msg = String(submissionErr?.message || "");
-          if (/already submitted|max attempts/i.test(msg)) {
-            throw new Error("You already submitted this exam. Re-opening is disabled.");
+          if (/time has ended|duration_elapsed|already submitted|max attempts/i.test(msg)) {
+            navigate("/portal/exams", {
+              replace: true,
+              state: {
+                examMessage:
+                  /time has ended|duration_elapsed/i.test(msg)
+                    ? "Your exam time has ended. Your saved answers were submitted automatically."
+                    : "You already submitted this exam.",
+              },
+            });
+            return;
           }
           throw submissionErr;
         }
-        const sub = await fetchSchoolPortalMyExamSubmission(sc.exam.id);
+        const { submission: sub, access: subAccess } = await fetchSchoolPortalMyExamSubmission(sc.exam.id);
         if (!sub) throw new Error("Could not load your submission.");
-        if (sub.status === "submitted") {
-          throw new Error("You already submitted this exam. Re-opening is disabled.");
-        }
-        if (sub.started_at && sub.exam?.duration_minutes) {
-          const started = new Date(sub.started_at).getTime();
-          const ends = started + Number(sub.exam.duration_minutes) * 60 * 1000;
-          if (Date.now() > ends) throw new Error("Exam duration already elapsed for this attempt.");
+        if (sub.status === "submitted" || subAccess?.duration_elapsed) {
+          navigate("/portal/exams", {
+            replace: true,
+            state: {
+              examMessage:
+                "Your exam time has ended. Your saved answers were submitted automatically.",
+            },
+          });
+          return;
         }
         setSubmission(sub);
         setExam(sub.exam || null);
         try {
-          const attempts = await fetchSchoolPortalMyExamAttemptsForSchedule(sc.id);
-          const latest = Array.isArray(attempts) ? attempts[0] : null;
+          const attempts = await fetchSchoolPortalMyExamAttemptsForSchedule(sc.exam?.id || sc.id);
+          const latest = Array.isArray(attempts)
+            ? attempts.find((a) => String(a.exam_id) === String(sc.exam?.id)) || attempts[0]
+            : null;
           if (latest?.id) {
             setExamAttemptId(latest.id);
             if (Number.isFinite(Number(latest.tab_switch_count))) setTabSwitchCount(Number(latest.tab_switch_count));
@@ -376,6 +383,15 @@ export default function PortalExamTakePage() {
     return () => clearTimeout(timeout);
   }, [examAttemptId, webcamReady, tabSwitchCount, warningCount]);
 
+  useEffect(() => {
+    if (!examAttemptId || !submission || submission.status === "submitted" || !schedule) return undefined;
+    if (!isActivityMonitorMode(schedule)) return undefined;
+    const tick = window.setInterval(() => {
+      void logSessionEvent("session_presence", { active: true });
+    }, 45000);
+    return () => window.clearInterval(tick);
+  }, [examAttemptId, submission?.status, schedule?.proctoring_mode]);
+
   const upsertAnswer = (questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
@@ -462,7 +478,10 @@ export default function PortalExamTakePage() {
     else setSubmitting(true);
     setError("");
     try {
-      await saveDraft({ throwOnError: true });
+      const saved = await saveDraft({ throwOnError: reason === "manual_submit" });
+      if (!saved && reason !== "manual_submit") {
+        await saveDraft({ throwOnError: false });
+      }
       await submitSchoolPortalExam(submission.id, { submit_reason: reason });
       let attemptId = examAttemptId;
       if (!attemptId && schedule?.exam?.id && schedule?.id && submission?.student_id) {
@@ -499,14 +518,24 @@ export default function PortalExamTakePage() {
           client_presence_active: false,
         }).catch(() => {});
       }
+      const timeAuto = reason === "auto_submit_time_elapsed";
       await Swal.fire({
         icon: "success",
-        title: "Exam submitted",
-        text: reason === "manual_submit" ? "Your answers were submitted successfully." : "Your exam has been submitted.",
-        timer: 1400,
+        title: timeAuto ? "Time ended" : "Exam submitted",
+        text: timeAuto
+          ? "Your saved answers were submitted automatically."
+          : reason === "manual_submit"
+          ? "Your answers were submitted successfully."
+          : "Your exam has been submitted.",
+        timer: 1600,
         showConfirmButton: false,
       });
-      navigate("/portal/exams", { replace: true });
+      navigate("/portal/exams", {
+        replace: true,
+        state: timeAuto
+          ? { examMessage: "Your exam time has ended. Your saved answers were submitted automatically." }
+          : undefined,
+      });
     } catch (e) {
       setError(e.message || "Could not submit exam.");
     } finally {

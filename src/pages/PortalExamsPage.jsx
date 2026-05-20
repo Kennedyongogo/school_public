@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -24,6 +24,7 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import {
   clearExamInvigilationPaperAccess,
   scheduleRequiresInvigilationRoom,
+  isLiveInvigilationMode,
 } from "../utils/examInvigilation";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
@@ -64,8 +65,21 @@ function formatDateTime(iso) {
   return d.toLocaleString();
 }
 
+function openButtonLabel(row, { alreadySubmitted, durationEnded, scheduleElapsed, disqualified, canOpen }) {
+  if (alreadySubmitted) return "Already submitted";
+  if (durationEnded) return "Time ended — submitted";
+  if (disqualified) return "Exam closed";
+  if (scheduleElapsed) return "Window elapsed";
+  if (!canOpen) return "Cannot open";
+  if (isLiveInvigilationMode(row)) return "Join invigilation room";
+  if (row.proctoring_mode === "strict_auto") return "Open strict exam";
+  return "Open exam";
+}
+
 export default function PortalExamsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const flashMessage = location.state?.examMessage || "";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
@@ -260,19 +274,36 @@ export default function PortalExamsPage() {
           </Alert>
         ) : (
           <Stack spacing={1.5}>
+            {flashMessage ? (
+              <Alert severity="success" onClose={() => navigate(location.pathname, { replace: true, state: {} })}>
+                {flashMessage}
+              </Alert>
+            ) : null}
             {filteredRows.map((row, idx) => (
               <Card key={row.id || idx} elevation={0} sx={{ border: "1px solid #f1d5d5" }}>
                 <CardContent>
                   {(() => {
-                    const alreadySubmitted = Boolean(row?.attendance?.submitted_at);
+                    const alreadySubmitted =
+                      row?.submission_status === "submitted" ||
+                      Boolean(row?.attendance?.submitted_at);
                     const disqualified = Boolean(row?.attendance?.is_cancelled);
-                    const endAtMs = row?.end_time ? new Date(row.end_time).getTime() : null;
-                    const elapsed = Number.isFinite(endAtMs) ? Date.now() > endAtMs : false;
+                    const scheduleElapsed =
+                      row?.schedule_window_elapsed === true ||
+                      (row?.end_time ? Date.now() > new Date(row.end_time).getTime() : false);
+                    const durationEnded =
+                      row?.open_block_reason === "duration_elapsed" ||
+                      (row?.duration_elapsed === true && !alreadySubmitted);
+                    const sessionOpen = ["scheduled", "live"].includes(
+                      String(row?.session_status || row?.status || "").toLowerCase()
+                    );
                     const canOpen =
-                      !alreadySubmitted &&
-                      !disqualified &&
-                      !elapsed &&
-                      ["scheduled", "live"].includes(String(row?.status || "").toLowerCase());
+                      typeof row?.can_open === "boolean"
+                        ? row.can_open
+                        : !alreadySubmitted &&
+                          !disqualified &&
+                          !scheduleElapsed &&
+                          !durationEnded &&
+                          sessionOpen;
                     return (
                   <Stack spacing={1}>
                     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
@@ -293,10 +324,23 @@ export default function PortalExamsPage() {
                         Exam closed: {row?.attendance?.cancellation_reason || "Proctoring violation detected."}
                       </Alert>
                     ) : null}
-                    {elapsed ? (
+                    {scheduleElapsed ? (
                       <Alert severity="warning" sx={{ py: 0 }}>
-                        Exam window elapsed. Opening paper is disabled.
+                        The scheduled exam window has ended. You can no longer open this paper.
                       </Alert>
+                    ) : null}
+                    {durationEnded || row?.open_block_reason === "duration_elapsed" ? (
+                      <Alert severity="info" sx={{ py: 0 }}>
+                        Your exam time has ended. Any answers you saved were submitted automatically.
+                      </Alert>
+                    ) : null}
+                    {!alreadySubmitted && row?.duration_minutes && row?.remaining_seconds != null ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Time allowed: {row.duration_minutes} min
+                        {row.remaining_seconds > 0
+                          ? ` · About ${Math.ceil(row.remaining_seconds / 60)} min left on your attempt`
+                          : ""}
+                      </Typography>
                     ) : null}
                     {row.curriculum_class_level?.name ? (
                       <Chip
@@ -318,7 +362,14 @@ export default function PortalExamsPage() {
                     </Stack>
                     <Typography variant="body2" color="text.secondary">
                       <QuizIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />
-                      Monitoring: {row.proctoring_mode || "none"}
+                      Monitoring:{" "}
+                      {row.proctoring_mode === "live_monitor"
+                        ? "Live invigilation"
+                        : row.proctoring_mode === "strict_auto"
+                          ? "Strict online"
+                          : row.proctoring_mode === "record_only"
+                            ? "Monitored online"
+                            : "Monitored online"}
                     </Typography>
                     {row.meeting_join_url ? (
                       <Typography variant="body2" color="text.secondary">
@@ -344,15 +395,13 @@ export default function PortalExamsPage() {
                         disabled={!canOpen}
                         sx={{ bgcolor: accent, "&:hover": { bgcolor: "#b91c1c" } }}
                       >
-                        {alreadySubmitted
-                          ? "Already submitted"
-                          : disqualified
-                          ? "Exam closed"
-                          : elapsed
-                          ? "Window elapsed"
-                          : scheduleRequiresInvigilationRoom(row)
-                          ? "Join invigilation room"
-                          : "Open exam paper"}
+                        {openButtonLabel(row, {
+                          alreadySubmitted,
+                          durationEnded,
+                          scheduleElapsed,
+                          disqualified,
+                          canOpen,
+                        })}
                       </Button>
                        <Tooltip title="View Result">
                          <IconButton

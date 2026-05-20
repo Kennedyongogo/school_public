@@ -1,12 +1,27 @@
-/** Student must use invigilation room (wait for admit + camera) before the exam paper. */
+/** Align with school_api/src/utils/examProctoring.js — live video only for live_monitor. */
+
+export function isLiveInvigilationMode(schedule) {
+  return String(schedule?.proctoring_mode || "").trim() === "live_monitor";
+}
+
+export function isActivityMonitorMode(schedule) {
+  const m = String(schedule?.proctoring_mode || "").trim();
+  return m === "record_only" || m === "strict_auto";
+}
+
+/** Student must use invigilation lobby/room before the exam paper (live invigilation only). */
 export function scheduleRequiresInvigilationRoom(schedule) {
   if (!schedule) return false;
+  if (isLiveInvigilationMode(schedule)) return true;
   if (schedule.exam_access_policy === "paper_plus_room_required") return true;
-  if (schedule.proctoring_mode === "live_monitor" || schedule.proctoring_mode === "strict_auto") return true;
-  const provider = String(schedule.meeting_provider || "").toLowerCase();
-  if (schedule.video_mode === "livekit" || provider === "livekit") return true;
-  if (schedule.meeting_id || schedule.meeting_join_url) return true;
   return false;
+}
+
+/** LiveKit video room — only when exam is live invigilation and platform is LiveKit. */
+export function scheduleUsesLiveKit(schedule) {
+  if (!schedule || !isLiveInvigilationMode(schedule)) return false;
+  const provider = String(schedule.meeting_provider || "").toLowerCase();
+  return schedule.video_mode === "livekit" || provider === "livekit";
 }
 
 export function examInvigilationSessionKey(scheduleId) {
