@@ -548,19 +548,50 @@ export default function PortalExamTakePage() {
     if (!schedule || !submission || submission.status === "submitted") return undefined;
     const onVisibility = () => {
       if (document.visibilityState !== "hidden") return;
-      if (!rules.preventTabSwitch) return;
-      setTabSwitchCount((prev) => prev + 1);
-      setWarningCount((prev) => prev + 1);
-      void logSessionEvent("violation_detected", { type: "tab_switch" });
-      void logSessionEvent("warning_issued", { reason: "tab_switch" });
-      if (rules.strictMode && Number(rules.tabSwitchLimit) <= 0) {
-        setExamLocked(true);
-        setLockReason("Exam closed due to tab switch policy breach.");
+      if (requiresRoom && !roomConfirmed) return;
+      const trackTabSwitch = isActivityMonitorMode(schedule) || rules.preventTabSwitch;
+      if (!trackTabSwitch) return;
+
+      const enforcePolicy = rules.preventTabSwitch;
+
+      setTabSwitchCount((prev) => {
+        const next = prev + 1;
+        if (examAttemptId) {
+          void updateSchoolPortalExamAttempt(examAttemptId, {
+            tab_switch_count: next,
+            last_activity_at: new Date().toISOString(),
+            client_presence_active: true,
+          }).catch(() => {});
+        }
+        void logSessionEvent("violation_detected", {
+          type: "tab_switch",
+          proctoring_mode: schedule?.proctoring_mode || "record_only",
+          enforced: enforcePolicy,
+        });
+        return next;
+      });
+
+      if (enforcePolicy) {
+        setWarningCount((prev) => prev + 1);
+        void logSessionEvent("warning_issued", { reason: "tab_switch" });
+        if (rules.strictMode && Number(rules.tabSwitchLimit) <= 0) {
+          setExamLocked(true);
+          setLockReason("Exam closed due to tab switch policy breach.");
+        }
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [schedule, submission, rules.preventTabSwitch, rules.strictMode, rules.tabSwitchLimit]);
+  }, [
+    schedule,
+    submission,
+    rules.preventTabSwitch,
+    rules.strictMode,
+    rules.tabSwitchLimit,
+    requiresRoom,
+    roomConfirmed,
+    examAttemptId,
+  ]);
 
   useEffect(() => {
     if (!examLocked || !examAttemptId) return;
@@ -655,7 +686,18 @@ export default function PortalExamTakePage() {
               </Box>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip label={`Duration: ${exam?.duration_minutes || 0} min`} size="small" />
-                <Chip label={`Tab switches: ${tabSwitchCount}`} size="small" color={tabSwitchCount > 0 ? "warning" : "default"} />
+                {isActivityMonitorMode(schedule) || rules.preventTabSwitch ? (
+                  <Chip
+                    label={`Tab switches: ${tabSwitchCount}`}
+                    size="small"
+                    color={tabSwitchCount > 0 ? "warning" : "default"}
+                    title={
+                      rules.preventTabSwitch
+                        ? "Tab switches are enforced"
+                        : "Recorded for your teacher (allowed in monitored mode)"
+                    }
+                  />
+                ) : null}
                 {rules.requiresWebcam ? (
                   <Chip label={webcamReady ? "Webcam: On" : "Webcam: Required"} size="small" color={webcamReady ? "success" : "error"} />
                 ) : null}
@@ -684,9 +726,14 @@ export default function PortalExamTakePage() {
               : "This exam requires invigilation room first. Open it below to continue."}
           </Alert>
         ) : null}
+        {isActivityMonitorMode(schedule) && !rules.preventTabSwitch ? (
+          <Alert severity="info" sx={{ mb: 1.5 }}>
+            Monitored exam: leaving this tab is recorded for your teacher but does not close your exam.
+          </Alert>
+        ) : null}
         {rules.preventTabSwitch && Number.isFinite(rules.tabSwitchLimit) ? (
           <Alert severity="info" sx={{ mb: 1.5 }}>
-            Proctoring active: tab switch limit is {rules.tabSwitchLimit}. Current switches: {tabSwitchCount}.
+            Strict exam: tab switch limit is {rules.tabSwitchLimit}. Current switches: {tabSwitchCount}.
           </Alert>
         ) : null}
         {rules.strictMode && rules.preventTabSwitch && Number(rules.tabSwitchLimit) <= 0 ? (
@@ -936,9 +983,6 @@ export default function PortalExamTakePage() {
                 : "Open invigilation room"}
             </Button>
           ) : null}
-          <Button variant="outlined" disabled={saving || autoSubmitting} onClick={() => void saveDraft()}>
-            {saving ? "Saving..." : "Save draft"}
-          </Button>
           <Button
             variant="contained"
             onClick={() => void submitNow("manual_submit")}
