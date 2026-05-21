@@ -17,11 +17,17 @@ export function scheduleRequiresInvigilationRoom(schedule) {
   return false;
 }
 
-/** LiveKit video room — only when exam is live invigilation and platform is LiveKit. */
+/** LiveKit in-app video for live invigilation exams. */
 export function scheduleUsesLiveKit(schedule) {
   if (!schedule || !isLiveInvigilationMode(schedule)) return false;
-  const provider = String(schedule.meeting_provider || "").toLowerCase();
+  const provider = String(schedule.meeting_provider || schedule.platform || "").toLowerCase();
   return schedule.video_mode === "livekit" || provider === "livekit";
+}
+
+export function scheduleUsesGoogleMeet(schedule) {
+  if (!schedule || !isLiveInvigilationMode(schedule)) return false;
+  const provider = String(schedule.meeting_provider || schedule.platform || "").toLowerCase().replace(/-/g, "_");
+  return schedule.video_mode === "google_meet" || provider === "google_meet" || provider === "googlemeet";
 }
 
 export function examInvigilationSessionKey(scheduleId) {

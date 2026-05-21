@@ -82,7 +82,6 @@ export default function PortalExamInvigilationPage() {
         setRoom(roomData);
         if (roomData?.proctoring_mode && !isLiveInvigilationMode(roomData)) {
           navigate(`/portal/exams/${scheduleId}`, { replace: true });
-          return;
         }
       } catch (e) {
         if (!cancelled) setError(e.message || "Could not open invigilation room.");
@@ -152,7 +151,7 @@ export default function PortalExamInvigilationPage() {
         </Alert>
       ) : !room?.meeting_id && isLiveKit ? (
         <Alert severity="warning" sx={{ m: 2 }}>
-          Invigilation video is not set up yet. Ask your teacher to open the exam room from the timetable first.
+          Invigilation video is not set up yet. Ask your teacher to open the exam room first.
         </Alert>
       ) : admitted ? (
         <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
@@ -191,16 +190,9 @@ export default function PortalExamInvigilationPage() {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  You were admitted. Turn on your camera above, then open the exam paper when ready — the camera stays in the
-                  corner while you answer.
+                  You were admitted. Turn on your camera above, then open the exam paper when ready.
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={goToExamPaper}
-                  disabled={!admitted}
-                  sx={{ fontWeight: 800, flexShrink: 0 }}
-                >
+                <Button variant="contained" color="primary" onClick={goToExamPaper} disabled={!admitted}>
                   Continue to exam paper
                 </Button>
               </Box>
@@ -228,4 +220,3 @@ export default function PortalExamInvigilationPage() {
     </Box>
   );
 }
-

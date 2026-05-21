@@ -16,12 +16,12 @@ import { LiveKitRoom } from "@livekit/components-react";
 import LiveKitVideoRoom from "./LiveKitVideoRoom";
 import LiveKitMediaControls from "./LiveKitMediaControls";
 import { fetchSchoolPortalExamScheduleLiveKitToken } from "../../api";
+import { resolveLiveKitJoinMedia } from "../../utils/liveKitJoinMedia";
 import "@livekit/components-styles";
 
 /** Floating invigilation camera (bottom-right) while answering the exam. */
 export default function ExamInvigilationVideoDock({ examScheduleId, mediaMode = "video" }) {
-  const joinMedia =
-    mediaMode === "video" ? { audio: true, video: true } : { audio: true, video: false };
+  const joinMedia = resolveLiveKitJoinMedia(mediaMode);
   const [expanded, setExpanded] = useState(true);
   const [lkToken, setLkToken] = useState(null);
   const [serverUrl, setServerUrl] = useState("");

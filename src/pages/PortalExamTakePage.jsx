@@ -1021,7 +1021,7 @@ export default function PortalExamTakePage() {
       {showPaper && isLiveKitInvigilation && roomConfirmed && scheduleId ? (
         <ExamInvigilationVideoDock
           examScheduleId={scheduleId}
-          mediaMode={schedule?.requires_webcam === false ? "optional" : "video"}
+          meetJoinUrl={schedule?.meet_join_url || schedule?.meeting_join_url}
         />
       ) : null}
     </Box>

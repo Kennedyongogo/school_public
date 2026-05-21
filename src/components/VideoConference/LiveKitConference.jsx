@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { LiveKitRoom, useConnectionState, useRoomContext } from "@livekit/components-react";
+import { LiveKitRoom, useConnectionState } from "@livekit/components-react";
 import { ConnectionState } from "livekit-client";
 import LiveKitVideoRoom from "./LiveKitVideoRoom";
 import "@livekit/components-styles";
@@ -17,13 +18,29 @@ import { fetchSchoolPortalExamScheduleLiveKitToken, fetchSchoolPortalLiveKitToke
 import LiveClassHostLayout from "./LiveClassHostLayout";
 import LiveKitMediaControls from "./LiveKitMediaControls";
 import Controls from "./Controls";
+import { resolveLiveKitJoinMediaForRole } from "../../utils/liveKitJoinMedia";
+import { reportLiveKitConnectionError } from "../../utils/reportLiveKitConnectionError";
+import {
+  LIVEKIT_MAX_CONNECT_ATTEMPTS,
+  useGatedLiveKitConnection,
+} from "../../hooks/useGatedLiveKitConnection";
+import {
+  isLiveKitMediaError,
+  isLiveKitNetworkTimeoutError,
+  isLiveKitRateLimitError,
+  isLiveKitTeardownError,
+  isTransientLiveKitSignalError,
+  LIVEKIT_SLOW_NETWORK_HINT,
+} from "../../utils/liveKitRoomErrors";
 
-function LiveKitConnectionTracker({ wasConnectedRef }) {
-  const room = useRoomContext();
-  const state = useConnectionState(room);
+function LiveKitConnectionTracker({ wasConnectedRef, onConnected }) {
+  const state = useConnectionState();
   useEffect(() => {
-    if (state === ConnectionState.Connected) wasConnectedRef.current = true;
-  }, [state, wasConnectedRef]);
+    if (state === ConnectionState.Connected) {
+      wasConnectedRef.current = true;
+      onConnected?.();
+    }
+  }, [state, wasConnectedRef, onConnected]);
   return null;
 }
 
@@ -39,34 +56,61 @@ export default function LiveKitConference({
   mediaMode = "optional",
 }) {
   const videoContextId = examScheduleId || liveClassId;
-  const joinMedia =
-    mediaMode === "video" ? { audio: true, video: true } : mediaMode === "audio" ? { audio: true, video: false } : { audio: false, video: false };
+  const isTeacher = role === "teacher";
+  const joinMedia = resolveLiveKitJoinMediaForRole(mediaMode, { isHost: isTeacher });
+  const {
+    room,
+    connectAttempt,
+    connectEnabled,
+    connectOptions,
+    prepareAndEnableConnect,
+    disableConnect,
+    onConnectionSuccess,
+    onConnectionFailure,
+    retryConnect,
+    resetSession,
+    canRetryNow,
+    msUntilRetry,
+    attemptsExhausted,
+  } = useGatedLiveKitConnection();
   const [lkToken, setLkToken] = useState(liveKitCredentials?.token ?? null);
   const [serverUrl, setServerUrl] = useState(liveKitCredentials?.url ?? "");
   const [loading, setLoading] = useState(!liveKitCredentials?.token);
-  const [error, setError] = useState("");
+  const [fatalError, setFatalError] = useState("");
+  const [connectionError, setConnectionError] = useState("");
+  const [retryWaitLabel, setRetryWaitLabel] = useState("");
   const [mobilePanel, setMobilePanel] = useState("video");
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down("md"));
-  const isTeacher = role === "teacher";
 
   const { socket, connected } = useSocket(token);
   const intentionalLeaveRef = useRef(false);
   const wasConnectedRef = useRef(false);
+  const reportedErrorRef = useRef("");
+
+  useEffect(() => {
+    resetSession();
+    wasConnectedRef.current = false;
+    intentionalLeaveRef.current = false;
+    reportedErrorRef.current = "";
+    setConnectionError("");
+  }, [videoContextId, resetSession]);
 
   useEffect(() => {
     if (liveKitCredentials?.token && liveKitCredentials?.url) {
       setLkToken(liveKitCredentials.token);
       setServerUrl(liveKitCredentials.url);
       setLoading(false);
-      setError("");
+      setFatalError("");
+      setConnectionError("");
       return undefined;
     }
     if (!token || !videoContextId) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
-      setError("");
+      setFatalError("");
+      setConnectionError("");
       try {
         const data = examScheduleId
           ? await fetchSchoolPortalExamScheduleLiveKitToken(examScheduleId)
@@ -75,7 +119,7 @@ export default function LiveKitConference({
         setLkToken(data.token);
         setServerUrl(data.url);
       } catch (e) {
-        if (!cancelled) setError(e.message || "Could not join LiveKit room.");
+        if (!cancelled) setFatalError(e.message || "Could not join LiveKit room.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -86,9 +130,31 @@ export default function LiveKitConference({
   }, [token, liveClassId, examScheduleId, videoContextId, liveKitCredentials?.token, liveKitCredentials?.url]);
 
   useEffect(() => {
-    wasConnectedRef.current = false;
-    intentionalLeaveRef.current = false;
-  }, [videoContextId, lkToken]);
+    if (!lkToken || !serverUrl || !room) return undefined;
+    let active = true;
+    (async () => {
+      if (!active) return;
+      await prepareAndEnableConnect(serverUrl, lkToken);
+    })();
+    return () => {
+      active = false;
+      disableConnect();
+    };
+  }, [lkToken, serverUrl, room, connectAttempt, prepareAndEnableConnect, disableConnect]);
+
+  useEffect(() => {
+    if (!connectionError) {
+      setRetryWaitLabel("");
+      return undefined;
+    }
+    const tick = () => {
+      const wait = msUntilRetry();
+      setRetryWaitLabel(wait > 0 ? `Wait ${Math.ceil(wait / 1000)}s before retry` : "");
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [connectionError, msUntilRetry]);
 
   useEffect(() => {
     if (!socket || !videoContextId) return undefined;
@@ -105,39 +171,99 @@ export default function LiveKitConference({
     };
   }, [socket, liveClassId, examScheduleId, videoContextId]);
 
-  const handleRequestLeave = useCallback(() => {
+  const finishLeave = useCallback(() => {
     intentionalLeaveRef.current = true;
-  }, []);
+    disableConnect();
+    try {
+      if (room && room.state !== ConnectionState.Disconnected) {
+        room.disconnect(true);
+      }
+    } catch (_) {
+      /* already disconnected */
+    }
+    if (socket?.connected && videoContextId) {
+      if (examScheduleId) socket.emit("leave:exam-schedule", examScheduleId);
+      else if (liveClassId) socket.emit("leave:live-class", liveClassId);
+    }
+    onLeave?.();
+  }, [disableConnect, room, socket, examScheduleId, liveClassId, videoContextId, onLeave]);
 
   const handleDisconnected = useCallback(() => {
-    if (!intentionalLeaveRef.current) {
-      if (!wasConnectedRef.current) {
-        console.warn("LiveKit disconnected before session was established (ignored).");
-      } else {
-        console.warn("LiveKit disconnected unexpectedly.");
-      }
+    if (intentionalLeaveRef.current) {
+      intentionalLeaveRef.current = false;
       return;
     }
-    intentionalLeaveRef.current = false;
-    onLeave?.();
-  }, [onLeave]);
+    if (!wasConnectedRef.current) {
+      console.warn("LiveKit disconnected before session was established (ignored).");
+    } else {
+      console.warn("LiveKit disconnected unexpectedly.");
+    }
+  }, []);
 
   const handleMediaDeviceFailure = useCallback((failure, kind) => {
     console.warn("LiveKit media device:", failure, kind);
   }, []);
 
-  const handleRoomError = useCallback((err) => {
-    const msg = err?.message || "";
-    if (/device|permission|not found|in use/i.test(msg)) {
-      console.warn("LiveKit media (non-fatal):", msg);
-      return;
-    }
-    if (/client initiated|cancelled|canceled|abort/i.test(msg)) {
-      console.warn("LiveKit connection ended:", msg);
-      return;
-    }
-    setError(msg || "LiveKit connection error.");
-  }, []);
+  const handleRoomError = useCallback(
+    (err) => {
+      const msg = err?.message || "";
+      if (isLiveKitMediaError(msg)) {
+        console.warn("LiveKit media (non-fatal):", msg);
+        return;
+      }
+      if (isLiveKitTeardownError(msg)) {
+        return;
+      }
+      if (isTransientLiveKitSignalError(msg, wasConnectedRef.current)) {
+        console.warn("LiveKit signal (transient):", msg);
+        return;
+      }
+
+      disableConnect();
+      const failureKind = onConnectionFailure(msg);
+
+      if (failureKind === "rate_limit") {
+        setConnectionError(
+          "LiveKit rate limit (HTTP 429): too many connection attempts. Wait about 2 minutes, then click Retry once."
+        );
+      } else if (failureKind === "exhausted") {
+        setConnectionError(
+          `Could not connect after ${LIVEKIT_MAX_CONNECT_ATTEMPTS} attempts. Reload the page or wait before Retry.`
+        );
+      } else {
+        const base = msg || "LiveKit connection error.";
+        setConnectionError(
+          isLiveKitNetworkTimeoutError(msg) ? `${base} ${LIVEKIT_SLOW_NETWORK_HINT}` : base
+        );
+      }
+
+      if (reportedErrorRef.current !== msg) {
+        reportedErrorRef.current = msg;
+        reportLiveKitConnectionError({
+          token,
+          message: msg,
+          name: err?.name,
+          context: examScheduleId ? "exam" : "live-class",
+          contextId: videoContextId,
+          serverUrl,
+        });
+      }
+    },
+    [token, examScheduleId, videoContextId, serverUrl, disableConnect, onConnectionFailure]
+  );
+
+  const handleConnected = useCallback(() => {
+    setConnectionError("");
+    reportedErrorRef.current = "";
+    onConnectionSuccess();
+  }, [onConnectionSuccess]);
+
+  const handleRetry = useCallback(() => {
+    if (!canRetryNow()) return;
+    reportedErrorRef.current = "";
+    setConnectionError("");
+    retryConnect();
+  }, [canRetryNow, retryConnect]);
 
   const header = useMemo(
     () => (
@@ -181,12 +307,12 @@ export default function LiveKitConference({
     );
   }
 
-  if (error || !lkToken || !serverUrl) {
+  if (fatalError || !lkToken || !serverUrl) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "#0b1220" }}>
         {header}
         <Alert severity="error" sx={{ m: 2 }}>
-          {error || "LiveKit is not available for this session."}
+          {fatalError || "LiveKit is not available for this session."}
         </Alert>
         <Box sx={{ px: 2, pb: 2 }}>
           <Controls
@@ -209,19 +335,45 @@ export default function LiveKitConference({
       {header}
 
       <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {connectionError ? (
+          <Alert
+            severity={isLiveKitRateLimitError(connectionError) ? "error" : "warning"}
+            sx={{ mx: 1, mt: 1, flexShrink: 0 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                disabled={!canRetryNow() || attemptsExhausted}
+                onClick={handleRetry}
+              >
+                Retry
+              </Button>
+            }
+          >
+            {connectionError}
+            {retryWaitLabel ? (
+              <Box component="span" sx={{ display: "block", typography: "caption", mt: 0.5 }}>
+                {retryWaitLabel}
+              </Box>
+            ) : null}
+          </Alert>
+        ) : null}
         <LiveKitRoom
+          key={`portal-lk-${videoContextId}-${connectAttempt}`}
+          room={room}
           video={joinMedia.video}
           audio={joinMedia.audio}
           token={lkToken}
           serverUrl={serverUrl}
-          connect
+          connect={connectEnabled}
+          connectOptions={connectOptions}
           onDisconnected={handleDisconnected}
           onMediaDeviceFailure={handleMediaDeviceFailure}
           onError={handleRoomError}
           data-lk-theme="default"
           style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
         >
-          <LiveKitConnectionTracker wasConnectedRef={wasConnectedRef} />
+          <LiveKitConnectionTracker wasConnectedRef={wasConnectedRef} onConnected={handleConnected} />
           <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <LiveClassHostLayout
               isTeacher={isTeacher}
@@ -252,7 +404,7 @@ export default function LiveKitConference({
               }
             />
           </Box>
-          <LiveKitMediaControls onRequestLeave={handleRequestLeave} />
+          <LiveKitMediaControls onLeave={finishLeave} room={room} />
         </LiveKitRoom>
       </Box>
     </Box>

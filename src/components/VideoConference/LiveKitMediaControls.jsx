@@ -29,10 +29,12 @@ function deviceErrorMessage(kind, error) {
 }
 
 /** Mic / camera / leave bar below the video area (not inside the LiveKit tile). */
-export default function LiveKitMediaControls({ onRequestLeave, showLeave = true }) {
-  const room = useRoomContext();
-  const connectionState = useConnectionState(room);
-  const mediaReady = connectionState === ConnectionState.Connected;
+export default function LiveKitMediaControls({ onRequestLeave, onLeave, showLeave = true, room: roomOverride }) {
+  const roomFromContext = useRoomContext();
+  const room = roomOverride ?? roomFromContext;
+  const connectionState = useConnectionState();
+  const mediaReady =
+    connectionState === ConnectionState.Connected || connectionState === ConnectionState.Reconnecting;
 
   const onMicError = React.useCallback((error) => {
     alert(deviceErrorMessage("Microphone", error));
@@ -64,17 +66,32 @@ export default function LiveKitMediaControls({ onRequestLeave, showLeave = true 
 
   const handleLeave = () => {
     onRequestLeave?.();
-    room?.disconnect();
+    onLeave?.();
+  };
+
+  const connectingReason =
+    connectionState === ConnectionState.Connecting
+      ? "Connecting to video…"
+      : connectionState === ConnectionState.Disconnected
+        ? "Not connected to video"
+        : undefined;
+
+  const stripDisabled = (props) => {
+    if (!props) return props;
+    const { disabled: _d, ...rest } = props;
+    return rest;
   };
 
   return (
     <Controls
       micOn={micOn}
       camOn={camOn}
-      micButtonProps={micButtonProps}
-      camButtonProps={camButtonProps}
+      micButtonProps={stripDisabled(micButtonProps)}
+      camButtonProps={stripDisabled(camButtonProps)}
       mediaDisabled={!mediaReady || micPending || camPending}
-      mediaDisabledReason={!mediaReady ? "Connecting to video…" : undefined}
+      mediaDisabledReason={
+        connectingReason || (micPending || camPending ? "Updating media…" : undefined)
+      }
       onLeave={showLeave ? handleLeave : undefined}
       showLeave={showLeave}
     />
