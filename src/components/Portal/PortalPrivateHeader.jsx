@@ -43,6 +43,7 @@ export default function PortalPrivateHeader({
   onGoProfile,
   onGoClasses,
   onGoExams,
+  onGoReportCards,
 }) {
   const imgSrc = profileImageUrl ? schoolPortalMediaUrl(profileImageUrl) : null;
   const initial = (displayName || "?").trim().charAt(0).toUpperCase() || "?";
@@ -59,6 +60,10 @@ export default function PortalPrivateHeader({
   const goExams = () => {
     setMobileOpen(false);
     if (typeof onGoExams === "function") onGoExams();
+  };
+  const goReportCards = () => {
+    setMobileOpen(false);
+    if (typeof onGoReportCards === "function") onGoReportCards();
   };
   const logout = () => {
     setMobileOpen(false);
@@ -178,6 +183,25 @@ export default function PortalPrivateHeader({
                 Exams
               </Button>
             )}
+            {typeof onGoReportCards === "function" && (
+              <Button
+                variant={currentNav === "report-cards" ? "contained" : "text"}
+                size="small"
+                onClick={onGoReportCards}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: currentNav === "report-cards" ? BRAND.navyDeep : "#fff",
+                  bgcolor: currentNav === "report-cards" ? BRAND.goldMuted : "transparent",
+                  minWidth: 110,
+                  "&:hover": {
+                    bgcolor: currentNav === "report-cards" ? BRAND.gold : "rgba(255,255,255,0.12)",
+                  },
+                }}
+              >
+                Report cards
+              </Button>
+            )}
           </Box>
 
           <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 0.5, flexShrink: 0 }}>
@@ -293,6 +317,11 @@ export default function PortalPrivateHeader({
             {typeof onGoExams === "function" && (
               <ListItemButton onClick={goExams} selected={currentNav === "exams"} sx={{ borderRadius: 1 }}>
                 <ListItemText primary="Exams" />
+              </ListItemButton>
+            )}
+            {typeof onGoReportCards === "function" && (
+              <ListItemButton onClick={goReportCards} selected={currentNav === "report-cards"} sx={{ borderRadius: 1 }}>
+                <ListItemText primary="Report cards" />
               </ListItemButton>
             )}
           </List>

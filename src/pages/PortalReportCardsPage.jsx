@@ -1,0 +1,356 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Collapse,
+  Divider,
+  IconButton,
+  Pagination,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import {
+  fetchSchoolPortalStudentProfile,
+  fetchSchoolPortalStudentReportCards,
+  fetchSchoolPortalUser,
+  schoolPortalMediaUrl,
+} from "../api";
+
+const accent = "#DC2626";
+const accentDark = "#B91C1C";
+const accentLight = "#FEE2E2";
+const navy = "#0c2340";
+const gold = "#c9a227";
+
+function formatDate(card) {
+  const raw = card?.created_at ?? card?.createdAt;
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function gradeChipColor(grade) {
+  const g = String(grade || "").trim().toUpperCase();
+  if (["A+", "A", "A-"].some((x) => g.startsWith(x))) return "success";
+  if (["B+", "B", "B-"].some((x) => g.startsWith(x))) return "info";
+  if (["C+", "C", "C-"].some((x) => g.startsWith(x))) return "warning";
+  return "default";
+}
+
+export default function PortalReportCardsPage() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [profile, setProfile] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { rows: list, pagination } = await fetchSchoolPortalStudentReportCards({ page, limit: 12 });
+      setRows(list);
+      setTotalPages(pagination.totalPages ?? 1);
+      setTotal(pagination.total ?? list.length);
+    } catch (e) {
+      setError(e.message || "Could not load report cards.");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+    if (!token) {
+      navigate("/marketplace", { replace: true });
+      return;
+    }
+    (async () => {
+      try {
+        const me = await fetchSchoolPortalUser();
+        if (me.role !== "student") {
+          navigate("/portal", { replace: true });
+          return;
+        }
+        const row = await fetchSchoolPortalStudentProfile();
+        setProfile(row);
+        setAuthReady(true);
+      } catch (e) {
+        setError(e.message || "Could not load report cards.");
+        setLoading(false);
+      }
+    })();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!authReady) return;
+    void load();
+  }, [authReady, load]);
+
+  const classLabel = profile?.curriculum_class?.name || "—";
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        pb: 4,
+        background: "linear-gradient(180deg, #FEF2F2 0%, #fff 50%)",
+      }}
+    >
+      <Box
+        sx={{
+          background: `linear-gradient(120deg, ${navy} 0%, #122b4d 60%, ${accentDark} 100%)`,
+          color: "#fff",
+          px: { xs: 2, sm: 3 },
+          py: { xs: 2.5, sm: 3 },
+          mb: 2,
+        }}
+      >
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: "rgba(201, 162, 39, 0.25)",
+              border: `1px solid rgba(201, 162, 39, 0.5)`,
+            }}
+          >
+            <DescriptionOutlinedIcon sx={{ color: gold, fontSize: 28 }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+              My report cards
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+              Official summaries published by your school · Class {classLabel}
+            </Typography>
+          </Box>
+        </Stack>
+        {!loading && !error ? (
+          <Chip
+            label={`${total} report card${total === 1 ? "" : "s"}`}
+            size="small"
+            sx={{ mt: 1.5, bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700 }}
+          />
+        ) : null}
+      </Box>
+
+      <Box sx={{ px: { xs: 2, sm: 3 }, maxWidth: 1200, mx: "auto" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+            <CircularProgress sx={{ color: accent }} />
+          </Box>
+        ) : error ? (
+          <Alert severity="error">{error}</Alert>
+        ) : rows.length === 0 ? (
+          <Card elevation={0} sx={{ border: `1px dashed ${accentLight}`, borderRadius: 3, textAlign: "center", py: 6 }}>
+            <DescriptionOutlinedIcon sx={{ fontSize: 56, color: accentLight, mb: 1 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: navy }}>
+              No report cards yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 400, mx: "auto" }}>
+              When teachers publish your term report cards, they will appear here. You can download each PDF anytime.
+            </Typography>
+          </Card>
+        ) : (
+          <>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
+                gap: 2,
+              }}
+            >
+              {rows.map((card, index) => {
+                const pdfUrl = card.pdf_url ? schoolPortalMediaUrl(card.pdf_url) : null;
+                const expanded = expandedId === card.id;
+                const lineCount = card.lines?.length ?? 0;
+                return (
+                  <Card
+                      key={card.id}
+                      elevation={0}
+                      sx={{
+                        height: "100%",
+                        border: `1px solid ${expanded ? accent : "#e8d4d4"}`,
+                        borderRadius: 3,
+                        transition: "box-shadow 0.2s, border-color 0.2s",
+                        boxShadow: expanded ? `0 8px 24px ${accent}22` : "none",
+                        "&:hover": { borderColor: accent, boxShadow: `0 4px 16px ${accent}18` },
+                      }}
+                    >
+                      <CardContent sx={{ pb: expanded ? 1 : 2 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography variant="overline" sx={{ color: accent, fontWeight: 800, letterSpacing: 1 }}>
+                              #{((page - 1) * 12 + index + 1).toString().padStart(2, "0")}
+                            </Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: navy, lineHeight: 1.25 }}>
+                              {card.title || "Report card"}
+                            </Typography>
+                          </Box>
+                          {card.overall_grade ? (
+                            <Chip
+                              icon={<EmojiEventsOutlinedIcon sx={{ fontSize: "16px !important" }} />}
+                              label={card.overall_grade}
+                              color={gradeChipColor(card.overall_grade)}
+                              sx={{ fontWeight: 800, flexShrink: 0 }}
+                            />
+                          ) : null}
+                        </Stack>
+
+                        <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.5 }}>
+                          <Chip
+                            size="small"
+                            icon={<SchoolOutlinedIcon />}
+                            label={card.curriculum_class?.name || classLabel}
+                            variant="outlined"
+                          />
+                          {card.curriculum_class_level?.name ? (
+                            <Chip size="small" label={card.curriculum_class_level.name} variant="outlined" />
+                          ) : null}
+                          <Chip
+                            size="small"
+                            icon={<CalendarMonthOutlinedIcon />}
+                            label={formatDate(card)}
+                            variant="outlined"
+                          />
+                        </Stack>
+
+                        <Box
+                          sx={{
+                            mt: 2,
+                            p: 1.5,
+                            borderRadius: 2,
+                            bgcolor: accentLight,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: 1,
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              Total marks
+                            </Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: accentDark }}>
+                              {card.total_marks_obtained}
+                              {card.total_marks_possible != null ? ` / ${card.total_marks_possible}` : ""}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" color="text.secondary">
+                            {lineCount} exam{lineCount === 1 ? "" : "s"}
+                          </Typography>
+                        </Box>
+
+                        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                          {pdfUrl ? (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<DownloadOutlinedIcon />}
+                              href={pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{
+                                flex: 1,
+                                fontWeight: 700,
+                                textTransform: "none",
+                                bgcolor: accent,
+                                "&:hover": { bgcolor: accentDark },
+                              }}
+                            >
+                              Open PDF
+                            </Button>
+                          ) : null}
+                          {lineCount > 0 ? (
+                            <IconButton
+                              size="small"
+                              aria-label={expanded ? "Hide details" : "Show exam breakdown"}
+                              onClick={() => setExpandedId(expanded ? null : card.id)}
+                              sx={{ border: `1px solid ${accentLight}`, borderRadius: 1 }}
+                            >
+                              {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            </IconButton>
+                          ) : null}
+                        </Stack>
+
+                        <Collapse in={expanded}>
+                          <Divider sx={{ my: 1.5 }} />
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 700 }}>Exam</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700 }}>
+                                  Marks
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700 }}>Grade</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {(card.lines || []).map((line) => (
+                                <TableRow key={line.id || line.exam_id}>
+                                  <TableCell>{line.exam_title}</TableCell>
+                                  <TableCell align="right">
+                                    {line.marks_obtained}
+                                    {line.total_marks != null ? ` / ${line.total_marks}` : ""}
+                                  </TableCell>
+                                  <TableCell>{line.grade || "—"}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Collapse>
+                      </CardContent>
+                    </Card>
+                );
+              })}
+            </Box>
+
+            {totalPages > 1 ? (
+              <Stack alignItems="center" sx={{ mt: 3 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, p) => setPage(p)}
+                  color="primary"
+                  shape="rounded"
+                />
+              </Stack>
+            ) : null}
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+}

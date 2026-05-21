@@ -163,12 +163,15 @@ export default function PortalPrivateLayout() {
             ? "classes"
             : location.pathname.startsWith("/portal/exams")
             ? "exams"
+            : location.pathname.startsWith("/portal/report-cards")
+            ? "report-cards"
             : "profile"
         }
         onGoProfile={() => navigate("/portal")}
         {...(user?.role === "student" && {
           onGoClasses: () => navigate("/portal/classes"),
           onGoExams: () => navigate("/portal/exams"),
+          onGoReportCards: () => navigate("/portal/report-cards"),
         })}
       />
 

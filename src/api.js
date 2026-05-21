@@ -254,6 +254,20 @@ export async function fetchSchoolPortalStudentExamResult(examScheduleId) {
   return data.data;
 }
 
+export async function fetchSchoolPortalStudentReportCards({ page = 1, limit = 20 } = {}) {
+  const base = getBaseUrl();
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  const res = await fetch(`${base}/api/school-portal/student/report-cards?${params}`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load report cards.");
+  return {
+    rows: Array.isArray(data.data) ? data.data : [],
+    pagination: data.pagination || { total: 0, page: 1, limit, totalPages: 1 },
+  };
+}
+
 export async function createSchoolPortalExamSubmission(examId) {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/submissions`, {
