@@ -364,6 +364,31 @@ export async function submitSchoolPortalExam(submissionId, payload = null) {
   return data.data;
 }
 
+export async function fetchSchoolPortalExamPdfTemplateBlob(examId) {
+  const base = getBaseUrl();
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/pdf-template`, {
+    headers: token ? { Authorization: `Bearer ${token}`, Accept: "application/pdf" } : { Accept: "application/pdf" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not load exam PDF.");
+  }
+  return res.blob();
+}
+
+export async function saveSchoolPortalExamPdfAnswers(submissionId, fieldValues) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/exams/submissions/${encodeURIComponent(submissionId)}/pdf-answers`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ field_values: fieldValues }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not save PDF answers.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalMyExamAttemptsForSchedule(examScheduleId) {
   const base = getBaseUrl();
   const examId = examScheduleId;

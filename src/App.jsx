@@ -23,7 +23,7 @@ const PortalProfilePage = lazy(() => import("./pages/PortalProfilePage"));
 const PortalClassesPage = lazy(() => import("./pages/PortalClassesPage"));
 const PortalExamsPage = lazy(() => import("./pages/PortalExamsPage"));
 const PortalReportCardsPage = lazy(() => import("./pages/PortalReportCardsPage"));
-const PortalExamTakePage = lazy(() => import("./pages/PortalExamTakePage"));
+const PortalExamTakeRouter = lazy(() => import("./pages/PortalExamTakeRouter"));
 const PortalExamInvigilationPage = lazy(() => import("./pages/PortalExamInvigilationPage"));
 const PortalLiveMeetingPage = lazy(() => import("./pages/PortalLiveMeetingPage"));
 const PortalLiveClassPage = lazy(() => import("./pages/PortalLiveClassPage"));
@@ -95,7 +95,7 @@ function AppLayout() {
               <Route index element={<PortalProfilePage />} />
               <Route path="classes" element={<PortalClassesPage />} />
               <Route path="exams" element={<PortalExamsPage />} />
-              <Route path="exams/:scheduleId" element={<PortalExamTakePage />} />
+              <Route path="exams/:scheduleId" element={<PortalExamTakeRouter />} />
               <Route path="report-cards" element={<PortalReportCardsPage />} />
             </Route>
             <Route path="/admission/apply" element={<AdmissionApplication />} />

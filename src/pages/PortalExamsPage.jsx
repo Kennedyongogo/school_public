@@ -71,6 +71,7 @@ function openButtonLabel(row, { alreadySubmitted, durationEnded, scheduleElapsed
   if (disqualified) return "Exam closed";
   if (scheduleElapsed) return "Window elapsed";
   if (!canOpen) return "Cannot open";
+  if (String(row.exam_type || row.exam?.exam_type || "") === "pdf_form") return "Open PDF exam";
   if (isLiveInvigilationMode(row)) return "Join invigilation room";
   if (row.proctoring_mode === "strict_auto") return "Open strict exam";
   return "Open exam";
@@ -149,6 +150,13 @@ export default function PortalExamsPage() {
   const openRows = useMemo(() => sortedRows.filter((r) => !isExamSubmitted(r)), [sortedRows]);
 
   const submittedRows = useMemo(() => sortedRows.filter(isExamSubmitted), [sortedRows]);
+
+  const isPdfResultView = useMemo(() => {
+    if (!result) return false;
+    const examType =
+      result.examType || selectedExam?.exam_type || selectedExam?.exam?.exam_type || "";
+    return result.showQuestionBreakdown === false || String(examType) === "pdf_form";
+  }, [result, selectedExam]);
 
   const termChips = useMemo(() => {
     const byId = new Map();
@@ -458,11 +466,20 @@ export default function PortalExamsPage() {
                     {result.totalScore} / {result.totalMax}
                   </Typography>
                   <Typography variant="body1" sx={{ color: "text.secondary", mb: 2 }}>
-                    {((result.totalScore / result.totalMax) * 100).toFixed(1)}% achieved
+                    {(result.percentage != null
+                      ? result.percentage
+                      : result.totalMax > 0
+                        ? ((result.totalScore / result.totalMax) * 100).toFixed(1)
+                        : 0)}
+                    % achieved
                   </Typography>
                   <LinearProgress
                     variant="determinate"
-                    value={(result.totalScore / result.totalMax) * 100}
+                    value={
+                      result.totalMax > 0
+                        ? Math.min(100, (result.totalScore / result.totalMax) * 100)
+                        : 0
+                    }
                     sx={{
                       height: 8,
                       borderRadius: 4,
@@ -492,50 +509,63 @@ export default function PortalExamsPage() {
                         py: 1,
                       }}
                     />
+                    {result.gradeRemarks ? (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                        {result.gradeRemarks}
+                      </Typography>
+                    ) : null}
                   </CardContent>
                 </Card>
               )}
 
-              <Divider />
-
-              {/* Questions Section */}
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#333" }}>
-                Question Breakdown
-              </Typography>
-              {result.questions && result.questions.length > 0 ? (
-                <Stack spacing={1.5}>
-                  {result.questions.map((q, i) => (
-                    <Card key={i} elevation={0} sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}>
-                      <CardContent sx={{ p: 2 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-                          Question {i + 1}: {q.question}
-                        </Typography>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            Score: {q.score} / {q.maxScore}
-                          </Typography>
-                          <LinearProgress
-                            variant="determinate"
-                            value={(q.score / q.maxScore) * 100}
-                            sx={{
-                              flex: 1,
-                              height: 6,
-                              borderRadius: 3,
-                              bgcolor: "#f0f0f0",
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor: q.score === q.maxScore ? "#4caf50" : q.score > 0 ? "#ff9800" : "#f44336",
-                              },
-                            }}
-                          />
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
+              {isPdfResultView ? (
+                <Alert severity="info">
+                  This was a PDF exam. Your teacher awarded an overall score — individual question marks are not
+                  shown here.
+                </Alert>
               ) : (
-                <Typography sx={{ textAlign: "center", color: "text.secondary", py: 2 }}>
-                  No question details available.
-                </Typography>
+                <>
+                  <Divider />
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#333" }}>
+                    Question Breakdown
+                  </Typography>
+                  {result.questions && result.questions.length > 0 ? (
+                    <Stack spacing={1.5}>
+                      {result.questions.map((q, i) => (
+                        <Card key={i} elevation={0} sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}>
+                          <CardContent sx={{ p: 2 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                              Question {i + 1}: {q.question}
+                            </Typography>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                Score: {q.score} / {q.maxScore}
+                              </Typography>
+                              <LinearProgress
+                                variant="determinate"
+                                value={q.maxScore > 0 ? (q.score / q.maxScore) * 100 : 0}
+                                sx={{
+                                  flex: 1,
+                                  height: 6,
+                                  borderRadius: 3,
+                                  bgcolor: "#f0f0f0",
+                                  "& .MuiLinearProgress-bar": {
+                                    bgcolor:
+                                      q.score === q.maxScore ? "#4caf50" : q.score > 0 ? "#ff9800" : "#f44336",
+                                  },
+                                }}
+                              />
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography sx={{ textAlign: "center", color: "text.secondary", py: 2 }}>
+                      No question details available.
+                    </Typography>
+                  )}
+                </>
               )}
             </Stack>
           ) : (
