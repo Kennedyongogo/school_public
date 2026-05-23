@@ -38,6 +38,7 @@ import {
   fetchSchoolPortalUser,
   fetchSchoolPortalStudentExamResult,
 } from "../api";
+import { showExamFeeBlockedAlert } from "../utils/examFeeAlerts";
 
 const TERM_FILTER_ALL = "all";
 const TERM_FILTER_NONE = "none";
@@ -304,14 +305,16 @@ export default function PortalExamsPage() {
                     const sessionOpen = ["scheduled", "live"].includes(
                       String(row?.session_status || row?.status || "").toLowerCase()
                     );
+                    const feePaymentRequired =
+                      row.fee_payment_required === true || row.open_block_reason === "fee_not_met";
+                    const canOpenSession =
+                      !alreadySubmitted &&
+                      !disqualified &&
+                      !scheduleElapsed &&
+                      !durationEnded &&
+                      sessionOpen;
                     const canOpen =
-                      typeof row?.can_open === "boolean"
-                        ? row.can_open
-                        : !alreadySubmitted &&
-                          !disqualified &&
-                          !scheduleElapsed &&
-                          !durationEnded &&
-                          sessionOpen;
+                      typeof row?.can_open === "boolean" ? row.can_open : canOpenSession;
                     return (
                   <Stack spacing={1}>
                     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
@@ -391,6 +394,10 @@ export default function PortalExamsPage() {
                         size="small"
                         startIcon={<PlayArrowRoundedIcon />}
                         onClick={() => {
+                          if (feePaymentRequired) {
+                            void showExamFeeBlockedAlert(row);
+                            return;
+                          }
                           if (scheduleRequiresInvigilationRoom(row)) {
                             clearExamInvigilationPaperAccess(row.id);
                             navigate(`/portal/exam-schedule/${encodeURIComponent(row.id)}/invigilation`, {
@@ -400,7 +407,7 @@ export default function PortalExamsPage() {
                           }
                           navigate(`/portal/exams/${encodeURIComponent(row.id)}`);
                         }}
-                        disabled={!canOpen}
+                        disabled={!canOpenSession}
                         sx={{ bgcolor: accent, "&:hover": { bgcolor: "#b91c1c" } }}
                       >
                         {openButtonLabel(row, {
@@ -408,7 +415,7 @@ export default function PortalExamsPage() {
                           durationEnded,
                           scheduleElapsed,
                           disqualified,
-                          canOpen,
+                          canOpen: canOpenSession,
                         })}
                       </Button>
                        <Tooltip title="View Result">

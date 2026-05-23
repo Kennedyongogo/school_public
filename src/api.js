@@ -214,6 +214,28 @@ export async function fetchSchoolPortalParentProfile() {
   return data.data;
 }
 
+export async function fetchMyParentFeeInvoices() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/fee-invoices/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load fee invoices.");
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function postMyParentFeePayment(invoiceId, { amount, reference, notes } = {}) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/fee-invoices/me/${encodeURIComponent(invoiceId)}/payments`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ amount, reference, notes }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not record payment.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalStudentProfile() {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/students/me`, {
@@ -275,7 +297,12 @@ export async function createSchoolPortalExamSubmission(examId) {
     headers: getMarketplaceAuthHeaders(),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Could not start exam.");
+  if (!res.ok) {
+    const err = new Error(data.message || "Could not start exam.");
+    err.code = data.code;
+    err.fee_access = data.fee_access;
+    throw err;
+  }
   return data.data;
 }
 

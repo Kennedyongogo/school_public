@@ -37,6 +37,7 @@ import {
   uploadSchoolPortalExamAnswerFile,
   schoolPortalMediaUrl,
 } from "../api";
+import { showExamFeeErrorFromApi } from "../utils/examFeeAlerts";
 
 const accent = "#DC2626";
 const accentDark = "#B91C1C";
@@ -221,6 +222,10 @@ export default function PortalExamTakePage() {
         try {
           await createSchoolPortalExamSubmission(sc.exam.id);
         } catch (submissionErr) {
+          if (await showExamFeeErrorFromApi(submissionErr)) {
+            navigate("/portal/exams", { replace: true });
+            return;
+          }
           const msg = String(submissionErr?.message || "");
           if (/time has ended|duration_elapsed|already submitted|max attempts/i.test(msg)) {
             navigate("/portal/exams", {

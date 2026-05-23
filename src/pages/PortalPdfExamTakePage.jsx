@@ -26,6 +26,7 @@ import {
   saveSchoolPortalExamPdfAnswers,
   submitSchoolPortalExam,
 } from "../api";
+import { showExamFeeErrorFromApi } from "../utils/examFeeAlerts";
 import {
   scheduleRequiresInvigilationRoom,
   hasExamInvigilationPaperAccess,
@@ -220,7 +221,15 @@ export default function PortalPdfExamTakePage() {
           }
         }
         setSchedule(sc);
-        await createSchoolPortalExamSubmission(sc.exam?.id || sc.id);
+        try {
+          await createSchoolPortalExamSubmission(sc.exam?.id || sc.id);
+        } catch (submissionErr) {
+          if (await showExamFeeErrorFromApi(submissionErr)) {
+            navigate("/portal/exams", { replace: true });
+            return;
+          }
+          throw submissionErr;
+        }
         const { submission: sub } = await fetchSchoolPortalMyExamSubmission(sc.exam?.id || sc.id);
         if (!sub) throw new Error("Could not load submission.");
         if (sub.status === "submitted") {

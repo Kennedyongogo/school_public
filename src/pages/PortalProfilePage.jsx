@@ -9,6 +9,8 @@ import {
   Stack,
   Chip,
   Avatar,
+  Grid,
+  Divider,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -19,6 +21,8 @@ import {
   MenuBook as MenuBookIcon,
   Phone as PhoneIcon,
   FactCheck as FactCheckIcon,
+  Layers as LayersIcon,
+  FamilyRestroom as FamilyRestroomIcon,
 } from "@mui/icons-material";
 import {
   fetchSchoolPortalUser,
@@ -157,6 +161,173 @@ function ChipField({ label, children }) {
   );
 }
 
+function classLabel(cl) {
+  if (!cl) return null;
+  const name = cl.name || "";
+  const code = cl.code ? ` (${cl.code})` : "";
+  const s = `${name}${code}`.trim();
+  return s || null;
+}
+
+function levelLabel(lv) {
+  if (!lv) return null;
+  const name = lv.name != null ? String(lv.name).trim() : "";
+  return name || null;
+}
+
+function curriculumLabel(c) {
+  if (!c) return null;
+  const name = c.name != null ? String(c.name).trim() : "";
+  if (!name) return null;
+  return c.type ? `${name} (${c.type})` : name;
+}
+
+function homeroomFromStudent(st) {
+  return (
+    st?.class_teacher?.user?.full_name ||
+    st?.class_teacher?.user?.username ||
+    st?.class_teacher?.full_name ||
+    st?.class_teacher?.username ||
+    st?.class_teacher?.email ||
+    null
+  );
+}
+
+function LinkedStudentCard({ student: st }) {
+  const u = st?.user || {};
+  const displayName = u.full_name || u.username || "Student";
+  const photoSrc =
+    st?.profile_picture != null && String(st.profile_picture).trim() !== ""
+      ? schoolPortalMediaUrl(st.profile_picture)
+      : null;
+  const cl = classLabel(st?.curriculum_class);
+  const lv = levelLabel(st?.curriculum_class_level);
+  const curr = curriculumLabel(st?.curriculum);
+  const homeroom = homeroomFromStudent(st);
+
+  const initials = (() => {
+    const n = String(displayName).trim();
+    if (!n) return "?";
+    const parts = n.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    return n.slice(0, 2).toUpperCase();
+  })();
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        width: "100%",
+        maxWidth: "none",
+        alignSelf: "stretch",
+        borderRadius: 2,
+        border: "1px solid #f1d5d5",
+        overflow: "hidden",
+        bgcolor: "rgba(255,255,255,0.98)",
+        boxShadow: "none",
+      }}
+    >
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ xs: "center", sm: "flex-start" }}
+        sx={{
+          p: { xs: 2, sm: 2.5 },
+          bgcolor: `${accent}06`,
+          borderBottom: `1px solid ${accentLight}`,
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <Avatar
+          src={photoSrc || undefined}
+          slotProps={
+            photoSrc ? { img: { style: { objectFit: "cover", objectPosition: "center top" } } } : undefined
+          }
+          sx={{
+            width: { xs: 80, sm: 88 },
+            height: { xs: 80, sm: 88 },
+            fontSize: "1.75rem",
+            fontWeight: 800,
+            bgcolor: `${accent}18`,
+            color: accentDark,
+            border: `3px solid ${accentLight}`,
+            flexShrink: 0,
+          }}
+        >
+          {!photoSrc ? initials : null}
+        </Avatar>
+        <Box sx={{ flex: 1, textAlign: { xs: "center", sm: "left" }, minWidth: 0, width: "100%" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2, color: accentDark, fontSize: { xs: "1.15rem", sm: "1.25rem" } }}>
+            {displayName}
+          </Typography>
+          {st?.admission_number ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 600 }}>
+              Admission {st.admission_number}
+            </Typography>
+          ) : null}
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            gap={0.75}
+            sx={{ mt: 1.25 }}
+            justifyContent={{ xs: "center", sm: "flex-start" }}
+          >
+            {curr ? (
+              <Chip
+                size="small"
+                icon={<SchoolIcon sx={{ fontSize: "16px !important" }} />}
+                label={curr}
+                sx={{ fontWeight: 700, maxWidth: { xs: "100%", sm: "none" } }}
+              />
+            ) : null}
+            {cl ? (
+              <Chip size="small" icon={<ClassIcon sx={{ fontSize: "16px !important" }} />} label={cl} sx={{ fontWeight: 700 }} />
+            ) : null}
+            {lv ? (
+              <Chip size="small" icon={<LayersIcon sx={{ fontSize: "16px !important" }} />} label={lv} sx={{ fontWeight: 700 }} />
+            ) : null}
+          </Stack>
+        </Box>
+      </Stack>
+
+      <Box sx={{ p: { xs: 2, sm: 2.5 }, width: "100%", boxSizing: "border-box" }}>
+        <Grid container spacing={2} sx={{ width: "100%", m: 0 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <Field label="Date of birth" value={formatDdMmYyyy(st?.date_of_birth)} placeholder="—" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Field label="Gender" value={genderLabel(st?.gender)} placeholder="—" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Field label="Term / level" value={lv} placeholder="—" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Field label="Homeroom teacher" value={homeroom} placeholder="—" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Field label="Enrollment date" value={formatDdMmYyyy(st?.enrollment_date)} placeholder="—" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <ChipField label="Account status">
+              <Chip
+                size="small"
+                label={st?.account_status || "—"}
+                sx={{ fontWeight: 600, textTransform: "capitalize" }}
+              />
+            </ChipField>
+          </Grid>
+          {u.email ? (
+            <Grid item xs={12} sm={6} md={4}>
+              <Field label="Student email" value={u.email} placeholder="—" />
+            </Grid>
+          ) : null}
+        </Grid>
+      </Box>
+    </Paper>
+  );
+}
+
 export default function PortalProfilePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -241,10 +412,9 @@ export default function PortalProfilePage() {
       ? `${st.curriculum.name}${st.curriculum.type ? ` (${st.curriculum.type})` : ""}`
       : null;
 
-  const classDisplay =
-    st?.curriculum_class != null
-      ? `${st.curriculum_class.name || ""}${st.curriculum_class.code ? ` (${st.curriculum_class.code})` : ""}`.trim() || null
-      : null;
+  const classDisplay = st?.curriculum_class != null ? classLabel(st.curriculum_class) : null;
+
+  const levelDisplay = levelLabel(st?.curriculum_class_level);
 
   const recordPhotoSrc =
     st?.profile_picture != null && String(st.profile_picture).trim() !== ""
@@ -356,6 +526,14 @@ export default function PortalProfilePage() {
                           sx={{ fontWeight: 700 }}
                         />
                       ) : null}
+                      {levelDisplay ? (
+                        <Chip
+                          icon={<LayersIcon sx={{ fontSize: "18px !important" }} />}
+                          label={levelDisplay}
+                          size="small"
+                          sx={{ fontWeight: 700 }}
+                        />
+                      ) : null}
                     </Stack>
                     <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 560 }}>
                       School record photo and enrollment below match what staff entered in Elimu Plus (Create student profile). Your portal login is shown in the first card.
@@ -393,6 +571,7 @@ export default function PortalProfilePage() {
                     <Field label="Gender" value={genderLabel(st.gender)} placeholder="—" />
                     <Field label="Curriculum" value={curriculumDisplay} placeholder="—" />
                     <Field label="Class" value={classDisplay} placeholder="—" />
+                    <Field label="Term / level" value={levelDisplay} placeholder="—" />
                     <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5, lineHeight: 1.45 }}>
                       Homeroom teacher is set automatically from the teacher assigned as class teacher for this class.
                     </Typography>
@@ -457,6 +636,10 @@ export default function PortalProfilePage() {
             </Box>
           </>
         ) : detail?.kind === "parent" && detail.row ? (
+          (() => {
+            const parentRow = detail.row;
+            const linkedStudents = Array.isArray(parentRow.students) ? parentRow.students : [];
+            return (
           <>
             <Box sx={heroBandSx}>
               <Typography variant="overline" sx={{ opacity: 0.9, letterSpacing: 1 }}>
@@ -490,9 +673,25 @@ export default function PortalProfilePage() {
                   >
                     {!profileImg ? initials(displayName) : null}
                   </Avatar>
-                  <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 560, alignSelf: "center" }}>
-                    Parent record on file with the school appears in the card below.
-                  </Typography>
+                  <Stack spacing={1} sx={{ flex: 1, alignItems: { xs: "center", sm: "flex-start" }, textAlign: { xs: "center", sm: "left" } }}>
+                    <Stack direction="row" flexWrap="wrap" gap={1} justifyContent={{ xs: "center", sm: "flex-start" }}>
+                      {u.role ? (
+                        <Chip label={String(u.role).replace(/_/g, " ")} size="small" sx={{ fontWeight: 700, textTransform: "capitalize" }} />
+                      ) : null}
+                      {parentRow.relationship ? (
+                        <Chip label={parentRow.relationship} size="small" sx={{ fontWeight: 700, bgcolor: `${accent}12`, border: `1px solid ${accentLight}` }} />
+                      ) : null}
+                      <Chip
+                        icon={<FamilyRestroomIcon sx={{ fontSize: "18px !important" }} />}
+                        label={`${linkedStudents.length} linked student${linkedStudents.length === 1 ? "" : "s"}`}
+                        size="small"
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 560 }}>
+                      Parent record on file with the school appears in the cards below. Your linked children&apos;s enrollment details are listed under <strong>Linked students</strong>.
+                    </Typography>
+                  </Stack>
                 </Stack>
               </Paper>
               <Box
@@ -504,6 +703,7 @@ export default function PortalProfilePage() {
                   alignItems: "stretch",
                   width: "100%",
                   px: { xs: 0.5, sm: 1 },
+                  mb: 2.5,
                 })}
               >
                 <Box sx={profileCardCellSx}>
@@ -517,20 +717,47 @@ export default function PortalProfilePage() {
                 </Box>
                 <Box sx={profileCardCellSx}>
                   <DetailCard icon={BadgeIcon} title="Parent record">
-                    <Field label="Relationship" value={detail.row.relationship} placeholder="—" />
-                    <Field label="Occupation" value={detail.row.occupation} placeholder="—" />
+                    <Field label="Relationship" value={parentRow.relationship} placeholder="—" />
+                    <Field label="Occupation" value={parentRow.occupation} placeholder="—" />
                     <ChipField label="Newsletter">
                       <Chip
                         size="small"
-                        label={detail.row.newsletter_subscription ? "Subscribed" : "Not subscribed"}
+                        label={parentRow.newsletter_subscription ? "Subscribed" : "Not subscribed"}
                         sx={{ fontWeight: 600 }}
                       />
                     </ChipField>
                   </DetailCard>
                 </Box>
               </Box>
+
+              <Box sx={{ width: "100%", maxWidth: "none", mb: 2.5 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 800, color: accentDark, mb: 1.5, display: "flex", alignItems: "center", gap: 1 }}
+                >
+                  <FamilyRestroomIcon sx={{ fontSize: 22 }} />
+                  Linked students
+                </Typography>
+                {linkedStudents.length === 0 ? (
+                  <Alert severity="info" sx={{ borderRadius: 2, border: `1px solid ${accentLight}`, width: "100%" }}>
+                    No students are linked to your parent profile yet. Ask the school to connect your children under
+                    Elimu Plus when creating or editing your parent record.
+                  </Alert>
+                ) : (
+                  <Stack spacing={1.5} sx={{ width: "100%" }}>
+                    {linkedStudents.map((st, idx) => (
+                      <Box key={st.id} sx={{ width: "100%" }}>
+                        {idx > 0 ? <Divider sx={{ mb: 1.5, borderColor: accentLight }} /> : null}
+                        <LinkedStudentCard student={st} />
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
             </Box>
           </>
+            );
+          })()
         ) : detail?.kind === "parent" && !detail.row ? (
           <>
             <Box sx={heroBandSx}>
