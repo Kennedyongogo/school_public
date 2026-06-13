@@ -205,7 +205,7 @@ export default function PortalFeesPage() {
               Total credit on this level: <strong>KES ${Number(receipt.invoice_credit_balance || 0).toLocaleString()}</strong>.
             </p>
             <p style="margin:0;text-align:left;color:#4b5563">
-              ${receipt.carry_forward_message || "This credit counts toward your child's fee requirements for this term/level, including exam access rules."}
+              ${receipt.carry_forward_message || "This credit counts toward your child's fee requirements for this term/level."}
             </p>
           `,
           confirmButtonText: "Got it",
@@ -356,7 +356,7 @@ export default function PortalFeesPage() {
                             <Alert severity="success" sx={{ borderRadius: 1.5, width: "100%" }}>
                               Credit on this level: <strong>KES {Number(inv.credit_balance).toLocaleString()}</strong>
                               {" "}
-                              (overpayment). This counts toward fee requirements for this term/level, including exam access.
+                              (overpayment). This counts toward fee requirements for this term/level.
                             </Alert>
                           ) : null}
 

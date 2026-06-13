@@ -263,7 +263,44 @@ export async function fetchSchoolPortalStudentExamSchedules() {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || "Could not load exam schedules.");
-  return Array.isArray(data.data) ? data.data : [];
+  return (Array.isArray(data.data) ? data.data : []).map(stripLegacyExamFeeGateFields);
+}
+
+/** Exams no longer gate on school fees; drop legacy fee fields from API payloads. */
+function stripLegacyExamFeeGateFields(row) {
+  if (!row || typeof row !== "object") return row;
+  const next = { ...row };
+  delete next.fee_payment_required;
+  delete next.fee_block_message;
+  delete next.fee_required_amount;
+  delete next.fee_amount_paid;
+  delete next.fee_amount_shortfall;
+  delete next.fee_access;
+  delete next.exam_fee_access_mode;
+  delete next.exam_fee_minimum_amount;
+  delete next.exam_fee_minimum_basis;
+  if (next.open_block_reason === "fee_not_met") {
+    next.open_block_reason = null;
+    if (next.can_open === false) next.can_open = true;
+  }
+  return next;
+}
+
+function stripLegacyExamSubmissionAccess(access) {
+  if (!access || typeof access !== "object") return access;
+  const next = { ...access };
+  delete next.fee_payment_required;
+  delete next.fee_block_message;
+  delete next.fee_required_amount;
+  delete next.fee_amount_paid;
+  delete next.fee_amount_shortfall;
+  delete next.fee_access;
+  delete next.exam_fee_access_mode;
+  if (next.open_block_reason === "fee_not_met") {
+    next.open_block_reason = null;
+    if (next.can_open === false) next.can_open = true;
+  }
+  return next;
 }
 
 export async function fetchSchoolPortalStudentExamResult(examScheduleId) {
@@ -300,7 +337,6 @@ export async function createSchoolPortalExamSubmission(examId) {
   if (!res.ok) {
     const err = new Error(data.message || "Could not start exam.");
     err.code = data.code;
-    err.fee_access = data.fee_access;
     throw err;
   }
   return data.data;
@@ -345,7 +381,10 @@ export async function fetchSchoolPortalMyExamSubmission(examId) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || "Could not load exam paper.");
-  return { submission: data.data, access: data.access || null };
+  return {
+    submission: data.data,
+    access: stripLegacyExamSubmissionAccess(data.access || null),
+  };
 }
 
 /** Upload one file for a file_upload exam question (student JWT). */

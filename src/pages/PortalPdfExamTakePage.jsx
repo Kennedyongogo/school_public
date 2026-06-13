@@ -26,7 +26,6 @@ import {
   saveSchoolPortalExamPdfAnswers,
   submitSchoolPortalExam,
 } from "../api";
-import { showExamFeeErrorFromApi } from "../utils/examFeeAlerts";
 import {
   scheduleRequiresInvigilationRoom,
   hasExamInvigilationPaperAccess,
@@ -145,7 +144,9 @@ export default function PortalPdfExamTakePage() {
   const [fields, setFields] = useState([]);
   const [answers, setAnswers] = useState({});
   const [pdfUrl, setPdfUrl] = useState("");
+  const [pdfLoading, setPdfLoading] = useState(true);
   const saveTimerRef = useRef(null);
+  const pdfUrlRef = useRef("");
 
   const deadline = useMemo(() => {
     if (!submission?.started_at || !exam?.duration_minutes) return null;
@@ -202,7 +203,11 @@ export default function PortalPdfExamTakePage() {
           navigate(`/portal/exams/${scheduleId}`, { replace: true });
           return;
         }
-        if (sc?.attendance?.submitted_at) {
+        if (
+          sc?.attendance?.submitted_at ||
+          sc?.submission_status === "submitted" ||
+          sc?.open_block_reason === "already_submitted"
+        ) {
           navigate("/portal/exams", { replace: true, state: { examMessage: "You already submitted this exam." } });
           return;
         }
@@ -221,15 +226,7 @@ export default function PortalPdfExamTakePage() {
           }
         }
         setSchedule(sc);
-        try {
-          await createSchoolPortalExamSubmission(sc.exam?.id || sc.id);
-        } catch (submissionErr) {
-          if (await showExamFeeErrorFromApi(submissionErr)) {
-            navigate("/portal/exams", { replace: true });
-            return;
-          }
-          throw submissionErr;
-        }
+        await createSchoolPortalExamSubmission(sc.exam?.id || sc.id);
         const { submission: sub } = await fetchSchoolPortalMyExamSubmission(sc.exam?.id || sc.id);
         if (!sub) throw new Error("Could not load submission.");
         if (sub.status === "submitted") {
@@ -244,9 +241,15 @@ export default function PortalPdfExamTakePage() {
           sub.pdf_answers_json && typeof sub.pdf_answers_json === "object" ? { ...sub.pdf_answers_json } : {};
         setAnswers(initial);
         const examId = ex?.id || sc.exam?.id || sc.id;
+        setPdfLoading(true);
         const blob = await fetchSchoolPortalExamPdfTemplateBlob(examId);
-        setPdfUrl(URL.createObjectURL(blob));
+        if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+        const nextUrl = URL.createObjectURL(blob);
+        pdfUrlRef.current = nextUrl;
+        setPdfUrl(nextUrl);
+        setPdfLoading(false);
       } catch (e) {
+        setPdfLoading(false);
         setError(e.message || "Could not open PDF exam.");
       } finally {
         setLoading(false);
@@ -254,7 +257,10 @@ export default function PortalPdfExamTakePage() {
     };
     void load();
     return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+        pdfUrlRef.current = "";
+      }
     };
   }, [scheduleId, navigate]);
 
@@ -298,15 +304,7 @@ export default function PortalPdfExamTakePage() {
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-        <CircularProgress sx={{ color: accent }} />
-      </Box>
-    );
-  }
-
-  if (error) {
+  if (error && !schedule) {
     return (
       <Box sx={{ p: 2 }}>
         <Alert severity="error">{error}</Alert>
@@ -321,7 +319,7 @@ export default function PortalPdfExamTakePage() {
     <Box sx={{ p: { xs: 1.5, sm: 2 }, pb: 4 }}>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1} sx={{ mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          {exam?.title || schedule?.exam?.title || "PDF Exam"}
+          {exam?.title || schedule?.exam?.title || (loading ? "Loading exam…" : "PDF Exam")}
         </Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           {remainingSeconds != null ? (
@@ -332,7 +330,7 @@ export default function PortalPdfExamTakePage() {
           {saving ? <Typography variant="caption">Saving…</Typography> : null}
           <Button
             variant="contained"
-            disabled={submitting}
+            disabled={submitting || loading || submission?.status === "submitted"}
             onClick={() => void handleSubmit()}
             sx={{ bgcolor: accent, "&:hover": { bgcolor: "#B91C1C" } }}
           >
@@ -344,12 +342,24 @@ export default function PortalPdfExamTakePage() {
       <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
         <Card sx={{ flex: 1.2, minHeight: 480 }} elevation={0}>
           <CardContent sx={{ p: 0, height: "100%" }}>
-            {pdfUrl ? (
+            {pdfLoading || loading ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: { xs: 420, lg: 640 },
+                  bgcolor: "#f9fafb",
+                }}
+              >
+                <CircularProgress sx={{ color: accent }} />
+              </Box>
+            ) : pdfUrl ? (
               <Box
                 component="iframe"
                 src={pdfUrl}
                 title="Exam PDF"
-                sx={{ width: "100%", height: { xs: 420, lg: 640 }, border: "none" }}
+                sx={{ width: "100%", height: { xs: 420, lg: 640 }, border: "none", bgcolor: "#fff" }}
               />
             ) : (
               <Alert severity="warning">PDF preview unavailable.</Alert>

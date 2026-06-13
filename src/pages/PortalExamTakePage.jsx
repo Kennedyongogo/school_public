@@ -37,7 +37,6 @@ import {
   uploadSchoolPortalExamAnswerFile,
   schoolPortalMediaUrl,
 } from "../api";
-import { showExamFeeErrorFromApi } from "../utils/examFeeAlerts";
 
 const accent = "#DC2626";
 const accentDark = "#B91C1C";
@@ -79,6 +78,7 @@ import {
   isActivityMonitorMode,
   hasExamInvigilationPaperAccess,
   clearExamInvigilationPaperAccess,
+  isExamScheduleWindowOpen,
 } from "../utils/examInvigilation";
 
 const formatScheduleTime = (value, timezone = "Africa/Nairobi") => {
@@ -191,7 +191,11 @@ export default function PortalExamTakePage() {
           const nowAt = formatScheduleTime(new Date().toISOString(), tz);
           throw new Error(`Exam window elapsed for this schedule (${startAt} - ${endAt}, ${tz}). Current time: ${nowAt}.`);
         }
-        if (sc?.attendance?.submitted_at) {
+        if (
+          sc?.attendance?.submitted_at ||
+          sc?.submission_status === "submitted" ||
+          sc?.open_block_reason === "already_submitted"
+        ) {
           throw new Error("You already submitted this exam. Re-opening is disabled.");
         }
 
@@ -222,10 +226,6 @@ export default function PortalExamTakePage() {
         try {
           await createSchoolPortalExamSubmission(sc.exam.id);
         } catch (submissionErr) {
-          if (await showExamFeeErrorFromApi(submissionErr)) {
-            navigate("/portal/exams", { replace: true });
-            return;
-          }
           const msg = String(submissionErr?.message || "");
           if (/time has ended|duration_elapsed|already submitted|max attempts/i.test(msg)) {
             navigate("/portal/exams", {
@@ -243,7 +243,14 @@ export default function PortalExamTakePage() {
         }
         const { submission: sub, access: subAccess } = await fetchSchoolPortalMyExamSubmission(sc.exam.id);
         if (!sub) throw new Error("Could not load your submission.");
-        if (sub.status === "submitted" || subAccess?.duration_elapsed) {
+        if (sub.status === "submitted") {
+          navigate("/portal/exams", {
+            replace: true,
+            state: { examMessage: "You already submitted this exam." },
+          });
+          return;
+        }
+        if (subAccess?.duration_elapsed && sub.status === "submitted") {
           navigate("/portal/exams", {
             replace: true,
             state: {

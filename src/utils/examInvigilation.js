@@ -4,6 +4,16 @@ export function isLiveInvigilationMode(schedule) {
   return String(schedule?.proctoring_mode || "").trim() === "live_monitor";
 }
 
+/** True when now is between exam start_time and end_time (inclusive if times exist). */
+export function isExamScheduleWindowOpen(schedule) {
+  const now = Date.now();
+  const start = schedule?.start_time ? new Date(schedule.start_time).getTime() : null;
+  const end = schedule?.end_time ? new Date(schedule.end_time).getTime() : null;
+  if (Number.isFinite(start) && now < start) return false;
+  if (Number.isFinite(end) && now > end) return false;
+  return true;
+}
+
 export function isActivityMonitorMode(schedule) {
   const m = String(schedule?.proctoring_mode || "").trim();
   return m === "record_only" || m === "strict_auto";

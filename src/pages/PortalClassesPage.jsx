@@ -70,7 +70,13 @@ export default function PortalClassesPage() {
           return;
         }
         setStudent(profile);
-        setLessons(timetableLessons);
+        setLessons(
+          [...timetableLessons].sort((a, b) => {
+            const dateCmp = String(b.lesson_date || "").localeCompare(String(a.lesson_date || ""));
+            if (dateCmp !== 0) return dateCmp;
+            return String(b.starts_at || "").localeCompare(String(a.starts_at || ""));
+          })
+        );
       } catch (e) {
         setError(e.message || "Could not load classes.");
       } finally {

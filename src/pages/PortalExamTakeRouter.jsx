@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 import { fetchSchoolPortalStudentExamSchedules } from "../api";
 import PortalExamTakePage from "./PortalExamTakePage";
@@ -9,9 +9,23 @@ const accent = "#DC2626";
 
 export default function PortalExamTakeRouter() {
   const { scheduleId } = useParams();
-  const [mode, setMode] = useState("loading");
+  const location = useLocation();
+  const hintedType = location.state?.examType || "";
+  const [mode, setMode] = useState(() => {
+    if (hintedType === "pdf_form") return "pdf";
+    if (hintedType) return "standard";
+    return "loading";
+  });
 
   useEffect(() => {
+    if (hintedType === "pdf_form") {
+      setMode("pdf");
+      return undefined;
+    }
+    if (hintedType) {
+      setMode("standard");
+      return undefined;
+    }
     let cancelled = false;
     const run = async () => {
       try {
@@ -27,7 +41,7 @@ export default function PortalExamTakeRouter() {
     return () => {
       cancelled = true;
     };
-  }, [scheduleId]);
+  }, [scheduleId, hintedType]);
 
   if (mode === "loading") {
     return (
