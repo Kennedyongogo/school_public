@@ -40,12 +40,23 @@ import {
 const accent = "#DC2626";
 const accentLight = "#FEE2E2";
 
+function examSortTimestamp(row) {
+  const candidates = [
+    row?.start_time,
+    row?.created_at,
+    row?.end_time,
+    row?.updated_at,
+    row?.exam?.created_at,
+  ];
+  for (const raw of candidates) {
+    const t = raw ? new Date(raw).getTime() : NaN;
+    if (Number.isFinite(t)) return t;
+  }
+  return 0;
+}
+
 function sortExamsLatestFirst(list) {
-  return [...list].sort((a, b) => {
-    const ta = new Date(a?.start_time || a?.end_time || a?.created_at || 0).getTime();
-    const tb = new Date(b?.start_time || b?.end_time || b?.created_at || 0).getTime();
-    return tb - ta;
-  });
+  return [...list].sort((a, b) => examSortTimestamp(b) - examSortTimestamp(a));
 }
 
 function formatDateTime(iso) {
@@ -248,6 +259,7 @@ export default function PortalExamsPage() {
                               navigate(`/portal/exams/${encodeURIComponent(row.id)}`, {
                                 state: {
                                   examType: row.exam_type || row.exam?.exam_type || "questions",
+                                  scheduleSnapshot: row,
                                 },
                               });
                             }}

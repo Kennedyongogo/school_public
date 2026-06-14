@@ -455,6 +455,38 @@ export async function saveSchoolPortalExamPdfAnswers(submissionId, fieldValues) 
   return data.data;
 }
 
+export async function uploadSchoolPortalExamPdfWorkingPaper(submissionId, file) {
+  const base = getBaseUrl();
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const formData = new FormData();
+  formData.append("exam_pdf_working_paper", file);
+  const res = await fetch(
+    `${base}/api/exams/submissions/${encodeURIComponent(submissionId)}/pdf-working-papers`,
+    {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}`, Accept: "application/json" } : { Accept: "application/json" },
+      body: formData,
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not upload working paper.");
+  return { submission: data.data, uploaded_file: data.uploaded_file || null };
+}
+
+export async function deleteSchoolPortalExamPdfWorkingPaper(submissionId, fileId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/exams/submissions/${encodeURIComponent(submissionId)}/pdf-working-papers/${encodeURIComponent(fileId)}`,
+    {
+      method: "DELETE",
+      headers: getMarketplaceAuthHeaders(),
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not remove working paper.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalMyExamAttemptsForSchedule(examScheduleId) {
   const base = getBaseUrl();
   const examId = examScheduleId;

@@ -18,14 +18,8 @@ export default function PortalExamTakeRouter() {
   });
 
   useEffect(() => {
-    if (hintedType === "pdf_form") {
-      setMode("pdf");
-      return undefined;
-    }
-    if (hintedType) {
-      setMode("standard");
-      return undefined;
-    }
+    if (hintedType === "pdf_form") return undefined;
+    if (hintedType) return undefined;
     let cancelled = false;
     const run = async () => {
       try {
