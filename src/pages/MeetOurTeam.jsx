@@ -1,16 +1,15 @@
 import React from "react";
 import { Box } from "@mui/material";
 import StaffDirectory from "../components/StaffDirectory";
+import { HOME } from "../components/Home/homeShared";
 
 export default function MeetOurTeam() {
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "#f5f7fa",
+        bgcolor: HOME.cream,
         width: "100%",
-        maxWidth: "100vw",
-        boxSizing: "border-box",
       }}
     >
       <StaffDirectory />

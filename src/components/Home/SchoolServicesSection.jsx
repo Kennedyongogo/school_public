@@ -1,13 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Typography,
-  Box,
-  Container,
-  Fade,
-  Grid,
-  Card,
-  CardContent,
-} from "@mui/material";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Box, Fade, LinearProgress, Stack, Typography } from "@mui/material";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import ScienceIcon from "@mui/icons-material/Science";
@@ -15,6 +7,8 @@ import PsychologyIcon from "@mui/icons-material/Psychology";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import ComputerIcon from "@mui/icons-material/Computer";
 import SchoolIcon from "@mui/icons-material/School";
+import { HOME, homeBodyFontSize } from "./homeShared";
+import { HomeSectionHeader, HomeSectionShell } from "./homeUi";
 
 const getBaseUrl = () => {
   const env = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL;
@@ -34,15 +28,8 @@ function resolveIcon(iconKey) {
   return ICON_BY_KEY[iconKey] || SchoolIcon;
 }
 
-/** Matches header / footer / hero accents */
-const BRAND = {
-  navy: "#0c2340",
-  navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
-};
-
-const ROTATE_MS = 3200;
+const ROTATE_MS = 6000;
+const TICK_MS = 50;
 
 async function fetchPublicSchoolServices() {
   try {
@@ -50,21 +37,121 @@ async function fetchPublicSchoolServices() {
     const res = await fetch(`${base}/api/school-services/public`);
     if (!res.ok) throw new Error(String(res.status));
     const data = await res.json();
-    if (data.success && Array.isArray(data.data)) {
-      return data.data;
-    }
+    if (data.success && Array.isArray(data.data)) return data.data;
     return [];
   } catch {
     return [];
   }
 }
 
+function ServiceDetailPanel({ active, progress, ActiveIcon, showProgress }) {
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        minHeight: { xs: 280, md: 300 },
+        borderRadius: 3,
+        overflow: "hidden",
+        border: `1px solid ${HOME.border}`,
+        boxShadow: HOME.shadowMd,
+        bgcolor: "#fff",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Box sx={{ height: 6, background: HOME.navyGradient }} />
+      {showProgress ? (
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          sx={{
+            height: 3,
+            bgcolor: HOME.sky,
+            "& .MuiLinearProgress-bar": {
+              bgcolor: HOME.gold,
+              transition: `transform ${TICK_MS}ms linear`,
+            },
+          }}
+        />
+      ) : null}
+
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2.5, sm: 3, md: 3.5 },
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "flex-start", sm: "center" },
+          gap: { xs: 2, sm: 3.5 },
+        }}
+      >
+        <Box
+          sx={{
+            width: { xs: 96, sm: 112, md: 120 },
+            height: { xs: 96, sm: 112, md: 120 },
+            borderRadius: "50%",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: `linear-gradient(145deg, rgba(230,207,106,0.4), rgba(201,162,39,0.22))`,
+            border: `2px solid ${HOME.borderGold}`,
+            color: HOME.navyDeep,
+            boxShadow: `0 12px 32px ${HOME.gold}33`,
+          }}
+        >
+          <ActiveIcon sx={{ fontSize: { xs: 48, sm: 52, md: 56 } }} />
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Fade in key={active?.id || active?.name} timeout={450}>
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: HOME.fontDisplay,
+                  fontWeight: 700,
+                  fontSize: { xs: "1.75rem", md: "2.15rem" },
+                  color: HOME.navyDeep,
+                  mb: 1.5,
+                  lineHeight: 1.12,
+                }}
+              >
+                {active?.name}
+              </Typography>
+              <Typography
+                sx={{
+                  color: HOME.inkMuted,
+                  lineHeight: 1.8,
+                  fontSize: homeBodyFontSize,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {active?.description}
+              </Typography>
+            </Box>
+          </Fade>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export default function SchoolServicesSection() {
   const [isVisible, setIsVisible] = useState(false);
   const [activeService, setActiveService] = useState(0);
   const [schoolServices, setSchoolServices] = useState([]);
+  const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const progressRef = useRef(0);
 
   const serviceCount = schoolServices.length;
+  const hasMultiple = serviceCount > 1;
+
+  const selectService = useCallback((idx) => {
+    setActiveService(idx);
+    progressRef.current = 0;
+    setProgress(0);
+  }, []);
 
   useEffect(() => {
     setIsVisible(true);
@@ -73,6 +160,8 @@ export default function SchoolServicesSection() {
       if (!cancelled) {
         setSchoolServices(list);
         setActiveService(0);
+        progressRef.current = 0;
+        setProgress(0);
       }
     });
     return () => {
@@ -81,12 +170,21 @@ export default function SchoolServicesSection() {
   }, []);
 
   useEffect(() => {
-    if (serviceCount < 2) return undefined;
+    if (!hasMultiple || isPaused) return undefined;
+
     const interval = window.setInterval(() => {
-      setActiveService((prev) => (prev + 1) % serviceCount);
-    }, ROTATE_MS);
+      progressRef.current += (TICK_MS / ROTATE_MS) * 100;
+      if (progressRef.current >= 100) {
+        progressRef.current = 0;
+        setActiveService((prev) => (prev + 1) % serviceCount);
+        setProgress(0);
+      } else {
+        setProgress(progressRef.current);
+      }
+    }, TICK_MS);
+
     return () => window.clearInterval(interval);
-  }, [serviceCount]);
+  }, [serviceCount, hasMultiple, isPaused, activeService]);
 
   const active = useMemo(
     () => schoolServices[activeService] || schoolServices[0],
@@ -94,231 +192,116 @@ export default function SchoolServicesSection() {
   );
 
   const ActiveIcon = resolveIcon(active?.icon_key);
-  const hasServices = serviceCount > 0;
 
   return (
-    <Box
+    <HomeSectionShell
       id="school-services-section"
-      sx={{
-        width: "100%",
-        maxWidth: "100%",
-        boxSizing: "border-box",
-        bgcolor: "#f0f4fa",
-        pt: { xs: 3, md: 5 },
-        pb: { xs: 4, md: 6 },
-        borderTop: `1px solid rgba(12, 35, 64, 0.08)`,
-        fontFamily: '"Open Sans", "Segoe UI", sans-serif',
+      bg={{
+        bgcolor: HOME.cream,
+        py: { xs: 5, md: 7 },
+        borderTop: `1px solid ${HOME.border}`,
       }}
     >
-      <Container
-        maxWidth={false}
-        disableGutters
+      <Box
         sx={{
-          px: { xs: 1.75, sm: 2.5, md: 4 },
+          position: "absolute",
+          bottom: -100,
+          left: -60,
+          width: 280,
+          height: 280,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${HOME.gold}14 0%, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 1,
           width: "100%",
-          maxWidth: "100%",
-          boxSizing: "border-box",
+          px: { xs: 1.25, sm: 1.5, md: 2 },
         }}
       >
         <Fade in={isVisible} timeout={700}>
-          <Grid container spacing={{ xs: 2.5, md: 3 }} sx={{ width: "100%" }}>
-            <Grid item xs={12} sx={{ width: "100%", maxWidth: "100%" }}>
-              <Box
-                sx={{
-                  textAlign: "center",
-                  maxWidth: "min(900px, 100%)",
-                  mx: "auto",
-                  mb: { xs: 1, md: 0.5 },
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    px: 2,
-                    py: 0.5,
-                    mb: 2,
-                    borderRadius: "999px",
-                    bgcolor: "rgba(201, 162, 39, 0.12)",
-                    border: `1px solid rgba(201, 162, 39, 0.35)`,
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      color: BRAND.navyDeep,
-                    }}
-                  >
-                    What we offer
-                  </Typography>
-                </Box>
-                <Typography
-                  sx={{
-                    fontFamily: '"Cormorant Garamond", serif',
-                    fontWeight: 800,
-                    fontSize: { xs: "1.85rem", sm: "2.25rem", md: "2.5rem" },
-                    color: BRAND.navyDeep,
-                    lineHeight: 1.15,
-                    mb: 2,
-                  }}
-                >
-                  Programmes &{" "}
-                  <Box component="span" sx={{ color: BRAND.gold }}>
-                    services
-                  </Box>
-                </Typography>
-                <Typography
-                  sx={{
-                    color: "rgba(8, 22, 43, 0.88)",
-                    fontSize: { xs: "1rem", md: "1.15rem" },
-                    lineHeight: 1.65,
-                  }}
-                >
-                  A balanced school experience: strong academics, enriching activities, and support
-                  systems — all within a safe, welcoming community aligned with our{" "}
-                  <Box component="span" sx={{ fontWeight: 700, color: BRAND.navy }}>
-                    Learn • Grow • Excel
+          <Box>
+            <HomeSectionHeader
+              eyebrow="What we offer"
+              title="Programmes &"
+              titleAccent="services"
+              subtitle={
+                <>
+                  Academics, activities, and support — rooted in our{" "}
+                  <Box component="span" sx={{ fontWeight: 700, color: HOME.navy }}>
+                    {HOME.tagline || "Learn • Grow • Excel"}
                   </Box>{" "}
                   motto.
-                </Typography>
-              </Box>
-            </Grid>
+                </>
+              }
+            />
 
-            {hasServices && (
-            <Grid item xs={12} sx={{ width: "100%", maxWidth: "100%" }}>
+            {serviceCount > 0 ? (
               <Box
-                sx={{
-                  position: "relative",
-                  width: "100%",
-                  maxWidth: "100%",
-                  pb: 4,
-                  boxSizing: "border-box",
+                sx={{ width: "100%" }}
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => {
+                  setIsPaused(false);
+                  progressRef.current = 0;
+                  setProgress(0);
+                }}
+                onFocus={() => setIsPaused(true)}
+                onBlur={() => {
+                  setIsPaused(false);
+                  progressRef.current = 0;
+                  setProgress(0);
                 }}
               >
-                <Card
-                  elevation={0}
-                  sx={{
-                    width: "100%",
-                    maxWidth: "100%",
-                    boxSizing: "border-box",
-                    display: "flex",
-                    flexDirection: "column",
-                    borderRadius: 3,
-                    overflow: "hidden",
-                    border: `1px solid rgba(12, 35, 64, 0.12)`,
-                    boxShadow: "0 12px 40px rgba(8, 22, 43, 0.1)",
-                    bgcolor: "#ffffff",
-                  }}
-                >
-                  <CardContent
-                    sx={{
-                      p: { xs: 2.5, sm: 3.5, md: 4 },
-                      "&:last-child": { pb: { xs: 2.5, sm: 3.5, md: 4 } },
-                    }}
-                  >
-                    <Box
-                      key={activeService}
-                      sx={{
-                        display: "flex",
-                        flexDirection: { xs: "column", sm: "row" },
-                        alignItems: { xs: "center", sm: "center" },
-                        textAlign: { xs: "center", sm: "left" },
-                        gap: { xs: 2.5, sm: 4 },
-                        width: "100%",
-                        minWidth: 0,
-                        animation: "svcFadeIn 0.45s ease",
-                        "@keyframes svcFadeIn": {
-                          "0%": { opacity: 0, transform: "translateY(12px)" },
-                          "100%": { opacity: 1, transform: "translateY(0)" },
-                        },
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 88,
-                          height: 88,
-                          minWidth: 88,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: `linear-gradient(145deg, rgba(230, 207, 106, 0.25), rgba(201, 162, 39, 0.18))`,
-                          border: `1px solid rgba(201, 162, 39, 0.4)`,
-                          color: BRAND.navyDeep,
-                        }}
-                      >
-                        <ActiveIcon sx={{ fontSize: 44 }} />
-                      </Box>
+                <ServiceDetailPanel
+                  active={active}
+                  progress={progress}
+                  ActiveIcon={ActiveIcon}
+                  showProgress={hasMultiple}
+                />
 
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography
-                          sx={{
-                            fontFamily: '"Cormorant Garamond", serif',
-                            fontWeight: 800,
-                            fontSize: { xs: "1.4rem", md: "1.65rem" },
-                            color: BRAND.navyDeep,
-                            mb: 1,
-                          }}
-                        >
-                          {active.name}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            color: "rgba(8, 22, 43, 0.85)",
-                            lineHeight: 1.6,
-                            fontSize: { xs: "0.98rem", md: "1.05rem" },
-                          }}
-                        >
-                          {active.description}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-
-                {serviceCount > 1 && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      display: "flex",
-                      gap: 1,
-                      alignItems: "center",
-                    }}
+                {hasMultiple ? (
+                  <Stack
+                    direction="row"
+                    justifyContent="center"
+                    spacing={0.75}
+                    sx={{ mt: 2.5 }}
+                    role="tablist"
+                    aria-label="School programmes"
                   >
-                    {schoolServices.map((_, idx) => (
+                    {schoolServices.map((svc, idx) => (
                       <Box
-                        key={idx}
+                        key={svc.id || svc.name}
                         component="button"
                         type="button"
-                        aria-label={`Show service ${idx + 1}`}
-                        onClick={() => setActiveService(idx)}
+                        role="tab"
+                        aria-selected={activeService === idx}
+                        aria-label={`Show ${svc.name}`}
+                        onClick={() => selectService(idx)}
                         sx={{
-                          width: activeService === idx ? 22 : 8,
+                          width: activeService === idx ? 24 : 8,
                           height: 8,
                           p: 0,
                           border: "none",
                           borderRadius: "999px",
                           cursor: "pointer",
                           transition: "all 0.25s ease",
-                          bgcolor:
-                            activeService === idx ? BRAND.gold : "rgba(12, 35, 64, 0.2)",
-                          "&:hover": { bgcolor: BRAND.goldMuted },
+                          bgcolor: activeService === idx ? HOME.gold : "rgba(12, 35, 64, 0.16)",
+                          "&:hover": {
+                            bgcolor: activeService === idx ? HOME.goldMuted : "rgba(12, 35, 64, 0.28)",
+                          },
                         }}
                       />
                     ))}
-                  </Box>
-                )}
+                  </Stack>
+                ) : null}
               </Box>
-            </Grid>
-            )}
-          </Grid>
+            ) : null}
+          </Box>
         </Fade>
-      </Container>
-    </Box>
+      </Box>
+    </HomeSectionShell>
   );
 }

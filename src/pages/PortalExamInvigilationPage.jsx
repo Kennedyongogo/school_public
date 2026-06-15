@@ -61,7 +61,7 @@ export default function PortalExamInvigilationPage() {
 
   useEffect(() => {
     if (!token) {
-      navigate("/marketplace", { replace: true });
+      navigate("/login", { replace: true });
       return undefined;
     }
     let cancelled = false;

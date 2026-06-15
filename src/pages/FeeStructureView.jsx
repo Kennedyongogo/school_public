@@ -2,20 +2,230 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  Card,
-  Button,
   CircularProgress,
   Alert,
+  Chip,
+  Stack,
+  Grid,
+  Skeleton,
+  Divider,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchPublicCurricula, fetchPublicFeeStructures } from "../api";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import { HOME } from "../components/Home/homeShared";
+import {
+  HomeSectionHeader,
+  HomeSectionShell,
+  HomeGhostButton,
+  HomePrimaryButton,
+} from "../components/Home/homeUi";
 
-const NAVY = "#16213e";
-const NAVY_DEEP = "#1a1a2e";
-const GOLD = "#FFD700";
-const RED = "#FF0000";
-const CREAM = "#FFF8F0";
+const sectionPad = { px: { xs: 1.25, sm: 1.5, md: 2 } };
+
+function formatKes(amount) {
+  const n = parseFloat(amount);
+  if (Number.isNaN(n)) return "KES —";
+  return `KES ${n.toLocaleString("en-KE", { maximumFractionDigits: 0 })}`;
+}
+
+function phaseLabel(phase) {
+  if (phase === "first_half") return "First half";
+  if (phase === "second_half") return "Second half";
+  return String(phase || "Payment phase").replace(/_/g, " ");
+}
+
+function capitalizeItem(name) {
+  if (!name) return "Fee item";
+  return String(name).charAt(0).toUpperCase() + String(name).slice(1);
+}
+
+const feeCardSx = {
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  borderRadius: 3,
+  overflow: "hidden",
+  bgcolor: "#fff",
+  border: `1px solid ${HOME.border}`,
+  boxShadow: HOME.shadowSm,
+  transition: "all 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
+  "&:hover": {
+    boxShadow: HOME.shadowMd,
+    borderColor: HOME.borderGold,
+    transform: "translateY(-4px)",
+  },
+};
+
+function FeeCardSkeleton() {
+  return (
+    <Box sx={{ ...feeCardSx, "&:hover": { transform: "none" } }}>
+      <Skeleton variant="rectangular" height={4} />
+      <Box sx={{ p: 2.5 }}>
+        <Skeleton width="60%" height={28} sx={{ mb: 2 }} />
+        <Skeleton width="40%" height={40} sx={{ mb: 2 }} />
+        <Skeleton width="100%" height={80} />
+      </Box>
+    </Box>
+  );
+}
+
+function BreakdownPhase({ phase }) {
+  if (!phase) return null;
+
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        p: { xs: 1.5, sm: 2 },
+        borderRadius: 2,
+        bgcolor: HOME.cream,
+        border: `1px solid ${HOME.border}`,
+      }}
+    >
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: "0.72rem",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: HOME.inkSoft,
+          }}
+        >
+          {phaseLabel(phase.phase)}
+        </Typography>
+        <Typography sx={{ fontWeight: 800, color: HOME.gold, fontSize: "0.95rem" }}>
+          {formatKes(phase.amount)}
+        </Typography>
+      </Stack>
+
+      {phase.items?.length > 0 ? (
+        <Stack spacing={0.75}>
+          {phase.items.map((item, i) => (
+            <Stack
+              key={`${item.name}-${i}`}
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{
+                py: 0.5,
+                borderBottom: i < phase.items.length - 1 ? `1px dashed ${HOME.border}` : "none",
+              }}
+            >
+              <Typography variant="body2" sx={{ color: HOME.inkMuted, fontWeight: 600 }}>
+                {capitalizeItem(item.name)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: HOME.navyDeep, fontWeight: 700 }}>
+                {formatKes(item.amount)}
+              </Typography>
+            </Stack>
+          ))}
+        </Stack>
+      ) : (
+        <Typography variant="caption" sx={{ color: HOME.inkSoft }}>
+          No line items listed
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+function FeeStructureCard({ feeStructure }) {
+  const className = feeStructure.curriculum_class?.name || "N/A";
+  const classCode = feeStructure.curriculum_class?.code || "";
+  const levelName = feeStructure.curriculum_class_level?.name || "N/A";
+  const phases = feeStructure.payment_breakdown || [];
+
+  return (
+    <Box sx={feeCardSx}>
+      <Box sx={{ height: 4, background: HOME.navyGradient, flexShrink: 0 }} />
+
+      <Box sx={{ p: { xs: 2, sm: 2.5, md: 3 }, flex: 1, display: "flex", flexDirection: "column" }}>
+        <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mb: 2 }}>
+          <Chip
+            size="small"
+            icon={<SchoolOutlinedIcon sx={{ fontSize: "16px !important" }} />}
+            label={`Class: ${className}${classCode ? ` (${classCode})` : ""}`}
+            sx={{ fontWeight: 700, bgcolor: HOME.sky, color: HOME.navyDeep, border: `1px solid ${HOME.border}` }}
+          />
+          <Chip
+            size="small"
+            icon={<LayersOutlinedIcon sx={{ fontSize: "16px !important" }} />}
+            label={`Level: ${levelName}`}
+            sx={{ fontWeight: 700, bgcolor: HOME.sky, color: HOME.navyDeep, border: `1px solid ${HOME.border}` }}
+          />
+        </Stack>
+
+        <Box
+          sx={{
+            p: { xs: 2, sm: 2.5 },
+            mb: 2.5,
+            borderRadius: 2.5,
+            background: `linear-gradient(135deg, ${HOME.navyDeep} 0%, ${HOME.navy} 100%)`,
+            border: `1px solid ${HOME.borderGold}`,
+            textAlign: "center",
+          }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.75} sx={{ mb: 0.5 }}>
+            <AccountBalanceWalletOutlinedIcon sx={{ color: HOME.goldMuted, fontSize: 20 }} />
+            <Typography
+              sx={{
+                fontSize: "0.72rem",
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              Term fee
+            </Typography>
+          </Stack>
+          <Typography
+            sx={{
+              fontFamily: HOME.fontDisplay,
+              fontWeight: 700,
+              fontSize: { xs: "2rem", sm: "2.35rem" },
+              color: HOME.goldMuted,
+              lineHeight: 1.1,
+            }}
+          >
+            {formatKes(feeStructure.term_fee_amount)}
+          </Typography>
+        </Box>
+
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5 }}>
+          <PaymentsOutlinedIcon sx={{ color: HOME.gold, fontSize: 20 }} />
+          <Typography sx={{ fontWeight: 800, color: HOME.navyDeep, fontSize: "0.95rem" }}>
+            Payment breakdown
+          </Typography>
+        </Stack>
+
+        {phases.length > 0 ? (
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={1.5}
+            sx={{ flex: 1 }}
+          >
+            {phases.map((phase, idx) => (
+              <BreakdownPhase key={`${phase.phase}-${idx}`} phase={phase} />
+            ))}
+          </Stack>
+        ) : (
+          <Typography variant="body2" sx={{ color: HOME.inkMuted }}>
+            No breakdown available for this term.
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
 export default function FeeStructureView() {
   const navigate = useNavigate();
@@ -41,136 +251,168 @@ export default function FeeStructureView() {
         setLoading(false);
       }
     };
-    loadData();
+    void loadData();
   }, [curriculumId]);
 
+  const handleApply = () => {
+    if (curriculum) {
+      localStorage.setItem(
+        "selectedCurriculum",
+        JSON.stringify({ id: curriculum.id, name: curriculum.name })
+      );
+    }
+    navigate("/admission/form");
+  };
+
   return (
-    <Box sx={{ pt: 2, pb: 4, bgcolor: "#f5f7fa", minWidth: "100vw", width: "100%", maxWidth: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2, pl: 2 }}>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon sx={{ fontSize: "0.95rem !important" }} />}
-          onClick={() => navigate("/admission/apply")}
+    <Box sx={{ minHeight: "100vh", width: "100%", maxWidth: "100%", bgcolor: HOME.cream, fontFamily: HOME.fontBody }}>
+      <HomeSectionShell
+        bg={{
+          background: `linear-gradient(180deg, ${HOME.sky} 0%, ${HOME.cream} 100%)`,
+          pt: { xs: 1.5, md: 2 },
+          pb: { xs: 1, md: 1.25 },
+        }}
+      >
+        <Box
           sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            fontSize: "0.9375rem",
-            letterSpacing: "0.02em",
-            px: 2.5,
-            py: 1,
-            borderRadius: "999px",
-            borderWidth: 2,
-            borderColor: NAVY,
-            color: "black",
-            bgcolor: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(8px)",
-            boxShadow: `0 4px 18px rgba(22, 33, 62, 0.12), inset 0 1px 0 rgba(255,255,255,0.85)`,
-            transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-            "& .MuiButton-startIcon": { mr: 1 },
-            "&:focus": { outline: "none" },
-            "&:hover": {
-              borderWidth: 2,
-              borderColor: RED,
-              bgcolor: NAVY_DEEP,
-              color: "white",
-              boxShadow: `0 10px 28px rgba(26, 26, 46, 0.35), 0 0 0 1px rgba(255, 215, 0, 0.35)`,
-              transform: "translateY(-2px)",
-              "& .MuiSvgIcon-root": { color: GOLD },
-            },
+            position: "absolute",
+            top: -80,
+            right: -50,
+            width: 240,
+            height: 240,
+            borderRadius: "50%",
+            background: `radial-gradient(circle, rgba(201,162,39,0.14) 0%, transparent 70%)`,
+            pointerEvents: "none",
           }}
-        >
-          Back
-        </Button>
-      </Box>
-      <Box sx={{ textAlign: "center", mb: 4, width: "100%" }}>
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 800,
-            mb: 2,
-            color: RED,
-            fontSize: "2.2rem",
-          }}
-        >
-          Fee Structure
-        </Typography>
-        <Typography variant="body1" sx={{ color: "#333", maxWidth: "600px", mx: "auto", fontSize: "1.05rem" }}>
-          {curriculum?.name || "Loading..."}
-        </Typography>
-      </Box>
+        />
+        <Box sx={{ ...sectionPad, position: "relative", zIndex: 1, width: "100%" }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            justifyContent="space-between"
+            spacing={1.5}
+            sx={{ mb: { xs: 1, md: 1.25 } }}
+          >
+            <HomeGhostButton onClick={() => navigate("/admission/apply")} startIcon={<ArrowBackIcon />}>
+              Back to admission
+            </HomeGhostButton>
+            {curriculum ? (
+              <Chip
+                label={curriculum.name}
+                sx={{
+                  fontWeight: 800,
+                  bgcolor: "rgba(201, 162, 39, 0.15)",
+                  color: HOME.navyDeep,
+                  border: `1px solid ${HOME.borderGold}`,
+                  fontSize: "0.85rem",
+                  height: 32,
+                }}
+              />
+            ) : null}
+          </Stack>
 
-      {error && (
-        <Box sx={{ width: "100%", px: 2 }}>
-          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
+          <HomeSectionHeader
+            eyebrow="Transparency"
+            title="Fee"
+            titleAccent="structure"
+            subtitle="Review term fees and payment breakdowns by class and level before you apply."
+            sx={{ mb: 0 }}
+          />
         </Box>
-      )}
+      </HomeSectionShell>
 
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <CircularProgress sx={{ color: NAVY }} />
-        </Box>
-      ) : feeStructures.length === 0 ? (
-        <Box sx={{ textAlign: "center", py: 4, width: "100%" }}>
-          <Typography color="text.secondary">No fee structure available for this curriculum.</Typography>
-        </Box>
-      ) : (
-        <Box sx={{ px: 2, py: 2, width: "100%" }}>
-          {feeStructures.map((fs) => (
-            <Card
-              key={fs.id}
+      <HomeSectionShell bg={{ pt: { xs: 1, md: 1.5 }, pb: { xs: 4, md: 6 }, bgcolor: HOME.cream }}>
+        <Box sx={{ ...sectionPad, width: "100%" }}>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2, borderRadius: 2, border: `1px solid ${HOME.border}` }}
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+
+          {loading ? (
+            <Grid container spacing={{ xs: 2, md: 2.5 }}>
+              {Array.from({ length: 2 }).map((_, i) => (
+                <Grid key={i} size={{ xs: 12, lg: 6 }}>
+                  <FeeCardSkeleton />
+                </Grid>
+              ))}
+            </Grid>
+          ) : feeStructures.length === 0 ? (
+            <Box
               sx={{
-                borderRadius: "16px",
-                overflow: "hidden",
-                mb: 3,
-                width: "100%",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                bgcolor: CREAM,
+                textAlign: "center",
+                py: 8,
+                px: 3,
+                borderRadius: 3,
+                bgcolor: "#fff",
+                border: `1px solid ${HOME.border}`,
               }}
             >
-              <Box sx={{ px: 3, py: 2 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: NAVY }}>
-                    Term Fee: KES {parseFloat(fs.term_fee_amount).toLocaleString()}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" sx={{ lineHeight: 1.6, color: "black", fontSize: "1rem", mb: 2 }}>
-                  Payment Breakdown:
+              <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 48, color: HOME.gold, mb: 2, opacity: 0.85 }} />
+              <Typography
+                sx={{
+                  fontFamily: HOME.fontDisplay,
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: HOME.navyDeep,
+                  mb: 1,
+                }}
+              >
+                No fee structure available
+              </Typography>
+              <Typography sx={{ color: HOME.inkMuted, maxWidth: 420, mx: "auto", mb: 3 }}>
+                Fee details for this curriculum have not been published yet. Contact the school for more information.
+              </Typography>
+              <HomeGhostButton onClick={() => navigate("/admission/apply")}>Back to admission</HomeGhostButton>
+            </Box>
+          ) : (
+            <>
+              <Grid container spacing={{ xs: 2, md: 2.5 }}>
+                {feeStructures.map((fs) => (
+                  <Grid key={fs.id} size={{ xs: 12, lg: 6 }}>
+                    <FeeStructureCard feeStructure={fs} />
+                  </Grid>
+                ))}
+              </Grid>
+
+              <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: HOME.border }} />
+
+              <Box
+                sx={{
+                  p: { xs: 2.5, sm: 3 },
+                  borderRadius: 3,
+                  textAlign: "center",
+                  background: HOME.navyGradient,
+                  border: `1px solid ${HOME.borderGold}`,
+                  boxShadow: HOME.shadowMd,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: HOME.fontDisplay,
+                    fontWeight: 700,
+                    fontSize: { xs: "1.35rem", sm: "1.6rem" },
+                    color: "#fff",
+                    mb: 1,
+                  }}
+                >
+                  Ready to apply?
                 </Typography>
-                {fs.payment_breakdown && fs.payment_breakdown.length > 0 ? (
-                  fs.payment_breakdown.map((phase, idx) => (
-                    <Box key={idx} sx={{ mb: 2, pl: 2 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: NAVY }}>
-                        {phase.phase === "first_half" ? "First Half" : "Second Half"}: KES {parseFloat(phase.amount).toLocaleString()}
-                      </Typography>
-                      {phase.items && phase.items.length > 0 ? (
-                        <Box sx={{ pl: 2, mt: 1 }}>
-                          {phase.items.map((item, i) => (
-                            <Typography key={i} variant="caption" sx={{ display: "block", color: "#555" }}>
-                              • {item.name}: KES {parseFloat(item.amount).toLocaleString()}
-                            </Typography>
-                          ))}
-                        </Box>
-                      ) : null}
-                    </Box>
-                  ))
-                ) : (
-                  <Typography variant="caption" color="text.secondary">No breakdown available</Typography>
-                )}
+                <Typography sx={{ color: "rgba(255,255,255,0.82)", mb: 2.5, maxWidth: 480, mx: "auto" }}>
+                  Start your admission application for {curriculum?.name || "this curriculum"}.
+                </Typography>
+                <HomePrimaryButton endIcon={<ArrowForwardIcon />} onClick={handleApply}>
+                  Apply for admission
+                </HomePrimaryButton>
               </Box>
-              <Box sx={{ px: 3, py: 1, pt: 0, display: "flex", gap: 2, flexWrap: "wrap" }}>
-                <Typography variant="caption" sx={{ color: "#666" }}>
-                  <strong>Class:</strong> {fs.curriculum_class?.name || "N/A"} ({fs.curriculum_class?.code || ""})
-                </Typography>
-                <Typography variant="caption" sx={{ color: "#666" }}>
-                  <strong>Level:</strong> {fs.curriculum_class_level?.name || "N/A"}
-                </Typography>
-              </Box>
-            </Card>
-          ))}
+            </>
+          )}
         </Box>
-      )}
+      </HomeSectionShell>
     </Box>
   );
 }

@@ -339,7 +339,7 @@ export default function PortalProfilePage() {
     const token =
       typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
     if (!token) {
-      navigate("/marketplace", { replace: true });
+      navigate("/login", { replace: true });
       return;
     }
     setLoading(true);
@@ -348,7 +348,7 @@ export default function PortalProfilePage() {
       const me = await fetchSchoolPortalUser();
       if (me.role !== "parent" && me.role !== "student") {
         clearSchoolPortalSession();
-        navigate("/marketplace", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
       setUser(me);

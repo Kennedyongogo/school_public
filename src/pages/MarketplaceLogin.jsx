@@ -3,15 +3,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
-  Paper,
   TextField,
-  Button,
   Tabs,
   Tab,
   InputAdornment,
   IconButton,
   Link,
   CircularProgress,
+  Chip,
+  Stack,
 } from "@mui/material";
 import {
   School,
@@ -27,18 +27,8 @@ import {
 import Swal from "sweetalert2";
 import { loginMarketplaceUser } from "../api";
 import BrandLogoMark from "../components/common/BrandLogoMark";
-
-/** Elimu Plus palette — navy + red accent */
-const BRAND = {
-  navy: "#0c2340",
-  navyDeep: "#08162b",
-  red: "#DC2626",
-  redDark: "#B91C1C",
-  redLight: "#F87171",
-};
-const LOGIN_BTN_GRAD = `linear-gradient(145deg, ${BRAND.red}, ${BRAND.redDark})`;
-
-const BG_LIGHT = "#f0f4fa";
+import { HOME, homeGlassSx } from "../components/Home/homeShared";
+import { HomeGhostButton, HomePrimaryButton } from "../components/Home/homeUi";
 
 const HERO_IMAGE_CANDIDATES = [
   "anilsharma26-children-7047124_1920.jpg",
@@ -69,9 +59,21 @@ const FEATURE_ITEMS = [
   {
     icon: <VerifiedUser />,
     title: "Parent partnership",
-    text: "Stay connected with news, events, and your child’s progress.",
+    text: "Stay connected with news, events, and your child's progress.",
   },
 ];
+
+const textFieldSx = {
+  "& .MuiOutlinedInput-root": {
+    bgcolor: "#fff",
+    borderRadius: 2,
+    fontFamily: HOME.fontBody,
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HOME.borderGold },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HOME.gold, borderWidth: 2 },
+  },
+  "& .MuiInputLabel-root.Mui-focused": { color: HOME.navyDeep },
+  "& .MuiInputBase-input": { color: HOME.navyDeep, fontSize: "1rem" },
+};
 
 export default function MarketplaceLogin() {
   const navigate = useNavigate();
@@ -88,20 +90,14 @@ export default function MarketplaceLogin() {
   const [slideIndex, setSlideIndex] = useState(0);
 
   const heroUrls = HERO_IMAGE_CANDIDATES.map(heroPublicUrl);
-  const heroCount = HERO_IMAGE_CANDIDATES.length;
 
   useEffect(() => {
-    if (heroCount <= 1) return undefined;
-    const id = window.setInterval(
-      () => setSlideIndex((i) => (i + 1) % heroCount),
-      6500
-    );
+    if (heroUrls.length <= 1) return undefined;
+    const id = window.setInterval(() => setSlideIndex((i) => (i + 1) % heroUrls.length), 6500);
     return () => window.clearInterval(id);
-  }, [heroCount]);
+  }, [heroUrls.length]);
 
-  const handleRoleTabChange = (_, newValue) => {
-    setRoleTab(newValue);
-  };
+  const swalGold = { confirmButtonColor: HOME.gold };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -110,7 +106,7 @@ export default function MarketplaceLogin() {
         icon: "error",
         title: "Login",
         text: "Please enter your email or username and password.",
-        confirmButtonColor: BRAND.red,
+        ...swalGold,
       });
       return;
     }
@@ -128,7 +124,7 @@ export default function MarketplaceLogin() {
           icon: "error",
           title: "Login failed",
           text: "Invalid response from server.",
-          confirmButtonColor: BRAND.red,
+          ...swalGold,
         });
         return;
       }
@@ -141,22 +137,19 @@ export default function MarketplaceLogin() {
             expectedRole === "parent"
               ? "This email belongs to a student account. Switch to the Student login tab."
               : "This email belongs to a parent account. Switch to the Parent login tab.",
-          confirmButtonColor: BRAND.red,
+          ...swalGold,
         });
         return;
       }
       localStorage.setItem("marketplace_token", token);
       localStorage.setItem("marketplace_user", JSON.stringify(user));
-      localStorage.setItem(
-        "portal_login_role",
-        roleTab === 0 ? "parent" : "student"
-      );
+      localStorage.setItem("portal_login_role", roleTab === 0 ? "parent" : "student");
       Swal.fire({
         icon: "success",
         title: "Welcome back!",
         timer: 1200,
         showConfirmButton: false,
-        confirmButtonColor: BRAND.red,
+        ...swalGold,
       });
       navigate(returnTo, { replace: true });
     } catch (err) {
@@ -164,7 +157,7 @@ export default function MarketplaceLogin() {
         icon: "error",
         title: "Login failed",
         text: err.message || "Login failed.",
-        confirmButtonColor: BRAND.red,
+        ...swalGold,
       });
     } finally {
       setLoginLoading(false);
@@ -176,22 +169,23 @@ export default function MarketplaceLogin() {
       sx={{
         display: "flex",
         flexDirection: { xs: "column", lg: "row" },
-        height: "100vh",
-        maxHeight: "100vh",
+        minHeight: "100vh",
+        height: { lg: "100vh" },
+        maxHeight: { lg: "100vh" },
         overflow: "hidden",
-        bgcolor: BG_LIGHT,
+        bgcolor: HOME.cream,
+        fontFamily: HOME.fontBody,
       }}
     >
-      {/* Left: rotating hero imagery */}
+      {/* Left hero */}
       <Box
         sx={{
           display: { xs: "none", lg: "flex" },
           width: "50%",
           flex: "0 0 50%",
-          height: "100%",
           flexDirection: "column",
           justifyContent: "space-between",
-          bgcolor: BRAND.navyDeep,
+          bgcolor: HOME.navyDeep,
           overflow: "hidden",
           position: "relative",
           minHeight: 0,
@@ -210,7 +204,8 @@ export default function MarketplaceLogin() {
               height: "100%",
               objectFit: "cover",
               opacity: i === slideIndex ? 1 : 0,
-              transition: "opacity 1.8s ease-in-out",
+              transform: i === slideIndex ? "scale(1)" : "scale(1.04)",
+              transition: "opacity 1.8s ease-in-out, transform 8s ease-out",
               zIndex: 0,
             }}
           />
@@ -220,390 +215,322 @@ export default function MarketplaceLogin() {
             position: "absolute",
             inset: 0,
             zIndex: 1,
-            background:
-              "linear-gradient(165deg, rgba(8,22,43,0.88) 0%, rgba(12,35,64,0.55) 45%, rgba(8,22,43,0.82) 100%)",
+            background: HOME.heroOverlay,
           }}
         />
 
-        <Box sx={{ position: "relative", zIndex: 2, p: "clamp(0.75rem, 1.5vh, 1.5rem)", flexShrink: 0 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <BrandLogoMark
-              size={52}
-              sx={{
-                height: { xs: 44, sm: 52 },
-                maxWidth: "min(260px, 85vw)",
-                filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.35))",
-              }}
-            />
-          </Box>
+        <Box sx={{ position: "relative", zIndex: 2, p: 3, flexShrink: 0 }}>
+          <BrandLogoMark
+            size={52}
+            sx={{
+              height: 52,
+              maxWidth: 260,
+              filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.35))",
+            }}
+          />
         </Box>
 
         <Box
           sx={{
             position: "relative",
             zIndex: 2,
-            px: "clamp(0.75rem, 1.5vh, 1.5rem)",
-            py: "clamp(0.5rem, 2vh, 2rem)",
+            px: 3,
+            py: 2,
             flex: 1,
-            minHeight: 0,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
           }}
         >
-          <Typography
-            variant="h4"
+          <Chip
+            label="Parent & student portal"
             sx={{
-              fontFamily: '"Cormorant Garamond", serif',
+              mb: 2,
+              width: "fit-content",
               fontWeight: 700,
-              color: "white",
+              fontSize: "0.68rem",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              bgcolor: "rgba(201, 162, 39, 0.15)",
+              color: HOME.goldMuted,
+              border: `1px solid ${HOME.borderGold}`,
+            }}
+          />
+          <Typography
+            sx={{
+              fontFamily: HOME.fontDisplay,
+              fontWeight: 700,
+              color: "#fff",
               maxWidth: 440,
-              lineHeight: 1.2,
-              mb: "clamp(0.5rem, 1.5vh, 1.5rem)",
-              fontSize: "clamp(1.25rem, 2.8vh, 1.85rem)",
+              lineHeight: 1.15,
+              mb: 1.5,
+              fontSize: "clamp(1.75rem, 3vh, 2.25rem)",
             }}
           >
             Learn • Grow •{" "}
-            <Box component="span" sx={{ color: BRAND.redLight }}>
+            <Box component="span" sx={{ color: HOME.gold }}>
               Excel
             </Box>
           </Typography>
           <Typography
             sx={{
-              color: "rgba(255,255,255,0.88)",
-              fontSize: "clamp(0.9rem, 1.5vh, 1.05rem)",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: "1.05rem",
               maxWidth: 460,
-              mb: "clamp(1rem, 2vh, 1.75rem)",
-              lineHeight: 1.5,
+              mb: 2.5,
+              lineHeight: 1.65,
             }}
           >
             Excellence in education with a global outlook — preparing young minds for tomorrow&apos;s
             legacy.
           </Typography>
+
           <Box
             sx={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "clamp(0.5rem, 1vh, 1rem)",
-              maxWidth: 480,
+              gap: 1.25,
+              maxWidth: 500,
             }}
           >
             {FEATURE_ITEMS.map((item) => (
               <Box
                 key={item.title}
                 sx={{
-                  p: "clamp(0.5rem, 1.2vh, 1rem)",
-                  borderRadius: 2,
-                  background: "rgba(255, 255, 255, 0.1)",
-                  backdropFilter: "blur(8px)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  ...homeGlassSx({ radius: 2 }),
+                  p: 1.5,
                 }}
               >
-                <Box
-                  sx={{
-                    color: BRAND.redLight,
-                    mb: 0.5,
-                    "& .MuiSvgIcon-root": { fontSize: "clamp(22px, 2.5vh, 28px)" },
-                  }}
-                >
-                  {item.icon}
-                </Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 600,
-                    color: "white",
-                    mb: 0.25,
-                    fontSize: "clamp(0.85rem, 1.5vh, 1rem)",
-                  }}
-                >
+                <Box sx={{ color: HOME.goldMuted, mb: 0.75, lineHeight: 0 }}>{item.icon}</Box>
+                <Typography sx={{ fontWeight: 700, color: "#fff", mb: 0.25, fontSize: "0.9rem" }}>
                   {item.title}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "rgba(255,255,255,0.85)", fontSize: "clamp(0.8rem, 1.3vh, 1.2rem)" }}
-                >
+                <Typography sx={{ color: "rgba(255,255,255,0.8)", fontSize: "0.82rem", lineHeight: 1.5 }}>
                   {item.text}
                 </Typography>
               </Box>
             ))}
           </Box>
+
+          <Stack direction="row" spacing={0.75} sx={{ mt: 2.5 }}>
+            {heroUrls.map((_, i) => (
+              <Box
+                key={i}
+                component="button"
+                type="button"
+                aria-label={`Slide ${i + 1}`}
+                onClick={() => setSlideIndex(i)}
+                sx={{
+                  width: i === slideIndex ? 24 : 8,
+                  height: 8,
+                  p: 0,
+                  border: "none",
+                  borderRadius: "999px",
+                  cursor: "pointer",
+                  bgcolor: i === slideIndex ? HOME.gold : "rgba(255,255,255,0.35)",
+                  transition: "all 0.25s ease",
+                }}
+              />
+            ))}
+          </Stack>
         </Box>
 
-        <Box sx={{ position: "relative", zIndex: 2, p: "clamp(0.5rem, 1vh, 1rem)", flexShrink: 0 }}>
-          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.8rem, 1.2vh, 1.2rem)" }}>
-            © {new Date().getFullYear()} Elimu Plus. Learn • Grow • Excel.
+        <Box sx={{ position: "relative", zIndex: 2, p: 3, flexShrink: 0 }}>
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>
+            © {new Date().getFullYear()} {HOME.name}. Learn • Grow • Excel.
           </Typography>
         </Box>
       </Box>
 
-      {/* Right: login */}
+      {/* Right: login form */}
       <Box
         sx={{
           flex: 1,
           minHeight: 0,
-          height: "100%",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          pt: { xs: 5, sm: 6 },
-          px: "clamp(0.5rem, 2vh, 1.5rem)",
-          pb: "clamp(0.5rem, 1.5vh, 1rem)",
-          bgcolor: BG_LIGHT,
+          px: { xs: 1.25, sm: 2 },
+          py: { xs: 3, sm: 4 },
+          bgcolor: HOME.cream,
           overflow: "auto",
           position: "relative",
-          fontFamily: '"Open Sans", "Segoe UI", sans-serif',
         }}
       >
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => navigate("/")}
-          disableRipple
-          sx={{
-            position: "absolute",
-            top: { xs: 12, sm: 16 },
-            left: { xs: 12, sm: 16 },
-            color: BRAND.navyDeep,
-            fontSize: "1.2rem",
-            textTransform: "none",
-            fontWeight: 600,
-            outline: "none",
-            "&:focus": { outline: "none", boxShadow: "none" },
-            "&:focus-visible": { outline: "none", boxShadow: "none" },
-            "&:hover": { color: BRAND.red, backgroundColor: "transparent" },
-          }}
-        >
-          Back to Home
-        </Button>
+        <Box sx={{ position: "absolute", top: { xs: 12, sm: 16 }, left: { xs: 12, sm: 16 } }}>
+          <HomeGhostButton onClick={() => navigate("/")} startIcon={<ArrowBack />} sx={{ fontSize: "0.9rem" }}>
+            Back to home
+          </HomeGhostButton>
+        </Box>
+
+        <Box sx={{ display: { xs: "flex", lg: "none" }, flexDirection: "column", alignItems: "center", mb: 2, mt: 5 }}>
+          <BrandLogoMark size={56} sx={{ height: 48, maxWidth: 280 }} />
+        </Box>
 
         <Box
           sx={{
-            display: { xs: "flex", lg: "none" },
-            flexDirection: "column",
-            alignItems: "center",
-            mb: "clamp(0.5rem, 1.5vh, 1rem)",
-            flexShrink: 0,
-          }}
-        >
-          <BrandLogoMark
-            size={56}
-            sx={{
-              mx: "auto",
-              mb: 0.5,
-              height: { xs: 48, sm: 56 },
-              maxWidth: "min(280px, 90vw)",
-            }}
-          />
-        </Box>
-
-        <Paper
-          elevation={0}
-          sx={{
             width: "100%",
-            maxWidth: 480,
-            maxHeight: { xs: "none", lg: "min(78vh, 560px)" },
-            borderRadius: 2,
+            maxWidth: 460,
+            borderRadius: 3,
             overflow: "hidden",
-            border: `1px solid rgba(12, 35, 64, 0.15)`,
-            boxShadow: "0 25px 50px -12px rgba(8, 22, 43, 0.12)",
-            flexShrink: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            mt: 1.5,
+            bgcolor: "#fff",
+            border: `1px solid ${HOME.border}`,
+            boxShadow: HOME.shadowLg,
           }}
         >
-          <Tabs
-            value={roleTab}
-            onChange={handleRoleTabChange}
-            variant="fullWidth"
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              minHeight: 48,
-              bgcolor: "rgba(12, 35, 64, 0.04)",
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 700,
-                py: 1.25,
-                fontSize: "1rem",
-                color: BRAND.navy,
-                outline: "none",
-                "&:focus": { outline: "none" },
-                "&:focus-visible": { outline: "none", boxShadow: "none" },
-                "&.Mui-focusVisible": {
-                  outline: "none",
-                  boxShadow: "none",
-                  backgroundColor: "transparent",
-                },
-              },
-              "& .Mui-selected": { color: BRAND.red },
-              "& .MuiTabs-indicator": { backgroundColor: BRAND.red, height: 3 },
-              "& .MuiTab-root:hover": { color: BRAND.red, opacity: 0.95 },
-            }}
-          >
-            <Tab label="Parent login" disableRipple />
-            <Tab label="Student login" disableRipple />
-          </Tabs>
+          <Box sx={{ height: 4, background: HOME.navyGradient }} />
 
-          <Box sx={{ p: "clamp(0.75rem, 1.5vh, 1.5rem)", flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Box sx={{ p: { xs: 2, sm: 2.5 }, pb: 1.5 }}>
             <Typography
-              variant="h5"
               sx={{
-                fontFamily: '"Cormorant Garamond", serif',
+                fontFamily: HOME.fontDisplay,
                 fontWeight: 700,
-                mb: 0.25,
-                fontSize: "clamp(1.25rem, 2.5vh, 1.75rem)",
-                color: BRAND.navyDeep,
+                fontSize: { xs: "1.65rem", sm: "1.85rem" },
+                color: HOME.navyDeep,
+                textAlign: "center",
+                mb: 0.5,
               }}
             >
               Welcome back
             </Typography>
             <Typography
               variant="body2"
-              sx={{
-                mb: "clamp(0.5rem, 1.5vh, 1rem)",
-                fontSize: "clamp(1.2rem, 1.8vh, 1.2rem)",
-                color: "rgba(8, 22, 43, 0.85)",
-              }}
+              sx={{ color: HOME.inkMuted, textAlign: "center", mb: 2, lineHeight: 1.6 }}
             >
-              {roleTab === 0
-                ? "Sign in to the parent portal for news, fees, and your child’s school updates."
-                : "Sign in to your student portal for assignments, schedules, and resources."}
+              Sign in to your school portal
             </Typography>
 
-            <Box
-              component="form"
-              onSubmit={handleLogin}
-              sx={{ display: "flex", flexDirection: "column", gap: "clamp(0.5rem, 1.2vh, 1rem)" }}
-            >
-              <TextField
-                fullWidth
-                type="email"
-                label="Email or username"
-                placeholder="you@family.com or your username"
-                value={emailOrPhone}
-                onChange={(e) => setEmailOrPhone(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <AccountCircle sx={{ color: BRAND.navy, fontSize: 24 }} />
-                    </InputAdornment>
-                  ),
-                  sx: {
-                    fontSize: "1rem",
-                    "& .MuiOutlinedInput-notchedOutline": {},
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: BRAND.red,
-                      borderWidth: 2,
-                    },
-                  },
-                }}
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Tabs
+                value={roleTab}
+                onChange={(_, v) => setRoleTab(v)}
                 sx={{
-                  "& .MuiInputLabel-root": { color: BRAND.navy },
-                  "& label.Mui-focused": { color: BRAND.red },
-                  "& .MuiInputBase-input": { fontSize: "1rem", color: BRAND.navyDeep },
-                }}
-              />
-              <TextField
-                fullWidth
-                type={showPassword ? "text" : "password"}
-                label="Password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock sx={{ color: BRAND.navy, fontSize: 24 }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        size="small"
-                        disableRipple
-                        sx={{
-                          outline: "none",
-                          color: BRAND.navy,
-                          "&:focus": { outline: "none" },
-                          "&:focus-visible": { outline: "none", boxShadow: "none" },
-                        }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                  sx: {
-                    fontSize: "1rem",
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: BRAND.red,
-                      borderWidth: 2,
-                    },
-                  },
-                }}
-                sx={{
-                  "& .MuiInputLabel-root": { color: BRAND.navy },
-                  "& label.Mui-focused": { color: BRAND.red },
-                  "& .MuiInputBase-input": { fontSize: "1rem", color: BRAND.navyDeep },
-                }}
-              />
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                <Link
-                  href="#"
-                  variant="body2"
-                  onClick={(e) => e.preventDefault()}
-                  sx={{
-                    color: BRAND.red,
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    fontSize: "1.2rem",
-                    "&:hover": { textDecoration: "underline" },
-                  }}
-                >
-                  Forgot password?
-                </Link>
-              </Box>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                disableRipple
-                disabled={loginLoading}
-                sx={{
-                  py: 1.5,
-                  fontWeight: 700,
-                  fontSize: "1.05rem",
-                  background: LOGIN_BTN_GRAD,
-                  color: "#fff",
-                  textTransform: "none",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  boxShadow: "0 10px 25px rgba(220, 38, 38, 0.28)",
-                  outline: "none",
-                  "&:focus": { outline: "none", boxShadow: "0 10px 25px rgba(220, 38, 38, 0.28)" },
-                  "&:focus-visible": { outline: "none", boxShadow: "0 10px 25px rgba(220, 38, 38, 0.28)" },
-                  "&:hover": {
-                    background: BRAND.redDark,
-                    boxShadow: "0 12px 28px rgba(185, 28, 28, 0.35)",
-                  },
+                  minHeight: 44,
+                  bgcolor: "rgba(12, 35, 64, 0.06)",
+                  borderRadius: "999px",
+                  p: 0.5,
+                  border: `1px solid ${HOME.border}`,
+                  mb: 2,
+                  "& .MuiTabs-indicator": { display: "none" },
+                  "& .MuiTabs-flexContainer": { gap: 0.5 },
                 }}
               >
-                {loginLoading ? (
-                  <CircularProgress size={24} sx={{ color: "#fff" }} />
-                ) : roleTab === 0 ? (
-                  "Sign in as parent"
-                ) : (
-                  "Sign in as student"
-                )}
-              </Button>
+                {["Parent login", "Student login"].map((label, i) => (
+                  <Tab
+                    key={label}
+                    label={label}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: "0.88rem",
+                      fontFamily: HOME.fontBody,
+                      minHeight: 38,
+                      px: { xs: 2, sm: 2.5 },
+                      borderRadius: "999px",
+                      color: HOME.navy,
+                      opacity: roleTab === i ? 1 : 0.65,
+                      bgcolor: roleTab === i ? "#fff" : "transparent",
+                      boxShadow: roleTab === i ? HOME.shadowSm : "none",
+                      transition: "all 0.2s ease",
+                      "&.Mui-selected": { color: HOME.navyDeep },
+                    }}
+                  />
+                ))}
+              </Tabs>
             </Box>
-          </Box>
-        </Paper>
 
+            <Typography variant="body2" sx={{ color: HOME.inkMuted, mb: 2, lineHeight: 1.65, fontSize: "0.92rem" }}>
+              {roleTab === 0
+                ? "Access fees, report cards, events, and school updates for your family."
+                : "Access classes, exams, schedules, and learning resources."}
+            </Typography>
+          </Box>
+
+          <Box
+            component="form"
+            onSubmit={handleLogin}
+            sx={{ px: { xs: 2, sm: 2.5 }, pb: { xs: 2.5, sm: 3 }, display: "flex", flexDirection: "column", gap: 1.75 }}
+          >
+            <TextField
+              fullWidth
+              type="email"
+              label="Email or username"
+              placeholder="you@family.com"
+              value={emailOrPhone}
+              onChange={(e) => setEmailOrPhone(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <AccountCircle sx={{ color: HOME.gold }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={textFieldSx}
+            />
+            <TextField
+              fullWidth
+              type={showPassword ? "text" : "password"}
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock sx={{ color: HOME.gold }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      size="small"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      sx={{ color: HOME.navy }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={textFieldSx}
+            />
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Link
+                href="#"
+                variant="body2"
+                onClick={(e) => e.preventDefault()}
+                sx={{
+                  color: HOME.gold,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  fontSize: "0.88rem",
+                  "&:hover": { textDecoration: "underline", color: HOME.navyDeep },
+                }}
+              >
+                Forgot password?
+              </Link>
+            </Box>
+
+            <HomePrimaryButton
+              type="submit"
+              fullWidth
+              disabled={loginLoading}
+              sx={{ py: 1.35, fontSize: "1rem", mt: 0.5 }}
+            >
+              {loginLoading ? (
+                <CircularProgress size={24} sx={{ color: HOME.navyDeep }} />
+              ) : roleTab === 0 ? (
+                "Sign in as parent"
+              ) : (
+                "Sign in as student"
+              )}
+            </HomePrimaryButton>
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

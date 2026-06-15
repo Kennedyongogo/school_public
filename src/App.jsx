@@ -16,7 +16,6 @@ import BrandPageLoader from "./components/common/BrandPageLoader";
 
 const Home = lazy(() => import("./pages/Home"));
 const Team = lazy(() => import("./pages/Team"));
-const Portfolio = lazy(() => import("./pages/Portfolio"));
 const MeetOurTeam = lazy(() => import("./pages/MeetOurTeam"));
 const MarketplaceLogin = lazy(() => import("./pages/MarketplaceLogin"));
 const PortalProfilePage = lazy(() => import("./pages/PortalProfilePage"));
@@ -49,7 +48,7 @@ function ScrollToTop() {
 function AppLayout() {
   const location = useLocation();
   const hideHeader =
-    location.pathname === "/marketplace" ||
+    location.pathname === "/login" ||
     location.pathname.startsWith("/portal");
 
   return (
@@ -61,7 +60,7 @@ function AppLayout() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route
-              path="/team"
+              path="/about-us"
               element={
                 <>
                   <Team />
@@ -69,15 +68,7 @@ function AppLayout() {
                 </>
               }
             />
-            <Route
-              path="/portfolio"
-              element={
-                <>
-                  <Portfolio />
-                  <Footer />
-                </>
-              }
-            />
+            <Route path="/team" element={<Navigate to="/about-us" replace />} />
             <Route
               path="/meet-our-team"
               element={
@@ -87,7 +78,8 @@ function AppLayout() {
                 </>
               }
             />
-            <Route path="/marketplace" element={<MarketplaceLogin />} />
+            <Route path="/login" element={<MarketplaceLogin />} />
+            <Route path="/marketplace" element={<Navigate to="/login" replace />} />
             <Route path="/portal/live-meeting" element={<PortalLiveMeetingPage />} />
             <Route path="/portal/live-class/:liveClassId" element={<PortalLiveClassPage />} />
             <Route path="/portal/exam-schedule/:scheduleId/invigilation" element={<PortalExamInvigilationPage />} />

@@ -57,7 +57,7 @@ export default function PortalPrivateLayout() {
   useEffect(() => {
     const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
     if (!token) {
-      navigate("/marketplace", { replace: true });
+      navigate("/login", { replace: true });
       return;
     }
     const load = async () => {
@@ -76,7 +76,7 @@ export default function PortalPrivateLayout() {
         }
       } catch {
         clearSchoolPortalSession();
-        navigate("/marketplace", { replace: true });
+        navigate("/login", { replace: true });
       }
     };
     void load();
@@ -154,7 +154,7 @@ export default function PortalPrivateLayout() {
         portalRoleLabel={portalLabel}
         onLogout={() => {
           clearSchoolPortalSession();
-          navigate("/marketplace", { replace: true });
+          navigate("/login", { replace: true });
         }}
         notificationCount={portalUnreadCount}
         onNotificationsClick={() => setNotificationDrawerOpen(true)}

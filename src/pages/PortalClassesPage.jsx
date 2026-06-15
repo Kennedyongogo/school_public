@@ -54,7 +54,7 @@ export default function PortalClassesPage() {
     const load = async () => {
       const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
       if (!token) {
-        navigate("/marketplace", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
       setLoading(true);

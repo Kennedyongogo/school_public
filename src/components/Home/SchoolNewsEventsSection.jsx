@@ -4,8 +4,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
-  Container,
   Dialog,
   DialogContent,
   IconButton,
@@ -15,11 +13,9 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import { motion } from "framer-motion";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailable";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -27,33 +23,31 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import ArrowCarousel from "./ArrowCarousel";
+import { HOME, homeBodyFontSize } from "./homeShared";
+import { HomeSectionHeader, HomeSectionShell, HomePrimaryButton } from "./homeUi";
 
-const BRAND = {
-  navy: "#0c2340",
-  navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
-  cream: "#f7f5ef",
-  sky: "#f0f4fa",
-};
+const BRAND = HOME;
 
 /** Shared gallery card dimensions (news & events). */
-const GALLERY_CARD_HEIGHT = 440;
-const GALLERY_POSTER_HEIGHT = 180;
+const GALLERY_POSTER_HEIGHT = { xs: 168, sm: 188, md: 200 };
 
 const galleryCardShellSx = {
-  height: GALLERY_CARD_HEIGHT,
+  width: "100%",
+  height: "100%",
+  minHeight: { xs: 360, md: 400 },
   display: "flex",
   flexDirection: "column",
   cursor: "pointer",
   borderRadius: 3,
   overflow: "hidden",
   bgcolor: "#fff",
-  border: "1px solid rgba(12, 35, 64, 0.1)",
-  boxShadow: "0 8px 28px rgba(12, 35, 64, 0.08)",
-  transition: "box-shadow 0.25s ease",
+  border: `1px solid ${HOME.border}`,
+  boxShadow: HOME.shadowSm,
+  transition: "all 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
   "&:hover": {
-    boxShadow: "0 16px 40px rgba(12, 35, 64, 0.16)",
+    boxShadow: HOME.shadowMd,
+    borderColor: HOME.borderGold,
+    transform: "translateY(-4px)",
   },
 };
 
@@ -61,10 +55,32 @@ const galleryCardBodySx = {
   flex: 1,
   display: "flex",
   flexDirection: "column",
-  p: { xs: 2, sm: 2.25 },
-  minHeight: GALLERY_CARD_HEIGHT - GALLERY_POSTER_HEIGHT,
+  p: { xs: 2, sm: 2.25, md: 2.5 },
   boxSizing: "border-box",
 };
+
+function GalleryCardWrap({ children }) {
+  return (
+    <Box sx={{ width: "100%", height: "100%", display: "flex", minWidth: 0 }}>
+      {children}
+    </Box>
+  );
+}
+
+function GalleryStrip({ items, ariaLabel, renderCard }) {
+  if (!items.length) return null;
+
+  return (
+    <ArrowCarousel
+      ariaLabel={ariaLabel}
+      items={items}
+      visibleMd={3}
+      visibleSm={2}
+      visibleXs={1}
+      renderCard={(item) => <GalleryCardWrap>{renderCard(item)}</GalleryCardWrap>}
+    />
+  );
+}
 
 const NEWS_CATEGORY_LABELS = {
   academic: "Academic",
@@ -179,13 +195,14 @@ async function fetchJson(path) {
   return Array.isArray(data.data) ? data.data : [];
 }
 
-function PosterHero({ src, alt, height = 200 }) {
+function PosterHero({ src, alt, height = GALLERY_POSTER_HEIGHT }) {
+  const resolvedHeight = typeof height === "object" ? height : { xs: height, md: height };
   const url = mediaUrl(src);
   if (!url) {
     return (
       <Box
         sx={{
-          height,
+          height: resolvedHeight,
           background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyDeep} 55%, ${BRAND.gold} 120%)`,
           display: "flex",
           alignItems: "center",
@@ -204,7 +221,7 @@ function PosterHero({ src, alt, height = 200 }) {
       alt={alt}
       sx={{
         width: "100%",
-        height,
+        height: resolvedHeight,
         objectFit: "cover",
         display: "block",
       }}
@@ -214,13 +231,10 @@ function PosterHero({ src, alt, height = 200 }) {
 
 function NewsCard({ item, onClick }) {
   return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ type: "spring", stiffness: 380, damping: 28 }}
-    >
-      <Box onClick={() => onClick(item)} sx={galleryCardShellSx}>
-        <Box sx={{ position: "relative", flexShrink: 0 }}>
-          <PosterHero src={item.poster_image} alt={item.title} height={GALLERY_POSTER_HEIGHT} />
+    <Box onClick={() => onClick(item)} sx={galleryCardShellSx}>
+      <Box sx={{ height: 4, background: HOME.navyGradient, flexShrink: 0 }} />
+      <Box sx={{ position: "relative", flexShrink: 0 }}>
+        <PosterHero src={item.poster_image} alt={item.title} />
           <Chip
             size="small"
             label={NEWS_CATEGORY_LABELS[item.category] || item.category || "News"}
@@ -243,9 +257,9 @@ function NewsCard({ item, onClick }) {
           </Typography>
           <Typography
             sx={{
-              fontFamily: '"Cormorant Garamond", serif',
+              fontFamily: HOME.fontDisplay,
               fontWeight: 700,
-              fontSize: "1.25rem",
+              fontSize: { xs: "1.15rem", md: "1.3rem" },
               lineHeight: 1.2,
               color: BRAND.navyDeep,
               mt: 0.5,
@@ -264,6 +278,7 @@ function NewsCard({ item, onClick }) {
               color: "text.secondary",
               lineHeight: 1.55,
               flex: 1,
+              fontSize: homeBodyFontSize,
               display: "-webkit-box",
               WebkitLineClamp: 3,
               WebkitBoxOrient: "vertical",
@@ -272,7 +287,12 @@ function NewsCard({ item, onClick }) {
           >
             {item.summary || excerpt(item.content, 140)}
           </Typography>
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: "auto", pt: 1.5, color: BRAND.navy }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.5}
+            sx={{ mt: "auto", pt: 1.5, color: BRAND.gold, fontFamily: HOME.fontBody }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               Read more
             </Typography>
@@ -280,7 +300,6 @@ function NewsCard({ item, onClick }) {
           </Stack>
         </Box>
       </Box>
-    </motion.div>
   );
 }
 
@@ -289,13 +308,10 @@ function EventCard({ item, onClick }) {
   const upcoming = isUpcomingEvent(item);
 
   return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ type: "spring", stiffness: 380, damping: 28 }}
-    >
-      <Box onClick={() => onClick(item)} sx={galleryCardShellSx}>
-        <Box sx={{ position: "relative", flexShrink: 0 }}>
-          <PosterHero src={item.poster_image} alt={item.title} height={GALLERY_POSTER_HEIGHT} />
+    <Box onClick={() => onClick(item)} sx={galleryCardShellSx}>
+      <Box sx={{ height: 4, background: HOME.navyGradient, flexShrink: 0 }} />
+      <Box sx={{ position: "relative", flexShrink: 0 }}>
+        <PosterHero src={item.poster_image} alt={item.title} />
           <Stack
             direction="row"
             spacing={0.75}
@@ -335,9 +351,9 @@ function EventCard({ item, onClick }) {
           </Typography>
           <Typography
             sx={{
-              fontFamily: '"Cormorant Garamond", serif',
+              fontFamily: HOME.fontDisplay,
               fontWeight: 700,
-              fontSize: "1.25rem",
+              fontSize: { xs: "1.15rem", md: "1.3rem" },
               lineHeight: 1.2,
               color: BRAND.navyDeep,
               mt: 0.5,
@@ -389,6 +405,7 @@ function EventCard({ item, onClick }) {
               color: "text.secondary",
               lineHeight: 1.55,
               flex: 1,
+              fontSize: homeBodyFontSize,
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
@@ -397,7 +414,12 @@ function EventCard({ item, onClick }) {
           >
             {excerpt(item.description, 120)}
           </Typography>
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: "auto", pt: 1.5, color: BRAND.navy }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.5}
+            sx={{ mt: "auto", pt: 1.5, color: BRAND.gold, fontFamily: HOME.fontBody }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               View details
             </Typography>
@@ -405,7 +427,6 @@ function EventCard({ item, onClick }) {
           </Stack>
         </Box>
       </Box>
-    </motion.div>
   );
 }
 
@@ -416,142 +437,235 @@ function DetailDialog({ open, onClose, item, kind, onJoinEvent, hasPortalToken }
     !isNews && (item.delivery_mode === "online" || item.delivery_mode === "hybrid");
   const canJoin = isOnlineEvent && canJoinOnlineEvent(item);
   const joinClosed = isOnlineEvent && !canJoin;
+  const dateLabel = isNews
+    ? formatNewsDate(item)
+    : formatEventRange(item.start_date, item.end_date);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+      PaperProps={{
+        sx: {
+          borderRadius: { xs: 2.5, sm: 3 },
+          overflow: "hidden",
+          border: `1px solid ${HOME.border}`,
+          boxShadow: HOME.shadowLg,
+          bgcolor: HOME.warmWhite,
+        },
+      }}
+    >
       <Box sx={{ position: "relative" }}>
-        <PosterHero
-          src={item.poster_image}
-          alt={item.title}
-          height={280}
+        <Box sx={{ height: 4, background: HOME.navyGradient }} />
+        <PosterHero src={item.poster_image} alt={item.title} height={{ xs: 220, sm: 280 }} />
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            top: 4,
+            background:
+              "linear-gradient(180deg, rgba(8,22,43,0.05) 0%, rgba(8,22,43,0.02) 45%, rgba(8,22,43,0.55) 100%)",
+            pointerEvents: "none",
+          }}
         />
         <IconButton
           onClick={onClose}
           sx={{
             position: "absolute",
-            top: 12,
-            right: 12,
-            bgcolor: "rgba(255,255,255,0.9)",
-            "&:hover": { bgcolor: "#fff" },
+            top: 16,
+            right: 16,
+            width: 40,
+            height: 40,
+            bgcolor: "rgba(255,255,255,0.94)",
+            border: `1px solid ${HOME.border}`,
+            boxShadow: HOME.shadowSm,
+            color: HOME.navyDeep,
+            "&:hover": { bgcolor: "#fff", transform: "scale(1.05)" },
+            transition: "all 0.2s ease",
           }}
           aria-label="Close"
         >
-          <CloseIcon />
+          <CloseIcon fontSize="small" />
         </IconButton>
-      </Box>
-      <DialogContent sx={{ pt: 3 }}>
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ position: "absolute", bottom: 16, left: 16, right: 56 }}
+        >
+          <Chip
+            label={isNews ? "News" : "Event"}
+            size="small"
+            sx={{ fontWeight: 700, bgcolor: HOME.navy, color: "#fff" }}
+          />
+          {isNews ? (
             <Chip
-              label={isNews ? "News" : "Event"}
+              label={NEWS_CATEGORY_LABELS[item.category] || item.category || "General"}
               size="small"
-              sx={{ fontWeight: 700, bgcolor: BRAND.navy, color: "#fff" }}
+              sx={{ fontWeight: 700, bgcolor: "rgba(255,255,255,0.94)", color: HOME.navyDeep }}
             />
-            {isNews ? (
+          ) : (
+            <>
               <Chip
-                label={NEWS_CATEGORY_LABELS[item.category] || item.category}
+                label={EVENT_TYPE_LABELS[item.event_type] || "Event"}
                 size="small"
-                sx={{ fontWeight: 600 }}
+                sx={{ fontWeight: 700, bgcolor: "rgba(255,255,255,0.94)", color: HOME.navyDeep }}
               />
-            ) : (
-              <>
+              {item.is_featured ? (
                 <Chip
-                  label={EVENT_TYPE_LABELS[item.event_type] || item.event_type}
                   size="small"
+                  icon={<StarRoundedIcon sx={{ fontSize: "16px !important" }} />}
+                  label="Featured"
+                  sx={{ fontWeight: 700, bgcolor: HOME.gold, color: HOME.navyDeep }}
                 />
+              ) : null}
+            </>
+          )}
+        </Stack>
+      </Box>
+
+      <DialogContent sx={{ px: { xs: 2.5, sm: 3.5 }, pt: 3, pb: { xs: 3, sm: 4 } }}>
+        <Stack spacing={2.5}>
+          <Box>
+            <Typography
+              component="h2"
+              sx={{
+                fontFamily: HOME.fontDisplay,
+                fontWeight: 700,
+                fontSize: { xs: "1.85rem", sm: "2.25rem" },
+                color: HOME.navyDeep,
+                lineHeight: 1.15,
+                mb: 1.25,
+              }}
+            >
+              {item.title}
+            </Typography>
+
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              flexWrap="wrap"
+              useFlexGap
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: HOME.sky,
+                border: `1px solid ${HOME.border}`,
+              }}
+            >
+              {isNews ? (
+                <ArticleOutlinedIcon sx={{ fontSize: 20, color: HOME.gold }} />
+              ) : (
+                <CalendarMonthOutlinedIcon sx={{ fontSize: 20, color: HOME.gold }} />
+              )}
+              <Typography variant="body2" sx={{ color: HOME.navyDeep, fontWeight: 700 }}>
+                {dateLabel}
+              </Typography>
+              {!isNews && item.delivery_mode ? (
                 <Chip
-                  label={deliveryLabel(item.delivery_mode)}
                   size="small"
+                  label={deliveryLabel(item.delivery_mode)}
                   icon={
                     item.delivery_mode !== "physical" ? (
-                      <VideocamOutlinedIcon />
+                      <VideocamOutlinedIcon sx={{ fontSize: "16px !important" }} />
                     ) : undefined
                   }
+                  sx={{ fontWeight: 700, bgcolor: "#fff", color: HOME.navyDeep }}
                 />
-                {isOnlineEvent ? (
-                  <Chip
-                    size="small"
-                    label={canJoin ? "Join open" : "Join closed"}
-                    color={canJoin ? "success" : "default"}
-                    variant={canJoin ? "filled" : "outlined"}
-                  />
-                ) : null}
-              </>
-            )}
-          </Stack>
-
-          <Typography
-            component="h2"
-            sx={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontWeight: 700,
-              fontSize: { xs: "1.75rem", sm: "2.1rem" },
-              color: BRAND.navyDeep,
-              lineHeight: 1.15,
-            }}
-          >
-            {item.title}
-          </Typography>
-
-          <Typography variant="body2" sx={{ color: BRAND.gold, fontWeight: 700 }}>
-            {isNews
-              ? formatNewsDate(item)
-              : formatEventRange(item.start_date, item.end_date)}
-          </Typography>
+              ) : null}
+            </Stack>
+          </Box>
 
           {!isNews && item.location && item.delivery_mode !== "online" ? (
-            <Stack direction="row" spacing={1} alignItems="center">
-              <LocationOnOutlinedIcon sx={{ color: BRAND.navy }} />
-              <Typography variant="body1">{item.location}</Typography>
+            <Stack
+              direction="row"
+              spacing={1.25}
+              alignItems="flex-start"
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: "#fff",
+                border: `1px solid ${HOME.border}`,
+              }}
+            >
+              <LocationOnOutlinedIcon sx={{ color: HOME.gold, mt: 0.15 }} />
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: "0.08em", color: HOME.inkSoft }}>
+                  LOCATION
+                </Typography>
+                <Typography variant="body1" sx={{ color: HOME.navyDeep, fontWeight: 600 }}>
+                  {item.location}
+                </Typography>
+              </Box>
             </Stack>
           ) : null}
 
-          <Typography
-            variant="body1"
+          <Box
             sx={{
-              color: "text.secondary",
-              lineHeight: 1.75,
-              whiteSpace: "pre-wrap",
+              p: { xs: 2, sm: 2.5 },
+              borderRadius: 2.5,
+              bgcolor: "#fff",
+              border: `1px solid ${HOME.border}`,
             }}
           >
-            {isNews ? item.content : item.description}
-          </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: HOME.inkMuted,
+                lineHeight: 1.8,
+                whiteSpace: "pre-wrap",
+                fontSize: { xs: "0.98rem", sm: "1.05rem" },
+              }}
+            >
+              {isNews ? item.content : item.description}
+            </Typography>
+          </Box>
 
           {isOnlineEvent ? (
             <Box
               sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: joinClosed ? "action.hover" : BRAND.sky,
-                border: `1px solid rgba(12, 35, 64, 0.1)`,
+                p: { xs: 2, sm: 2.5 },
+                borderRadius: 2.5,
+                background: joinClosed
+                  ? "rgba(12, 35, 64, 0.04)"
+                  : `linear-gradient(135deg, ${HOME.sky} 0%, #fff 100%)`,
+                border: `1px solid ${joinClosed ? HOME.border : HOME.borderGold}`,
               }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 700, color: BRAND.navyDeep, mb: 0.5 }}>
-                Online participation
-              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                <VideocamOutlinedIcon sx={{ color: HOME.gold }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: HOME.navyDeep }}>
+                  Online participation
+                </Typography>
+                <Chip
+                  size="small"
+                  label={canJoin ? "Join open" : "Join closed"}
+                  sx={{
+                    ml: "auto",
+                    fontWeight: 700,
+                    bgcolor: canJoin ? "rgba(46, 125, 50, 0.12)" : "rgba(12, 35, 64, 0.08)",
+                    color: canJoin ? "#2e7d32" : HOME.inkSoft,
+                  }}
+                />
+              </Stack>
               {canJoin ? (
                 <>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: HOME.inkMuted, lineHeight: 1.65, mb: 2 }}>
                     {hasPortalToken
-                      ? "Join the live video room with chat, reactions, and questions — you will wait in a lobby until staff admits you."
+                      ? "Join the live video room with chat, reactions, and questions. You will wait in a lobby until staff admits you."
                       : "Sign in as a parent or student to join the live video room with chat and Q&A."}
                   </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={() => onJoinEvent?.(item)}
-                    sx={{
-                      mt: 1.5,
-                      bgcolor: BRAND.gold,
-                      color: BRAND.navyDeep,
-                      fontWeight: 700,
-                      "&:hover": { bgcolor: BRAND.goldMuted },
-                    }}
-                  >
+                  <HomePrimaryButton onClick={() => onJoinEvent?.(item)}>
                     {hasPortalToken ? "Join event" : "Sign in to join"}
-                  </Button>
+                  </HomePrimaryButton>
                 </>
               ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: HOME.inkMuted, lineHeight: 1.65 }}>
                   {joinClosedMessage(item)}
                 </Typography>
               )}
@@ -570,7 +684,7 @@ function LoadingGallery({ ariaLabel = "Loading" }) {
         <ChevronLeftIcon />
       </IconButton>
       <Box sx={{ flex: 1 }}>
-        <Skeleton variant="rounded" height={GALLERY_CARD_HEIGHT} sx={{ borderRadius: 3 }} />
+        <Skeleton variant="rounded" height={{ xs: 360, md: 400 }} sx={{ borderRadius: 3, width: "100%" }} />
       </Box>
       <IconButton disabled sx={{ opacity: 0.35 }}>
         <ChevronRightIcon />
@@ -591,7 +705,7 @@ export default function SchoolNewsEventsSection() {
       if (hasPortalToken) {
         navigate(path);
       } else {
-        navigate("/marketplace", { state: { returnTo: path } });
+        navigate("/login", { state: { returnTo: path } });
       }
     },
     [hasPortalToken, navigate]
@@ -683,14 +797,11 @@ export default function SchoolNewsEventsSection() {
   const showEvents = tab === 1;
 
   return (
-    <Box
+    <HomeSectionShell
       id="school-news-events-section"
-      sx={{
-        position: "relative",
-        overflow: "hidden",
-        pt: { xs: 2.5, md: 4 },
-        pb: { xs: 3.5, md: 5.5 },
-        background: `linear-gradient(180deg, ${BRAND.sky} 0%, ${BRAND.cream} 45%, #fff 100%)`,
+      bg={{
+        background: `linear-gradient(180deg, ${HOME.sky} 0%, ${HOME.cream} 50%, #fff 100%)`,
+        py: { xs: 5, md: 7 },
       }}
     >
       <Box
@@ -705,68 +816,58 @@ export default function SchoolNewsEventsSection() {
           pointerEvents: "none",
         }}
       />
-      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
-        <Stack spacing={0.75} alignItems="center" textAlign="center" sx={{ mb: { xs: 1.5, md: 2 } }}>
-          <Chip
-            icon={<EventAvailableOutlinedIcon />}
-            label="Stay connected"
-            sx={{
-              fontWeight: 700,
-              bgcolor: "rgba(12, 35, 64, 0.06)",
-              color: BRAND.navy,
-              border: `1px solid rgba(12, 35, 64, 0.08)`,
-            }}
-          />
-          <Typography
-            component="h2"
-            sx={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontWeight: 700,
-              fontSize: { xs: "2.25rem", md: "3rem" },
-              color: BRAND.navyDeep,
-              lineHeight: 1.1,
-            }}
-          >
-            News & Events
-          </Typography>
-          <Typography
-            sx={{
-              maxWidth: 560,
-              color: "text.secondary",
-              fontSize: { xs: "1.2rem", md: "1.2rem" },
-              lineHeight: 1.6,
-            }}
-          >
-            Announcements, achievements, and what is happening at school — fresh from our
-            community.
-          </Typography>
-        </Stack>
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          width: "100%",
+          px: { xs: 1.25, sm: 1.5, md: 2 },
+        }}
+      >
+        <HomeSectionHeader
+          eyebrow="Stay connected"
+          title="News &"
+          titleAccent="events"
+          subtitle="News, achievements, and what's happening at school."
+        />
 
-        <Tabs
-          value={tab}
-          onChange={(_, v) => setTab(v)}
-          centered
-          sx={{
-            mb: 2,
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 700,
-              fontSize: "1rem",
-              minHeight: 48,
-              color: BRAND.navy,
-              opacity: 0.7,
-              "&.Mui-selected": { opacity: 1, color: BRAND.navyDeep },
-            },
-            "& .MuiTabs-indicator": {
-              height: 3,
-              borderRadius: 2,
-              bgcolor: BRAND.gold,
-            },
-          }}
-        >
-          <Tab label="News" />
-          <Tab label="Events" />
-        </Tabs>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+          <Tabs
+            value={tab}
+            onChange={(_, v) => setTab(v)}
+            sx={{
+              minHeight: 44,
+              bgcolor: "rgba(12, 35, 64, 0.06)",
+              borderRadius: "999px",
+              p: 0.5,
+              border: `1px solid ${HOME.border}`,
+              "& .MuiTabs-indicator": { display: "none" },
+              "& .MuiTabs-flexContainer": { gap: 0.5 },
+            }}
+          >
+            {["News", "Events"].map((label, i) => (
+              <Tab
+                key={label}
+                label={label}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  fontFamily: HOME.fontBody,
+                  minHeight: 40,
+                  px: 3,
+                  borderRadius: "999px",
+                  color: HOME.navy,
+                  opacity: tab === i ? 1 : 0.65,
+                  bgcolor: tab === i ? "#fff" : "transparent",
+                  boxShadow: tab === i ? HOME.shadowSm : "none",
+                  transition: "all 0.2s ease",
+                  "&.Mui-selected": { color: HOME.navyDeep },
+                }}
+              />
+            ))}
+          </Tabs>
+        </Box>
 
         {loading ? (
           <LoadingGallery ariaLabel={tab === 0 ? "Loading news" : "Loading events"} />
@@ -787,7 +888,7 @@ export default function SchoolNewsEventsSection() {
                   No news published yet. Check back soon.
                 </Typography>
               ) : (
-                <ArrowCarousel
+                <GalleryStrip
                   ariaLabel="School news"
                   items={sortedNews}
                   renderCard={(item) => <NewsCard item={item} onClick={openNews} />}
@@ -801,7 +902,7 @@ export default function SchoolNewsEventsSection() {
                   No events published yet.
                 </Typography>
               ) : (
-                <ArrowCarousel
+                <GalleryStrip
                   ariaLabel="School events"
                   items={sortedEvents}
                   renderCard={(item) => <EventCard item={item} onClick={openEvent} />}
@@ -810,8 +911,7 @@ export default function SchoolNewsEventsSection() {
             ) : null}
           </>
         )}
-
-      </Container>
+      </Box>
 
       <DetailDialog
         open={detail.open}
@@ -821,6 +921,6 @@ export default function SchoolNewsEventsSection() {
         onJoinEvent={handleJoinEvent}
         hasPortalToken={hasPortalToken}
       />
-    </Box>
+    </HomeSectionShell>
   );
 }

@@ -72,7 +72,7 @@ export default function PortalEventLivePage() {
 
   useEffect(() => {
     if (!token) {
-      navigate("/marketplace", {
+      navigate("/login", {
         replace: true,
         state: { returnTo: `/portal/event/${eventId}` },
       });

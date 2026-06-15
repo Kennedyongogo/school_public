@@ -1,24 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Container,
-  Typography,
-  Rating,
-  Avatar,
-  CircularProgress,
-  Chip,
-  Card,
-  CardContent,
-} from "@mui/material";
+import FormatQuoteRoundedIcon from "@mui/icons-material/FormatQuoteRounded";
+import { Box, CircularProgress, Stack, Typography, Rating, Avatar, Chip } from "@mui/material";
 import { fetchApprovedPortalReviews, schoolPortalMediaUrl } from "../../api";
 import ArrowCarousel from "./ArrowCarousel";
-
-const BRAND = {
-  navy: "#0c2340",
-  navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
-};
+import { HOME, homeBodyFontSize } from "./homeShared";
+import { HomeSectionHeader, HomeSectionShell } from "./homeUi";
 
 function roleLabel(role) {
   if (role === "student") return "Student";
@@ -31,111 +17,149 @@ function ReviewCard({ review }) {
   const label = roleLabel(review.reviewer_role);
 
   return (
-    <Card
-      elevation={0}
+    <Box
       sx={{
+        width: "100%",
         height: "100%",
-        minHeight: 320,
-        borderRadius: 2.5,
-        border: "2px solid rgba(201, 162, 39, 0.35)",
-        background:
-          "linear-gradient(165deg, #ffffff 0%, #f8fafc 45%, rgba(230, 207, 106, 0.12) 100%)",
-        boxShadow: "0 12px 28px rgba(8, 22, 43, 0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
+        minHeight: { xs: 260, md: 280 },
+        borderRadius: 3,
+        overflow: "hidden",
+        border: `1px solid ${HOME.border}`,
+        boxShadow: HOME.shadowSm,
+        bgcolor: "#fff",
         display: "flex",
         flexDirection: "column",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+        transition: "all 0.28s ease",
         "&:hover": {
-          transform: "translateY(-6px)",
-          boxShadow: "0 18px 36px rgba(8, 22, 43, 0.16)",
+          borderColor: HOME.borderGold,
+          boxShadow: HOME.shadowMd,
+          transform: "translateY(-4px)",
         },
       }}
     >
+      <Box sx={{ height: 4, background: HOME.navyGradient, flexShrink: 0 }} />
+
       <Box
         sx={{
-          height: 6,
-          background: `linear-gradient(90deg, ${BRAND.navyDeep}, ${BRAND.gold})`,
-          borderRadius: "10px 10px 0 0",
-        }}
-      />
-      <CardContent
-        sx={{
           flex: 1,
+          p: { xs: 2, sm: 2.5, md: 3 },
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          p: 2.5,
-          pt: 2,
-          "&:last-child": { pb: 2.5 },
+          position: "relative",
         }}
       >
-        <Avatar
-          src={avatarSrc || undefined}
-          alt={review.name || ""}
-          imgProps={{ referrerPolicy: "no-referrer" }}
+        <FormatQuoteRoundedIcon
           sx={{
-            width: 72,
-            height: 72,
-            mb: 1.5,
-            border: `3px solid ${BRAND.gold}`,
-            bgcolor: BRAND.navy,
-            color: BRAND.goldMuted,
-            fontWeight: 800,
-            fontSize: "1.5rem",
-            boxShadow: "0 4px 14px rgba(12, 35, 64, 0.2)",
+            position: "absolute",
+            top: 12,
+            right: 12,
+            fontSize: 36,
+            color: `${HOME.gold}33`,
+            pointerEvents: "none",
           }}
-        >
-          {(review.name || "?").charAt(0)}
-        </Avatar>
+        />
 
-        <Typography
-          sx={{
-            fontWeight: 800,
-            color: BRAND.navyDeep,
-            fontSize: "1.05rem",
-            lineHeight: 1.25,
-            mb: 0.5,
-          }}
-        >
-          {review.name || "Community member"}
-        </Typography>
-
-        {label ? (
-          <Chip
-            label={label}
-            size="small"
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2, pr: 4 }}>
+          <Avatar
+            src={avatarSrc || undefined}
+            alt={review.name || ""}
+            imgProps={{ referrerPolicy: "no-referrer" }}
             sx={{
-              height: 22,
-              mb: 1,
-              fontSize: "0.68rem",
-              fontWeight: 700,
-              bgcolor: "rgba(201, 162, 39, 0.15)",
-              color: BRAND.navyDeep,
-              border: "1px solid rgba(201, 162, 39, 0.35)",
+              width: { xs: 52, md: 60 },
+              height: { xs: 52, md: 60 },
+              border: `2px solid ${HOME.gold}`,
+              bgcolor: HOME.navy,
+              color: HOME.goldMuted,
+              fontWeight: 800,
+              flexShrink: 0,
             }}
-          />
-        ) : null}
+          >
+            {(review.name || "?").charAt(0)}
+          </Avatar>
 
-        <Rating value={Number(review.rating) || 0} readOnly size="small" sx={{ color: BRAND.gold, mb: 1.5 }} />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography
+              sx={{
+                fontFamily: HOME.fontBody,
+                fontWeight: 800,
+                color: HOME.navyDeep,
+                fontSize: { xs: "0.95rem", md: "1.05rem" },
+                lineHeight: 1.25,
+                mb: 0.5,
+              }}
+            >
+              {review.name || "Community member"}
+            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+              {label ? (
+                <Chip
+                  label={label}
+                  size="small"
+                  sx={{
+                    height: 22,
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    bgcolor: "rgba(201, 162, 39, 0.12)",
+                    color: HOME.navyDeep,
+                    border: `1px solid ${HOME.borderGold}`,
+                  }}
+                />
+              ) : null}
+              <Rating
+                value={Number(review.rating) || 0}
+                readOnly
+                size="small"
+                sx={{ color: HOME.gold }}
+              />
+            </Stack>
+          </Box>
+        </Stack>
 
         <Typography
-          variant="body2"
           sx={{
-            color: "rgba(8, 22, 43, 0.88)",
-            lineHeight: 1.55,
+            color: HOME.inkMuted,
+            lineHeight: 1.75,
             flex: 1,
+            fontSize: homeBodyFontSize,
+            fontStyle: "italic",
             display: "-webkit-box",
-            WebkitLineClamp: 6,
+            WebkitLineClamp: 5,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            textAlign: "left",
-            width: "100%",
           }}
         >
-          {review.comment || ""}
+          &ldquo;{review.comment || ""}&rdquo;
         </Typography>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
+  );
+}
+
+function ReviewsRow({ reviews }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        alignItems: "stretch",
+        gap: { xs: 1.5, md: 2 },
+        width: "100%",
+      }}
+    >
+      {reviews.map((review) => (
+        <Box
+          key={review.id}
+          sx={{
+            flex: { xs: "1 1 auto", md: "1 1 0" },
+            width: "100%",
+            minWidth: 0,
+            display: "flex",
+          }}
+        >
+          <ReviewCard review={review} />
+        </Box>
+      ))}
+    </Box>
   );
 }
 
@@ -161,67 +185,51 @@ export default function HomeReviewsSection() {
     };
   }, []);
 
+  const showStaticRow = reviews.length > 0 && reviews.length <= 3;
+
   return (
-    <Box
+    <HomeSectionShell
       id="reviews-section"
-      sx={{
-        bgcolor: "#ffffff",
-        pt: { xs: 2, md: 3 },
-        pb: { xs: 2, md: 3 },
-        borderTop: "1px solid rgba(12, 35, 64, 0.08)",
+      bg={{
+        background: `linear-gradient(180deg, #fff 0%, ${HOME.warmWhite} 100%)`,
+        py: { xs: 5, md: 7 },
+        borderTop: `1px solid ${HOME.border}`,
       }}
     >
-      <Container
-        maxWidth={false}
-        disableGutters
+      <Box
         sx={{
-          px: { xs: 1.75, sm: 2.5, md: 4 },
           width: "100%",
-          maxWidth: "100%",
-          boxSizing: "border-box",
+          px: { xs: 1.25, sm: 1.5, md: 2 },
         }}
       >
-        <Typography
-          sx={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontWeight: 700,
-            fontSize: { xs: "1.75rem", md: "2.25rem" },
-            color: BRAND.navyDeep,
-            textAlign: "center",
-            mb: 0.5,
-          }}
-        >
-          Parents & Students Reviews
-        </Typography>
-        <Typography
-          sx={{
-            textAlign: "center",
-            color: "text.secondary",
-            maxWidth: "min(720px, 100%)",
-            mx: "auto",
-            mb: 1.5,
-            fontSize: "1.2rem",
-          }}
-        >
-          Voices from our community — thank you for sharing your experience with Elimu Plus.
-        </Typography>
+        <HomeSectionHeader
+          eyebrow="Community voices"
+          title="What parents &"
+          titleAccent="students say"
+          subtitle="Feedback from families in our school community."
+        />
 
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
-            <CircularProgress sx={{ color: BRAND.gold }} />
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress sx={{ color: HOME.gold }} />
           </Box>
         ) : reviews.length === 0 ? (
-          <Typography sx={{ textAlign: "center", color: "text.secondary", py: 2 }}>
-            No published reviews yet. Sign in to the portal to be the first to share feedback.
+          <Typography sx={{ textAlign: "center", color: HOME.inkSoft, py: 2 }}>
+            No published reviews yet. Sign in to the portal to share your experience.
           </Typography>
+        ) : showStaticRow ? (
+          <ReviewsRow reviews={reviews} />
         ) : (
           <ArrowCarousel
             ariaLabel="Parent and student reviews"
             items={reviews}
+            visibleMd={3}
+            visibleSm={1}
+            visibleXs={1}
             renderCard={(review) => <ReviewCard review={review} />}
           />
         )}
-      </Container>
-    </Box>
+      </Box>
+    </HomeSectionShell>
   );
 }

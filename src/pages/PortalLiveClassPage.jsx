@@ -60,7 +60,7 @@ export default function PortalLiveClassPage() {
 
   useEffect(() => {
     if (!token) {
-      navigate("/marketplace", { replace: true });
+      navigate("/login", { replace: true });
       return undefined;
     }
 

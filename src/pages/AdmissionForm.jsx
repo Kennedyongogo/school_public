@@ -3,9 +3,7 @@ import {
   Box,
   Typography,
   TextField,
-  Button,
   Grid,
-  Paper,
   CircularProgress,
   Alert,
   InputAdornment,
@@ -14,6 +12,9 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Chip,
+  Stack,
+  Button,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -21,6 +22,9 @@ import UploadIcon from "@mui/icons-material/Upload";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CloseIcon from "@mui/icons-material/Close";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import Swal from "sweetalert2";
 import {
   uploadAdmissionDocuments,
@@ -28,18 +32,103 @@ import {
   fetchPublicCurriculumClasses,
   fetchPublicCurriculumClassLevels,
 } from "../api";
+import { HOME } from "../components/Home/homeShared";
+import {
+  HomeSectionHeader,
+  HomeSectionShell,
+  HomeGhostButton,
+  HomePrimaryButton,
+} from "../components/Home/homeUi";
 
-const NAVY = "#16213e";
-const NAVY_DEEP = "#1a1a2e";
-const GOLD = "#FFD700";
-const RED = "#FF0000";
-const CREAM = "#FFF8F0";
+const sectionPad = { px: { xs: 1.25, sm: 1.5, md: 2 } };
 
 const FILE_FIELDS = [
-  { name: "studentPicture", label: "Student Picture", accept: "image/*" },
-  { name: "studentReportcard", label: "Student Report Card", accept: ".pdf,.doc,.docx" },
-  { name: "studentBirthcertificate", label: "Student Birth Certificate", accept: ".pdf,.jpg,.jpeg,.png" },
+  { name: "studentPicture", label: "Student picture", accept: "image/*" },
+  { name: "studentReportcard", label: "Student report card", accept: ".pdf,.doc,.docx" },
+  { name: "studentBirthcertificate", label: "Student birth certificate", accept: ".pdf,.jpg,.jpeg,.png" },
 ];
+
+const textFieldSx = {
+  "& .MuiOutlinedInput-root": {
+    bgcolor: "#fff",
+    borderRadius: 2,
+    fontFamily: HOME.fontBody,
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HOME.borderGold },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HOME.gold, borderWidth: 2 },
+  },
+  "& .MuiInputLabel-root.Mui-focused": { color: HOME.navyDeep },
+};
+
+const radioOptionSx = (selected) => ({
+  mr: 0,
+  ml: 0,
+  width: "100%",
+  p: { xs: 1.25, sm: 1.5 },
+  m: 0,
+  borderRadius: 2,
+  border: `1px solid ${selected ? HOME.gold : HOME.border}`,
+  bgcolor: selected ? "rgba(201, 162, 39, 0.08)" : "#fff",
+  boxShadow: selected ? HOME.shadowSm : "none",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    borderColor: HOME.borderGold,
+    bgcolor: selected ? "rgba(201, 162, 39, 0.1)" : HOME.sky,
+  },
+  "& .MuiRadio-root": {
+    color: HOME.inkSoft,
+    "&.Mui-checked": { color: HOME.gold },
+  },
+});
+
+function FormPanel({ title, icon, children, sx }) {
+  return (
+    <Box
+      sx={{
+        borderRadius: 3,
+        overflow: "hidden",
+        bgcolor: "#fff",
+        border: `1px solid ${HOME.border}`,
+        boxShadow: HOME.shadowSm,
+        mb: { xs: 2, md: 2.5 },
+        ...sx,
+      }}
+    >
+      <Box sx={{ height: 4, background: HOME.navyGradient }} />
+      <Box sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2.5 }}>
+          {icon ? (
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: "rgba(201, 162, 39, 0.12)",
+                border: `1px solid ${HOME.borderGold}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: HOME.gold,
+              }}
+            >
+              {icon}
+            </Box>
+          ) : null}
+          <Typography
+            sx={{
+              fontFamily: HOME.fontDisplay,
+              fontWeight: 700,
+              fontSize: { xs: "1.25rem", sm: "1.4rem" },
+              color: HOME.navyDeep,
+            }}
+          >
+            {title}
+          </Typography>
+        </Stack>
+        {children}
+      </Box>
+    </Box>
+  );
+}
 
 function getPreviewKind(file) {
   if (!(file instanceof File)) return null;
@@ -62,12 +151,12 @@ function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
         mt: 1.5,
         p: 1.5,
         borderRadius: 2,
-        border: "1px solid rgba(22, 33, 62, 0.15)",
-        bgcolor: "rgba(255,255,255,0.7)",
+        border: `1px solid ${HOME.border}`,
+        bgcolor: HOME.cream,
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1, gap: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: NAVY }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: HOME.navyDeep }}>
           Preview — {label}
         </Typography>
         <Button
@@ -75,12 +164,12 @@ function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
           size="small"
           startIcon={<CloseIcon sx={{ fontSize: "1rem !important" }} />}
           onClick={onClear}
-          sx={{ textTransform: "none", color: "#666", minWidth: 0 }}
+          sx={{ textTransform: "none", color: HOME.inkSoft, minWidth: 0 }}
         >
           Remove
         </Button>
       </Box>
-      <Typography variant="caption" sx={{ color: "#666", display: "block", mb: 1 }}>
+      <Typography variant="caption" sx={{ color: HOME.inkSoft, display: "block", mb: 1 }}>
         {file.name} ({sizeKb} KB)
       </Typography>
 
@@ -93,8 +182,8 @@ function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
             display: "block",
             maxWidth: "100%",
             maxHeight: 220,
-            borderRadius: 1,
-            border: "1px solid rgba(0,0,0,0.08)",
+            borderRadius: 1.5,
+            border: `1px solid ${HOME.border}`,
             objectFit: "contain",
             bgcolor: "#fff",
           }}
@@ -109,8 +198,8 @@ function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
           sx={{
             width: "100%",
             height: { xs: 240, sm: 320 },
-            border: "1px solid rgba(0,0,0,0.1)",
-            borderRadius: 1,
+            border: `1px solid ${HOME.border}`,
+            borderRadius: 1.5,
             bgcolor: "#fff",
           }}
         />
@@ -123,17 +212,17 @@ function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
             alignItems: "center",
             gap: 1.5,
             p: 2,
-            borderRadius: 1,
+            borderRadius: 1.5,
             bgcolor: "#fff",
-            border: "1px dashed rgba(22, 33, 62, 0.25)",
+            border: `1px dashed ${HOME.borderGold}`,
           }}
         >
-          <DescriptionIcon sx={{ fontSize: 40, color: NAVY }} />
+          <DescriptionIcon sx={{ fontSize: 40, color: HOME.gold }} />
           <Box>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: HOME.navyDeep }}>
               Document selected
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: HOME.inkMuted }}>
               Word files cannot be previewed in the browser. The file will be uploaded on submit.
             </Typography>
           </Box>
@@ -148,7 +237,7 @@ function AdmissionDocumentPreview({ file, label, previewUrl, onClear }) {
           target="_blank"
           rel="noopener noreferrer"
           startIcon={<PictureAsPdfIcon />}
-          sx={{ mt: 1, textTransform: "none" }}
+          sx={{ mt: 1, textTransform: "none", color: HOME.navyDeep, fontWeight: 600 }}
         >
           Open full preview
         </Button>
@@ -189,8 +278,9 @@ export default function AdmissionForm() {
   useEffect(() => {
     const stored = localStorage.getItem("selectedCurriculum");
     if (stored) {
-      setSelectedCurriculum(JSON.parse(stored));
-      fetchClassesAndLevels(JSON.parse(stored).id);
+      const parsed = JSON.parse(stored);
+      setSelectedCurriculum(parsed);
+      void fetchClassesAndLevels(parsed.id);
     } else {
       navigate("/admission/apply");
     }
@@ -205,7 +295,7 @@ export default function AdmissionForm() {
       const allLevelsData = [];
       for (const cls of classesData) {
         const levels = await fetchPublicCurriculumClassLevels(curriculumId, cls.id);
-        levels.forEach(l => allLevelsData.push({ ...l, classId: cls.id, className: cls.name }));
+        levels.forEach((l) => allLevelsData.push({ ...l, classId: cls.id, className: cls.name }));
       }
       setAllLevels(allLevelsData);
     } catch (e) {
@@ -217,16 +307,16 @@ export default function AdmissionForm() {
 
   const handleClassSelect = (cls) => {
     setSelectedClass(cls);
-    const filteredLevels = allLevels.filter(l => l.classId === cls.id);
+    const filteredLevels = allLevels.filter((l) => l.classId === cls.id);
     setTerms(filteredLevels);
     setSelectedTerm(null);
   };
 
   useEffect(() => {
-    if (selectedClass && selectedTerm && !terms.some(t => t.id === selectedTerm?.id)) {
-      fetchTerms(selectedCurriculum.id, selectedClass.id);
+    if (selectedClass && selectedTerm && !terms.some((t) => t.id === selectedTerm?.id)) {
+      void fetchTerms(selectedCurriculum.id, selectedClass.id);
     }
-  }, [selectedClass, selectedTerm, terms]);
+  }, [selectedClass, selectedTerm, terms, selectedCurriculum?.id]);
 
   const fetchTerms = async (curriculumId, classId) => {
     setLoadingOptions(true);
@@ -247,7 +337,7 @@ export default function AdmissionForm() {
 
   const handleFileChange = (e) => {
     const { name, files } = e.target;
-    if (files && files[0]) {
+    if (files?.[0]) {
       setUploadedFiles((prev) => ({ ...prev, [name]: files[0] }));
     }
   };
@@ -261,9 +351,7 @@ export default function AdmissionForm() {
     const urls = {};
     for (const { name } of FILE_FIELDS) {
       const file = uploadedFiles[name];
-      if (file instanceof File) {
-        urls[name] = URL.createObjectURL(file);
-      }
+      if (file instanceof File) urls[name] = URL.createObjectURL(file);
     }
     return urls;
   }, [uploadedFiles]);
@@ -276,8 +364,7 @@ export default function AdmissionForm() {
 
   const filePath = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
 
-  const hasFileObjects = (files) =>
-    Object.values(files).some((file) => file instanceof File);
+  const hasFileObjects = (files) => Object.values(files).some((file) => file instanceof File);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -321,12 +408,12 @@ export default function AdmissionForm() {
       const applicationNumber = result?.data?.application_number;
       await Swal.fire({
         icon: "success",
-        title: "Application Submitted!",
+        title: "Application submitted!",
         html: applicationNumber
           ? `Your admission application has been received.<br/><strong>Reference: ${applicationNumber}</strong>`
           : "Your admission application has been received. We will contact you soon.",
         confirmButtonText: "Continue",
-        confirmButtonColor: NAVY,
+        confirmButtonColor: HOME.gold,
       });
 
       navigate("/admission/success");
@@ -335,9 +422,9 @@ export default function AdmissionForm() {
       setError(message);
       Swal.fire({
         icon: "error",
-        title: "Submission Failed",
+        title: "Submission failed",
         text: message,
-        confirmButtonColor: NAVY,
+        confirmButtonColor: HOME.gold,
       });
     } finally {
       setLoading(false);
@@ -345,252 +432,281 @@ export default function AdmissionForm() {
     }
   };
 
-  if (!selectedCurriculum) {
-    return null;
-  }
+  if (!selectedCurriculum) return null;
+
+  const levelOptions = selectedClass
+    ? allLevels.filter((l) => l.classId === selectedClass.id)
+    : allLevels;
 
   return (
-    <Box sx={{ pt: 0, pb: 0, mb: 0, bgcolor: "#f5f7fa", width: "100%", maxWidth: "100%" }}>
-        <Paper
+    <Box sx={{ minHeight: "100vh", width: "100%", maxWidth: "100%", bgcolor: HOME.cream, fontFamily: HOME.fontBody }}>
+      <HomeSectionShell
+        bg={{
+          background: `linear-gradient(180deg, ${HOME.sky} 0%, ${HOME.cream} 100%)`,
+          pt: { xs: 1.5, md: 2 },
+          pb: { xs: 1, md: 1.25 },
+        }}
+      >
+        <Box
           sx={{
-            pt: 2,
-            px: 4,
-            pb: 3,
-            mb: 0,
-            borderRadius: "20px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-            bgcolor: CREAM,
-            width: "100%",
+            position: "absolute",
+            top: -80,
+            right: -50,
+            width: 240,
+            height: 240,
+            borderRadius: "50%",
+            background: `radial-gradient(circle, rgba(201,162,39,0.14) 0%, transparent 70%)`,
+            pointerEvents: "none",
           }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              flexWrap: "wrap",
-              mb: 2,
-            }}
+        />
+        <Box sx={{ ...sectionPad, position: "relative", zIndex: 1, width: "100%" }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            justifyContent="space-between"
+            spacing={1.5}
+            sx={{ mb: { xs: 1, md: 1.25 } }}
           >
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon sx={{ fontSize: "0.95rem !important" }} />}
-              onClick={() => navigate("/admission/apply")}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                fontSize: "0.9375rem",
-                letterSpacing: "0.02em",
-                px: 1.5,
-                py: 0.5,
-                borderRadius: "999px",
-                borderWidth: 2,
-                borderColor: NAVY,
-                color: "black",
-                bgcolor: "rgba(255,255,255,0.92)",
-                backdropFilter: "blur(8px)",
-                boxShadow: `0 4px 18px rgba(22, 33, 62, 0.12), inset 0 1px 0 rgba(255,255,255,0.85)`,
-                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                flexShrink: 0,
-                "& .MuiButton-startIcon": { mr: 1 },
-                "&:focus": { outline: "none" },
-                "&:hover": {
-                  borderWidth: 2,
-                  borderColor: RED,
-                  bgcolor: NAVY_DEEP,
-                  color: "white",
-                  boxShadow: `0 10px 28px rgba(26, 26, 46, 0.35), 0 0 0 1px rgba(255, 215, 0, 0.35)`,
-                  transform: "translateY(-2px)",
-                  "& .MuiSvgIcon-root": { color: GOLD },
-                },
-              }}
-            >
+            <HomeGhostButton onClick={() => navigate("/admission/apply")} startIcon={<ArrowBackIcon />}>
               Back
-            </Button>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: NAVY, fontSize: "1.8rem" }}>
-              Admission Application
-            </Typography>
-            <Typography variant="caption" sx={{ bgcolor: RED, color: "black", px: 1.5, borderRadius: 1, fontSize: "0.85rem", fontWeight: 700 }}>
-              {selectedCurriculum.name}
-            </Typography>
-          </Box>
+            </HomeGhostButton>
+            <Chip
+              label={selectedCurriculum.name}
+              sx={{
+                fontWeight: 800,
+                bgcolor: "rgba(201, 162, 39, 0.15)",
+                color: HOME.navyDeep,
+                border: `1px solid ${HOME.borderGold}`,
+                fontSize: "0.85rem",
+                height: 32,
+              }}
+            />
+          </Stack>
 
+          <HomeSectionHeader
+            eyebrow="Admission application"
+            title="Complete your"
+            titleAccent="application"
+            subtitle="Choose class and level, then fill in applicant and student details to apply."
+            sx={{ mb: 0 }}
+          />
+        </Box>
+      </HomeSectionShell>
+
+      <HomeSectionShell bg={{ pt: { xs: 1, md: 1.5 }, pb: { xs: 4, md: 6 }, bgcolor: HOME.cream }}>
+        <Box sx={{ ...sectionPad, width: "100%" }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError(null)}>
+            <Alert
+              severity="error"
+              sx={{ mb: 2, borderRadius: 2, border: `1px solid ${HOME.border}` }}
+              onClose={() => setError(null)}
+            >
               {error}
             </Alert>
           )}
 
           <Box component="form" onSubmit={handleSubmit}>
-            <Grid container spacing={2} sx={{ mb: 0 }}>
+            <Grid container spacing={{ xs: 2, md: 2.5 }}>
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <FormPanel title="Select class" icon={<SchoolOutlinedIcon fontSize="small" />}>
+                  <FormControl fullWidth>
+                    <FormLabel sx={{ fontWeight: 700, color: HOME.navyDeep, mb: 1.5, fontFamily: HOME.fontBody }}>
+                      Select class *
+                    </FormLabel>
+                    {loadingOptions ? (
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <CircularProgress size={18} sx={{ color: HOME.gold }} />
+                        <Typography variant="body2" sx={{ color: HOME.inkMuted }}>
+                          Loading classes…
+                        </Typography>
+                      </Stack>
+                    ) : classes.length === 0 ? (
+                      <Typography variant="body2" sx={{ color: HOME.inkMuted }}>
+                        No classes available for this curriculum.
+                      </Typography>
+                    ) : (
+                      <RadioGroup
+                        value={selectedClass?.id || ""}
+                        onChange={(e) => handleClassSelect(classes.find((c) => c.id === e.target.value))}
+                        sx={{ display: "flex", flexDirection: "column", gap: 1, maxHeight: 320, overflowY: "auto", pr: 0.5 }}
+                      >
+                        {classes.map((cls) => (
+                          <FormControlLabel
+                            key={cls.id}
+                            value={cls.id}
+                            control={<Radio size="small" />}
+                            label={
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: HOME.navyDeep }}>
+                                {cls.name}
+                              </Typography>
+                            }
+                            sx={radioOptionSx(selectedClass?.id === cls.id)}
+                          />
+                        ))}
+                      </RadioGroup>
+                    )}
+                  </FormControl>
+                </FormPanel>
+              </Grid>
+
+              <Grid size={{ xs: 12, lg: 6 }}>
+                <FormPanel title="Select term / level" icon={<LayersOutlinedIcon fontSize="small" />}>
+                  <FormControl fullWidth>
+                    <FormLabel sx={{ fontWeight: 700, color: HOME.navyDeep, mb: 1.5, fontFamily: HOME.fontBody }}>
+                      Select term / level *
+                    </FormLabel>
+                    {loadingOptions ? (
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <CircularProgress size={18} sx={{ color: HOME.gold }} />
+                        <Typography variant="body2" sx={{ color: HOME.inkMuted }}>
+                          Loading levels…
+                        </Typography>
+                      </Stack>
+                    ) : levelOptions.length === 0 ? (
+                      <Typography variant="body2" sx={{ color: HOME.inkMuted }}>
+                        {selectedClass ? "No terms available for this class." : "Select a class first."}
+                      </Typography>
+                    ) : (
+                      <RadioGroup
+                        value={selectedTerm?.id || ""}
+                        onChange={(e) => {
+                          const term = levelOptions.find((t) => t.id === e.target.value);
+                          setSelectedTerm(term);
+                        }}
+                        sx={{ display: "flex", flexDirection: "column", gap: 1, maxHeight: 320, overflowY: "auto", pr: 0.5 }}
+                      >
+                        {levelOptions.map((term) => (
+                          <FormControlLabel
+                            key={term.id}
+                            value={term.id}
+                            control={<Radio size="small" />}
+                            label={
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: HOME.navyDeep }}>
+                                {term.name}
+                                {!selectedClass && term.className ? (
+                                  <Box component="span" sx={{ color: HOME.inkSoft, fontWeight: 500 }}>
+                                    {" "}
+                                    ({term.className})
+                                  </Box>
+                                ) : null}
+                              </Typography>
+                            }
+                            sx={radioOptionSx(selectedTerm?.id === term.id)}
+                          />
+                        ))}
+                      </RadioGroup>
+                    )}
+                  </FormControl>
+                </FormPanel>
+              </Grid>
+
               <Grid size={12}>
-                <FormControl fullWidth sx={{ mb: 0 }}>
-                  <FormLabel sx={{ fontWeight: 700, color: NAVY, mb: 1 }}>Select Class *</FormLabel>
-                  {loadingOptions ? (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CircularProgress size={16} sx={{ color: NAVY }} />
-                      <Typography variant="body2">Loading classes...</Typography>
-                    </Box>
-                  ) : (
-                    <RadioGroup
-                      value={selectedClass?.id || ""}
-                      onChange={(e) => handleClassSelect(classes.find(c => c.id === e.target.value))}
-                      sx={{ display: "flex", flexDirection: "column", gap: 1, maxHeight: 300, overflowY: "auto" }}
-                    >
-                      {classes.map((cls) => (
-                        <FormControlLabel
-                          key={cls.id}
-                          value={cls.id}
-                          control={<Radio size="small" />}
-                          label={<Typography variant="body2">{cls.name}</Typography>}
-                          sx={{ mr: 0, p: 1, border: "1px solid rgba(0,0,0,0.1)", borderRadius: 1 }}
+                <FormPanel title="Applicant details" icon={<PersonOutlineIcon fontSize="small" />}>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Applicant full name"
+                        name="applicantName"
+                        value={formData.applicantName}
+                        onChange={handleChange}
+                        sx={textFieldSx}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        label="Applicant phone"
+                        name="applicantPhone"
+                        value={formData.applicantPhone}
+                        onChange={handleChange}
+                        sx={textFieldSx}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        label="Applicant email"
+                        name="applicantEmail"
+                        type="email"
+                        value={formData.applicantEmail}
+                        onChange={handleChange}
+                        sx={textFieldSx}
+                      />
+                    </Grid>
+                  </Grid>
+                </FormPanel>
+              </Grid>
+
+              <Grid size={12}>
+                <FormPanel title="Student details & documents" icon={<PersonOutlineIcon fontSize="small" />}>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Student full name"
+                        name="studentName"
+                        value={formData.studentName}
+                        onChange={handleChange}
+                        sx={textFieldSx}
+                      />
+                    </Grid>
+                    {FILE_FIELDS.map(({ name, label, accept }) => (
+                      <Grid key={name} size={{ xs: 12, md: 6 }}>
+                        <TextField
+                          key={`${name}-${fileInputKeys[name]}`}
+                          fullWidth
+                          label={label}
+                          name={name}
+                          type="file"
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <UploadIcon sx={{ color: HOME.gold }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          InputLabelProps={{ shrink: true }}
+                          onChange={handleFileChange}
+                          sx={textFieldSx}
+                          inputProps={{ accept }}
                         />
-                      ))}
-                    </RadioGroup>
-                  )}
-                </FormControl>
-              </Grid>
-
-              <Grid size={12}>
-                <FormControl fullWidth sx={{ mb: 0 }}>
-                  <FormLabel sx={{ fontWeight: 700, color: NAVY, mb: 1 }}>Select Term/Level *</FormLabel>
-                  {loadingOptions ? (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CircularProgress size={16} sx={{ color: NAVY }} />
-                      <Typography variant="body2">Loading terms...</Typography>
-                    </Box>
-                  ) : allLevels.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">No terms available</Typography>
-                  ) : (
-                    <RadioGroup
-                      value={selectedTerm?.id || ""}
-                      onChange={(e) => {
-                        const term = allLevels.find(t => t.id === e.target.value);
-                        setSelectedTerm(term);
-                      }}
-                      sx={{ display: "flex", flexDirection: "column", gap: 1, maxHeight: 300, overflowY: "auto" }}
-                    >
-                      {allLevels.map((term) => (
-                        <FormControlLabel
-                          key={term.id}
-                          value={term.id}
-                          control={<Radio size="small" />}
-                          label={<Typography variant="body2">{term.name} ({term.className})</Typography>}
-                          sx={{ mr: 0, p: 1, border: "1px solid rgba(0,0,0,0.1)", borderRadius: 1 }}
+                        <AdmissionDocumentPreview
+                          file={uploadedFiles[name]}
+                          label={label}
+                          previewUrl={previewUrls[name]}
+                          onClear={() => clearFile(name)}
                         />
-                      ))}
-                    </RadioGroup>
-                  )}
-                </FormControl>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </FormPanel>
               </Grid>
             </Grid>
 
-            <Typography variant="h6" sx={{ fontWeight: 700, color: NAVY, mb: 2, mt: 2 }}>
-              Applicant Details
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Applicant Full Name"
-                  name="applicantName"
-                  value={formData.applicantName || ""}
-                  onChange={handleChange}
-                  variant="outlined"
-                  size="small"
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Applicant Phone"
-                  name="applicantPhone"
-                  value={formData.applicantPhone || ""}
-                  onChange={handleChange}
-                  variant="outlined"
-                  size="small"
-                />
-              </Grid>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Applicant Email"
-                  name="applicantEmail"
-                  type="email"
-                  value={formData.applicantEmail || ""}
-                  onChange={handleChange}
-                  variant="outlined"
-                  size="small"
-                />
-              </Grid>
-            </Grid>
-
-            <Typography variant="h6" sx={{ fontWeight: 700, color: NAVY, mb: 2, mt: 3 }}>
-              Student Details
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={12}>
-                <TextField
-                  fullWidth
-                  label="Student Full Name"
-                  name="studentName"
-                  value={formData.studentName || ""}
-                  onChange={handleChange}
-                  variant="outlined"
-                  size="small"
-                />
-              </Grid>
-              {FILE_FIELDS.map(({ name, label, accept }) => (
-                <Grid key={name} size={12}>
-                  <TextField
-                    key={`${name}-${fileInputKeys[name]}`}
-                    fullWidth
-                    label={label}
-                    name={name}
-                    type="file"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <UploadIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                    InputLabelProps={{ shrink: true }}
-                    onChange={handleFileChange}
-                    variant="outlined"
-                    size="small"
-                    inputProps={{ accept }}
-                  />
-                  <AdmissionDocumentPreview
-                    file={uploadedFiles[name]}
-                    label={label}
-                    previewUrl={previewUrls[name]}
-                    onClear={() => clearFile(name)}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-
-            <Box sx={{ display: "flex", gap: 2, mt: 2, mb: 0 }}>
-              <Button
+            <Box sx={{ mt: { xs: 2, md: 3 } }}>
+              <HomePrimaryButton
                 type="submit"
-                variant="contained"
+                fullWidth
                 disabled={loading || uploading || !selectedClass || !selectedTerm}
                 sx={{
-                  flex: 1,
-                  bgcolor: RED,
-                  color: "black",
-                  "&:hover": { bgcolor: "#cc0000" },
-                  textTransform: "none",
-                  fontWeight: 600,
+                  py: 1.5,
                   fontSize: "1.05rem",
+                  opacity: loading || uploading || !selectedClass || !selectedTerm ? 0.65 : 1,
                 }}
               >
-                {loading || uploading ? <CircularProgress size={24} /> : "Apply Now"}
-              </Button>
+                {loading || uploading ? (
+                  <CircularProgress size={24} sx={{ color: HOME.navyDeep }} />
+                ) : (
+                  "Submit application"
+                )}
+              </HomePrimaryButton>
             </Box>
           </Box>
-        </Paper>
+        </Box>
+      </HomeSectionShell>
     </Box>
   );
 }

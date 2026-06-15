@@ -16,7 +16,7 @@ import {
   Fade,
   Slide,
 } from "@mui/material";
-import { Home, Menu as MenuIcon, Close, Groups, Collections } from "@mui/icons-material";
+import { Home, Menu as MenuIcon, Close, Groups } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import BrandLogoMark from "../common/BrandLogoMark";
 import { BRAND as BRAND_SHARED } from "../../brand";
@@ -51,13 +51,7 @@ export default function PublicHeader() {
       {
         label: "About Us",
         icon: <Groups />,
-        route: "/team",
-        color: BRAND.gold,
-      },
-      {
-        label: "Portfolio",
-        icon: <Collections />,
-        route: "/portfolio",
+        route: "/about-us",
         color: BRAND.gold,
       },
     ],
@@ -188,8 +182,7 @@ export default function PublicHeader() {
           }
         }
       } else if (
-        location.pathname === "/team" ||
-        location.pathname === "/portfolio" ||
+        location.pathname === "/about-us" ||
         location.pathname === "/meet-our-team"
       ) {
         const sy = window.scrollY;
@@ -279,27 +272,24 @@ export default function PublicHeader() {
             (location.pathname === "/") && isAtTop
               ? "none"
               : `1px solid ${BRAND.surfaceBorder}`,
-          // Hide header when scrolling past hero section on home page, team page, portfolio page
+          // Hide header when scrolling past hero section on home page, team page
           transform:
             (location.pathname === "/" ||
-              location.pathname === "/team" ||
-              location.pathname === "/portfolio" ||
+              location.pathname === "/about-us" ||
               location.pathname === "/meet-our-team") &&
             !isHeaderVisible
               ? "translateY(-100%)"
               : "translateY(0)",
           opacity:
             (location.pathname === "/" ||
-              location.pathname === "/team" ||
-              location.pathname === "/portfolio" ||
+              location.pathname === "/about-us" ||
               location.pathname === "/meet-our-team") &&
             !isHeaderVisible
               ? 0
               : 1,
           pointerEvents:
             (location.pathname === "/" ||
-              location.pathname === "/team" ||
-              location.pathname === "/portfolio" ||
+              location.pathname === "/about-us" ||
               location.pathname === "/meet-our-team") &&
             !isHeaderVisible
               ? "none"
@@ -516,7 +506,7 @@ export default function PublicHeader() {
             >
               <Button
                 variant="contained"
-                onClick={() => navigate("/marketplace")}
+                onClick={() => navigate("/login")}
                 sx={{
                   px: 2.75,
                   py: 1.15,
@@ -750,7 +740,7 @@ export default function PublicHeader() {
             fullWidth
             onClick={() => {
               setMobileMenuOpen(false);
-              navigate("/marketplace");
+              navigate("/login");
             }}
             sx={{
               px: 3,
