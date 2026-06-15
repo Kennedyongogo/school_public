@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { Box, CircularProgress } from "@mui/material";
 import { fetchSchoolPortalStudentExamSchedules } from "../api";
+import { PortalLoading } from "../components/Portal/portalUi";
 import PortalExamTakePage from "./PortalExamTakePage";
 import PortalPdfExamTakePage from "./PortalPdfExamTakePage";
-
-const accent = "#DC2626";
 
 export default function PortalExamTakeRouter() {
   const { scheduleId } = useParams();
@@ -38,11 +36,7 @@ export default function PortalExamTakeRouter() {
   }, [scheduleId, hintedType]);
 
   if (mode === "loading") {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-        <CircularProgress sx={{ color: accent }} />
-      </Box>
-    );
+    return <PortalLoading label="Preparing your exam…" />;
   }
   if (mode === "pdf") return <PortalPdfExamTakePage />;
   return <PortalExamTakePage />;

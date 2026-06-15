@@ -34,11 +34,16 @@ import {
   schoolPortalMediaUrl,
 } from "../api";
 
-const accent = "#DC2626";
-const accentDark = "#B91C1C";
-const accentLight = "#FEE2E2";
-const navy = "#0c2340";
-const gold = "#c9a227";
+import {
+  PortalPageShell,
+  PortalPageHero,
+  PortalPageContent,
+  PortalSurfaceCard,
+  PortalLoading,
+  PortalEmptyState,
+  PortalPrimaryButton,
+} from "../components/Portal/portalUi";
+import { PORTAL } from "../components/Portal/portalShared";
 
 function formatDate(card) {
   const raw = card?.created_at ?? card?.createdAt;
@@ -116,105 +121,58 @@ export default function PortalReportCardsPage() {
   const classLabel = profile?.curriculum_class?.name || "—";
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        pb: 4,
-        background: "linear-gradient(180deg, #FEF2F2 0%, #fff 50%)",
-      }}
-    >
-      <Box
-        sx={{
-          background: `linear-gradient(120deg, ${navy} 0%, #122b4d 60%, ${accentDark} 100%)`,
-          color: "#fff",
-          px: { xs: 2, sm: 3 },
-          py: { xs: 2.5, sm: 3 },
-          mb: 2,
-        }}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Box
-            sx={{
-              width: 48,
-              height: 48,
-              borderRadius: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor: "rgba(201, 162, 39, 0.25)",
-              border: `1px solid rgba(201, 162, 39, 0.5)`,
-            }}
-          >
-            <DescriptionOutlinedIcon sx={{ color: gold, fontSize: 28 }} />
-          </Box>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-              My report cards
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-              Official summaries published by your school · Class {classLabel}
-            </Typography>
-          </Box>
-        </Stack>
-        {!loading && !error ? (
-          <Chip
-            label={`${total} report card${total === 1 ? "" : "s"}`}
-            size="small"
-            sx={{ mt: 1.5, bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700 }}
-          />
-        ) : null}
-      </Box>
+    <PortalPageShell>
+      <PortalPageHero
+        fullWidth
+        icon={<DescriptionOutlinedIcon />}
+        title="My report cards"
+        subtitle={`Official summaries published by your school · Class ${classLabel}`}
+        chip={
+          !loading && !error ? (
+            <Chip
+              label={`${total} report card${total === 1 ? "" : "s"}`}
+              size="small"
+              sx={{ mt: 1.5, bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700, border: `1px solid ${PORTAL.borderGold}` }}
+            />
+          ) : null
+        }
+      />
 
-      <Box sx={{ px: { xs: 2, sm: 3 }, maxWidth: 1200, mx: "auto" }}>
+      <PortalPageContent fullWidth>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-            <CircularProgress sx={{ color: accent }} />
-          </Box>
+          <PortalLoading label="Loading report cards…" />
         ) : error ? (
-          <Alert severity="error">{error}</Alert>
+          <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
         ) : rows.length === 0 ? (
-          <Card elevation={0} sx={{ border: `1px dashed ${accentLight}`, borderRadius: 3, textAlign: "center", py: 6 }}>
-            <DescriptionOutlinedIcon sx={{ fontSize: 56, color: accentLight, mb: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 700, color: navy }}>
-              No report cards yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 400, mx: "auto" }}>
-              When teachers publish your term report cards, they will appear here. You can download each PDF anytime.
-            </Typography>
-          </Card>
+          <PortalEmptyState
+            icon={<DescriptionOutlinedIcon />}
+            title="No report cards yet"
+            description="When teachers publish your term report cards, they will appear here. You can download each PDF anytime."
+          />
         ) : (
           <>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
-                gap: 2,
-              }}
-            >
+            <Stack spacing={2}>
               {rows.map((card, index) => {
                 const pdfUrl = card.pdf_url ? schoolPortalMediaUrl(card.pdf_url) : null;
                 const expanded = expandedId === card.id;
                 const lineCount = card.lines?.length ?? 0;
                 return (
-                  <Card
+                  <PortalSurfaceCard
                       key={card.id}
-                      elevation={0}
                       sx={{
                         height: "100%",
-                        border: `1px solid ${expanded ? accent : "#e8d4d4"}`,
-                        borderRadius: 3,
-                        transition: "box-shadow 0.2s, border-color 0.2s",
-                        boxShadow: expanded ? `0 8px 24px ${accent}22` : "none",
-                        "&:hover": { borderColor: accent, boxShadow: `0 4px 16px ${accent}18` },
+                        borderColor: expanded ? PORTAL.gold : PORTAL.border,
+                        boxShadow: expanded ? PORTAL.shadowMd : PORTAL.shadowSm,
                       }}
                     >
-                      <CardContent sx={{ pb: expanded ? 1 : 2 }}>
+                      <Box sx={{ p: 0 }}>
+                      <Box sx={{ p: { xs: 2, sm: 2.25 }, pb: expanded ? 1 : 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                           <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography variant="overline" sx={{ color: accent, fontWeight: 800, letterSpacing: 1 }}>
+                            <Typography variant="overline" sx={{ color: PORTAL.gold, fontWeight: 800, letterSpacing: 1 }}>
                               #{((page - 1) * 12 + index + 1).toString().padStart(2, "0")}
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 800, color: navy, lineHeight: 1.25 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: PORTAL.navyDeep, lineHeight: 1.25, fontFamily: PORTAL.fontDisplay }}>
                               {card.title || "Report card"}
                             </Typography>
                           </Box>
@@ -251,7 +209,8 @@ export default function PortalReportCardsPage() {
                             mt: 2,
                             p: 1.5,
                             borderRadius: 2,
-                            bgcolor: accentLight,
+                            bgcolor: PORTAL.sky,
+                            border: `1px solid ${PORTAL.border}`,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
@@ -263,7 +222,7 @@ export default function PortalReportCardsPage() {
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
                               Total marks
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 800, color: accentDark }}>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: PORTAL.navyDeep }}>
                               {card.total_marks_obtained}
                               {card.total_marks_possible != null ? ` / ${card.total_marks_possible}` : ""}
                             </Typography>
@@ -275,30 +234,23 @@ export default function PortalReportCardsPage() {
 
                         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                           {pdfUrl ? (
-                            <Button
-                              variant="contained"
+                            <PortalPrimaryButton
                               size="small"
                               startIcon={<DownloadOutlinedIcon />}
                               href={pdfUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              sx={{
-                                flex: 1,
-                                fontWeight: 700,
-                                textTransform: "none",
-                                bgcolor: accent,
-                                "&:hover": { bgcolor: accentDark },
-                              }}
+                              sx={{ flex: 1 }}
                             >
                               Open PDF
-                            </Button>
+                            </PortalPrimaryButton>
                           ) : null}
                           {lineCount > 0 ? (
                             <IconButton
                               size="small"
                               aria-label={expanded ? "Hide details" : "Show exam breakdown"}
                               onClick={() => setExpandedId(expanded ? null : card.id)}
-                              sx={{ border: `1px solid ${accentLight}`, borderRadius: 1 }}
+                              sx={{ border: `1px solid ${PORTAL.border}`, borderRadius: 1, color: PORTAL.navyDeep }}
                             >
                               {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                             </IconButton>
@@ -331,11 +283,12 @@ export default function PortalReportCardsPage() {
                             </TableBody>
                           </Table>
                         </Collapse>
-                      </CardContent>
-                    </Card>
+                      </Box>
+                      </Box>
+                    </PortalSurfaceCard>
                 );
               })}
-            </Box>
+            </Stack>
 
             {totalPages > 1 ? (
               <Stack alignItems="center" sx={{ mt: 3 }}>
@@ -343,14 +296,20 @@ export default function PortalReportCardsPage() {
                   count={totalPages}
                   page={page}
                   onChange={(_, p) => setPage(p)}
-                  color="primary"
+                  sx={{
+                    "& .MuiPaginationItem-root.Mui-selected": {
+                      bgcolor: PORTAL.gold,
+                      color: PORTAL.navyDeep,
+                      fontWeight: 700,
+                    },
+                  }}
                   shape="rounded"
                 />
               </Stack>
             ) : null}
           </>
         )}
-      </Box>
-    </Box>
+      </PortalPageContent>
+    </PortalPageShell>
   );
 }

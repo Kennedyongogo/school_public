@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, AppBar, Box, CircularProgress, IconButton, Toolbar, Typography } from "@mui/material";
-import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import { Alert, Box } from "@mui/material";
 import {
   beaconSchoolPortalLiveSessionLeave,
   fetchSchoolPortalLiveClassRoom,
@@ -12,6 +11,7 @@ import {
 import VideoConference from "../components/VideoConference/VideoConference";
 import LiveKitConference from "../components/VideoConference/LiveKitConference";
 import WaitingRoom from "../components/VideoConference/WaitingRoom";
+import { PortalFullscreenChrome } from "../components/Portal/portalUi";
 import { useSocket } from "../hooks/useSocket";
 import { useLiveClassLobby } from "../hooks/useLiveClassLobby";
 
@@ -175,41 +175,24 @@ export default function PortalLiveClassPage() {
   }, [admitted, isLiveKit, liveClassId]);
 
   const pageBusy = loading;
+  const videoBusy = isLiveKit && (videoPrep || !liveKitCreds);
 
   return (
-    <Box sx={{ position: "fixed", inset: 0, zIndex: 1300, display: "flex", flexDirection: "column", bgcolor: "#0b1220" }}>
-      <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Toolbar variant="dense">
-          <IconButton edge="start" onClick={() => void handleBack()} aria-label="Back">
-            <ArrowBackRoundedIcon />
-          </IconButton>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, flex: 1 }} noWrap>
-            {room?.subject_name || "Online class"}
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
-      {pageBusy ? (
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", gap: 2 }}>
-          <CircularProgress size={36} sx={{ color: "primary.light" }} />
-          <Typography>Opening class…</Typography>
-        </Box>
-      ) : error && !admitted ? (
-        <Alert severity="error" sx={{ m: 2 }}>
-          {error}
-        </Alert>
-      ) : !room?.meeting_id ? (
-        <Alert severity="warning" sx={{ m: 2 }}>
+    <PortalFullscreenChrome
+      title={room?.subject_name || "Online class"}
+      onBack={() => void handleBack()}
+      busy={pageBusy || (admitted && videoBusy)}
+      busyLabel={pageBusy ? "Opening class…" : "Joining video…"}
+    >
+      {error && !admitted ? (
+        <Alert severity="error" sx={{ m: 2, borderRadius: 2 }}>{error}</Alert>
+      ) : !room?.meeting_id && !pageBusy ? (
+        <Alert severity="warning" sx={{ m: 2, borderRadius: 2 }}>
           This session has no video room configured.
         </Alert>
-      ) : admitted ? (
+      ) : admitted && !videoBusy ? (
         <Box sx={{ flex: 1, minHeight: 0 }}>
-          {isLiveKit && (videoPrep || !liveKitCreds) ? (
-            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", gap: 2 }}>
-              <CircularProgress size={36} sx={{ color: "primary.light" }} />
-              <Typography>Joining video…</Typography>
-            </Box>
-          ) : isLiveKit ? (
+          {isLiveKit ? (
             <LiveKitConference
               key={liveClassId}
               token={token}
@@ -235,14 +218,14 @@ export default function PortalLiveClassPage() {
             />
           )}
         </Box>
-      ) : (
+      ) : !pageBusy ? (
         <WaitingRoom
           status={myStatus}
           subjectName={room?.subject_name}
           error={lobbyError}
           syncing={lobbySyncing}
         />
-      )}
-    </Box>
+      ) : null}
+    </PortalFullscreenChrome>
   );
 }

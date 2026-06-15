@@ -7,6 +7,8 @@ import {
   postSchoolPortalLiveSessionLeave,
   beaconSchoolPortalLiveSessionLeave,
 } from "../api";
+import { PortalFullscreenChrome } from "../components/Portal/portalUi";
+import { PORTAL } from "../components/Portal/portalShared";
 
 /** Live meetings stay inside this SPA (iframe). Leaving records attendance via toolbar or unload hooks. */
 export default function PortalLiveMeetingPage() {
@@ -72,14 +74,14 @@ export default function PortalLiveMeetingPage() {
 
   if (!valid) {
     return (
-      <Box sx={{ p: 3, maxWidth: 480, mx: "auto", mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
+      <Box sx={{ p: 3, maxWidth: 480, mx: "auto", mt: 8, textAlign: "center" }}>
+        <Typography variant="h6" gutterBottom sx={{ fontFamily: PORTAL.fontDisplay, fontWeight: 700, color: PORTAL.navyDeep }}>
           Invalid meeting link
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" sx={{ mb: 2, color: PORTAL.inkMuted }}>
           Open the class notification again from your portal, or ask your teacher for the join link.
         </Typography>
-        <IconButton color="primary" onClick={() => navigate("/portal")} aria-label="Back to portal">
+        <IconButton onClick={() => navigate("/portal")} aria-label="Back to portal" sx={{ color: PORTAL.gold }}>
           <ArrowBackRoundedIcon />
         </IconButton>
       </Box>
@@ -87,29 +89,7 @@ export default function PortalLiveMeetingPage() {
   }
 
   return (
-    <Box
-      sx={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1300,
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "#0b1220",
-      }}
-    >
-      <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Toolbar variant="dense" sx={{ gap: 1, minHeight: 48 }}>
-          <IconButton edge="start" color="inherit" aria-label="Leave meeting" onClick={() => void handleBack()}>
-            <ArrowBackRoundedIcon />
-          </IconButton>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, flex: 1 }} noWrap>
-            Live class
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
-            Tap ← when you finish to record your leave time
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <PortalFullscreenChrome title="Live class" onBack={() => void handleBack()}>
       <Box
         component="iframe"
         title="Live class"
@@ -122,6 +102,6 @@ export default function PortalLiveMeetingPage() {
         }}
         allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-read; clipboard-write"
       />
-    </Box>
+    </PortalFullscreenChrome>
   );
 }

@@ -4,10 +4,7 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
-  CircularProgress,
   Stack,
   Typography,
 } from "@mui/material";
@@ -17,20 +14,31 @@ import ClassIcon from "@mui/icons-material/Class";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PersonIcon from "@mui/icons-material/Person";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import {
   fetchSchoolPortalStudentProfile,
   fetchSchoolPortalStudentTimetableLessons,
   fetchSchoolPortalUser,
 } from "../api";
 import { getLessonJoinWindow } from "../utils/liveLessonWindow";
-
-const accent = "#DC2626";
-const accentLight = "#FEE2E2";
+import {
+  PortalPageShell,
+  PortalPageHero,
+  PortalPageContent,
+  PortalSurfaceCard,
+  PortalLoading,
+  PortalEmptyState,
+} from "../components/Portal/portalUi";
+import { PORTAL, portalPrimaryButtonSx, portalChipSx } from "../components/Portal/portalShared";
 
 function formatDate(iso) {
   if (!iso) return "—";
   try {
-    return new Date(`${iso}T00:00:00`).toLocaleDateString();
+    return new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
   } catch {
     return String(iso);
   }
@@ -40,7 +48,7 @@ function formatTimeRange(start, end) {
   const s = String(start || "").slice(0, 5);
   const e = String(end || "").slice(0, 5);
   if (!s && !e) return "—";
-  return `${s || "—"} - ${e || "—"}`;
+  return `${s || "—"} – ${e || "—"}`;
 }
 
 export default function PortalClassesPage() {
@@ -94,104 +102,127 @@ export default function PortalClassesPage() {
     : "—";
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        pb: 3,
-        background: "linear-gradient(180deg, #FEF2F2 0%, #fff 45%)",
-      }}
-    >
-      <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}>
-        <Card elevation={0} sx={{ border: `1px solid ${accentLight}`, mb: 2 }}>
-          <CardContent>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "flex-start", sm: "center" }}>
-              <Chip icon={<SchoolIcon />} label={`Curriculum: ${curriculumLabel}`} sx={{ fontWeight: 700 }} />
-              <Chip icon={<ClassIcon />} label={`Class: ${classLabel}`} sx={{ fontWeight: 700 }} />
-            </Stack>
-          </CardContent>
-        </Card>
+    <PortalPageShell>
+      <PortalPageHero
+        fullWidth
+        icon={<ClassIcon />}
+        title="My classes"
+        subtitle="Your timetable, teachers, and live online sessions — all in one place."
+        chip={
+          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1.5 }}>
+            <Chip icon={<SchoolIcon />} label={`Curriculum: ${curriculumLabel}`} size="small" sx={portalChipSx()} />
+            <Chip icon={<ClassIcon />} label={`Class: ${classLabel}`} size="small" sx={portalChipSx()} />
+          </Stack>
+        }
+      />
 
+      <PortalPageContent fullWidth>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress sx={{ color: accent }} />
-          </Box>
+          <PortalLoading label="Loading your timetable…" />
         ) : error ? (
-          <Alert severity="error">{error}</Alert>
+          <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
         ) : lessons.length === 0 ? (
-          <Alert severity="info">No lesson timetable entries found for your class yet.</Alert>
+          <PortalEmptyState
+            icon={<CalendarMonthOutlinedIcon />}
+            title="No lessons scheduled yet"
+            description="When your school publishes your class timetable, lessons will appear here with join links for live sessions."
+          />
         ) : (
-          <Stack spacing={1.5}>
-            {lessons.map((row, idx) => (
-              <Card key={row.id || idx} elevation={0} sx={{ border: "1px solid #f1d5d5" }}>
-                <CardContent>
-                  <Stack spacing={1}>
-                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
-                      <Typography sx={{ fontWeight: 800 }}>
-                        {idx + 1}. {row.subject?.name || "Lesson"}
-                      </Typography>
+          <Stack spacing={2}>
+            {lessons.map((row, idx) => {
+              const isOnline = String(row.delivery_mode || "").toLowerCase() === "online";
+              const joinWin =
+                row.live_session?.can_join != null
+                  ? { can_join: row.live_session.can_join, reason: row.live_session.join_blocked_reason }
+                  : getLessonJoinWindow({
+                      lesson_date: row.lesson_date,
+                      starts_at: row.starts_at,
+                      ends_at: row.ends_at,
+                      session_status: row.live_session?.session_status,
+                    });
+              const canJoin = joinWin.can_join;
+              const showLive =
+                row.live_session?.id &&
+                isOnline &&
+                (row.live_session.session_status === "live" || row.live_session.session_status === "scheduled");
+
+              return (
+                <PortalSurfaceCard key={row.id || idx} sx={{ p: 0 }}>
+                  <Box sx={{ p: { xs: 2, sm: 2.25 } }}>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1.5} alignItems={{ sm: "flex-start" }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          sx={{
+                            fontFamily: PORTAL.fontDisplay,
+                            fontWeight: 700,
+                            fontSize: { xs: "1.2rem", sm: "1.35rem" },
+                            color: PORTAL.navyDeep,
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {row.subject?.name || "Lesson"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: PORTAL.inkSoft, fontWeight: 700, letterSpacing: "0.04em" }}>
+                          LESSON {idx + 1}
+                        </Typography>
+                      </Box>
                       <Chip
                         size="small"
-                        label={String(row.delivery_mode || "physical").toLowerCase() === "online" ? "Online" : "Physical"}
-                        color={String(row.delivery_mode || "").toLowerCase() === "online" ? "info" : "default"}
+                        label={isOnline ? "Online" : "In person"}
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: isOnline ? "rgba(12, 35, 64, 0.08)" : PORTAL.sky,
+                          color: isOnline ? PORTAL.navy : PORTAL.inkMuted,
+                          border: `1px solid ${PORTAL.border}`,
+                        }}
                       />
                     </Stack>
-                    <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-                      <Typography variant="body2"><AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />{formatDate(row.lesson_date)} | {formatTimeRange(row.starts_at, row.ends_at)}</Typography>
-                      <Typography variant="body2"><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />{row.teacher?.user?.full_name || row.teacher?.user?.username || "Unassigned teacher"}</Typography>
+
+                    <Stack spacing={1} sx={{ mt: 2 }}>
+                      <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: PORTAL.inkMuted, fontWeight: 600 }}>
+                        <AccessTimeIcon sx={{ fontSize: 18, color: PORTAL.gold }} />
+                        {formatDate(row.lesson_date)} · {formatTimeRange(row.starts_at, row.ends_at)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: PORTAL.inkMuted, fontWeight: 600 }}>
+                        <PersonIcon sx={{ fontSize: 18, color: PORTAL.gold }} />
+                        {row.teacher?.user?.full_name || row.teacher?.user?.username || "Teacher to be assigned"}
+                      </Typography>
+                      <Typography variant="body2" sx={{ display: "flex", alignItems: "center", gap: 0.75, color: PORTAL.inkMuted, fontWeight: 600 }}>
+                        <MenuBookIcon sx={{ fontSize: 18, color: PORTAL.gold }} />
+                        Attendance: {row.attendance?.status || "Pending"}
+                      </Typography>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                      <MenuBookIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />
-                      Attendance: {row.attendance?.status || "Pending"}
-                    </Typography>
-                    {row.live_session?.id &&
-                    String(row.delivery_mode || "").toLowerCase() === "online" &&
-                    (row.live_session.session_status === "live" || row.live_session.session_status === "scheduled") ? (
-                      (() => {
-                        const joinWin =
-                          row.live_session.can_join != null
-                            ? {
-                                can_join: row.live_session.can_join,
-                                reason: row.live_session.join_blocked_reason,
-                              }
-                            : getLessonJoinWindow({
-                                lesson_date: row.lesson_date,
-                                starts_at: row.starts_at,
-                                ends_at: row.ends_at,
-                                session_status: row.live_session.session_status,
-                              });
-                        const canJoin = joinWin.can_join;
-                        return (
-                          <Stack spacing={0.5} sx={{ alignSelf: "flex-start", mt: 0.5 }}>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              disabled={!canJoin}
-                              startIcon={<VideoCallRoundedIcon />}
-                              onClick={() => navigate(`/portal/live-class/${row.live_session.id}`)}
-                              sx={{
-                                bgcolor: canJoin ? accent : undefined,
-                                "&:hover": canJoin ? { bgcolor: "#B91C1C" } : undefined,
-                              }}
-                            >
-                              Join live class
-                            </Button>
-                            {!canJoin && joinWin.reason ? (
-                              <Typography variant="caption" color="text.secondary">
-                                {joinWin.reason}
-                              </Typography>
-                            ) : null}
-                          </Stack>
-                        );
-                      })()
+
+                    {showLive ? (
+                      <Stack spacing={0.75} sx={{ mt: 2.5, alignItems: "flex-start" }}>
+                        <Button
+                          size="medium"
+                          variant="contained"
+                          disableElevation
+                          disabled={!canJoin}
+                          startIcon={<VideoCallRoundedIcon />}
+                          onClick={() => navigate(`/portal/live-class/${row.live_session.id}`)}
+                          sx={{
+                            ...portalPrimaryButtonSx(),
+                            opacity: canJoin ? 1 : 0.65,
+                          }}
+                        >
+                          Join live class
+                        </Button>
+                        {!canJoin && joinWin.reason ? (
+                          <Typography variant="caption" sx={{ color: PORTAL.inkSoft, maxWidth: 360, lineHeight: 1.5 }}>
+                            {joinWin.reason}
+                          </Typography>
+                        ) : null}
+                      </Stack>
                     ) : null}
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
+                  </Box>
+                </PortalSurfaceCard>
+              );
+            })}
           </Stack>
         )}
-      </Box>
-    </Box>
+      </PortalPageContent>
+    </PortalPageShell>
   );
 }
-

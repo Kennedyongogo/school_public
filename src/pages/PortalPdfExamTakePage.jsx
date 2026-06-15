@@ -45,8 +45,9 @@ import {
 } from "../utils/pdfManualAnswers";
 import { getCachedExamPdfBlobUrl, clearCachedExamPdfBlobUrl, peekCachedExamPdfBlobUrl } from "../utils/pdfExamBlobCache";
 import StablePdfIframe from "../components/Exam/StablePdfIframe";
+import { PORTAL, portalPageShellSx, portalPrimaryButtonSx } from "../components/Portal/portalShared";
 
-const accent = "#DC2626";
+const accent = PORTAL.gold;
 
 export default function PortalPdfExamTakePage() {
   const { scheduleId } = useParams();
@@ -379,7 +380,7 @@ export default function PortalPdfExamTakePage() {
             variant="contained"
             disabled={submitting || bootLoading || submission?.status === "submitted"}
             onClick={() => void handleSubmit()}
-            sx={{ bgcolor: accent, "&:hover": { bgcolor: "#B91C1C" } }}
+            sx={portalPrimaryButtonSx()}
           >
             {submission?.status === "submitted"
               ? "Already submitted"

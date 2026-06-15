@@ -23,6 +23,7 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Swal from "sweetalert2";
 import ExamInvigilationVideoDock from "../components/VideoConference/ExamInvigilationVideoDock";
+import { PORTAL, portalPageShellSx, portalPrimaryButtonSx } from "../components/Portal/portalShared";
 import {
   createSchoolPortalExamSubmission,
   fetchSchoolPortalMyExamSubmission,
@@ -38,8 +39,9 @@ import {
   schoolPortalMediaUrl,
 } from "../api";
 
-const accent = "#DC2626";
-const accentDark = "#B91C1C";
+const accent = PORTAL.gold;
+const accentDark = PORTAL.navyDeep;
+const cardBorder = PORTAL.border;
 
 const normalizeOptions = (q) => {
   if (Array.isArray(q?.options)) return q.options.map((x) => String(x || "").trim()).filter(Boolean);
@@ -686,19 +688,22 @@ export default function PortalExamTakePage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", background: "linear-gradient(180deg, #FEF2F2 0%, #fff 45%)", pb: 3 }}>
+    <Box sx={{ ...portalPageShellSx(), pb: 3 }}>
       <Box
         sx={{
           px: { xs: 2, sm: 3 },
           pt: 2,
+          maxWidth: 900,
+          mx: "auto",
           pb: showPaper && isLiveKitInvigilation && roomConfirmed ? 26 : 0,
         }}
       >
-        <Card elevation={0} sx={{ border: "1px solid #FEE2E2", mb: 2 }}>
+        <Card elevation={0} sx={{ border: `1px solid ${cardBorder}`, mb: 2, borderRadius: 3, overflow: "hidden" }}>
+          <Box sx={{ height: 4, background: PORTAL.navyGradient }} />
           <CardContent>
             <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: PORTAL.fontDisplay, color: PORTAL.navyDeep }}>
                   {exam?.title || "Exam"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -769,7 +774,8 @@ export default function PortalExamTakePage() {
         ) : null}
 
         {!showPaper ? (
-          <Card elevation={0} sx={{ border: "1px solid #FEE2E2", mb: 2 }}>
+          <Card elevation={0} sx={{ border: `1px solid ${cardBorder}`, mb: 2, borderRadius: 3, overflow: "hidden" }}>
+          <Box sx={{ height: 4, background: PORTAL.navyGradient }} />
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
                 Invigilation required first
@@ -784,7 +790,7 @@ export default function PortalExamTakePage() {
                   clearExamInvigilationPaperAccess(scheduleId);
                   navigate(`/portal/exam-schedule/${scheduleId}/invigilation`, { state: { freshJoin: true } });
                 }}
-                sx={{ bgcolor: accent, "&:hover": { bgcolor: accentDark } }}
+                sx={portalPrimaryButtonSx()}
               >
                 Go to invigilation room
               </Button>
@@ -806,7 +812,7 @@ export default function PortalExamTakePage() {
             const uploadedFiles =
               qType === "file_upload" && v && typeof v === "object" && Array.isArray(v.files) ? v.files : [];
             return (
-              <Card key={q.id} elevation={0} sx={{ border: "1px solid #f1d5d5" }}>
+              <Card key={q.id} elevation={0} sx={{ border: `1px solid ${cardBorder}`, borderRadius: 2 }}>
                 <CardContent>
                   <Typography sx={{ fontWeight: 700, mb: 1 }}>
                     {idx + 1}. {q.question_text}
@@ -1014,7 +1020,7 @@ export default function PortalExamTakePage() {
               (remainingSeconds != null && remainingSeconds <= 0) ||
               !canAnswer
             }
-            sx={{ bgcolor: accent, "&:hover": { bgcolor: accentDark } }}
+            sx={portalPrimaryButtonSx()}
           >
             {isSubmitted
               ? "Already submitted"

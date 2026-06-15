@@ -31,12 +31,12 @@ import {
   clearSchoolPortalSession,
   schoolPortalMediaUrl,
 } from "../api";
+import { PORTAL, portalPageShellSx } from "../components/Portal/portalShared";
 
-/** Match admin `ElimuPlusTeacherDetail` accent system */
-const accent = "#DC2626";
-const accentDark = "#B91C1C";
-const accentLight = "#FEE2E2";
-const backgroundLight = "#FEF2F2";
+const accent = PORTAL.gold;
+const accentDark = PORTAL.navyDeep;
+const accentLight = PORTAL.border;
+const backgroundLight = PORTAL.sky;
 
 function formatDdMmYyyy(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -95,17 +95,17 @@ function DetailCard({ icon: Icon, title, children }) {
         minHeight: 0,
         display: "flex",
         flexDirection: "column",
-        bgcolor: "rgba(255,255,255,0.96)",
-        boxShadow: `0 12px 40px -24px ${accent}55`,
+        bgcolor: PORTAL.warmWhite,
+        boxShadow: PORTAL.shadowSm,
       }}
     >
       <Stack
         direction="row"
         alignItems="center"
         spacing={1}
-        sx={{ px: 2.5, py: 1.75, bgcolor: `${accent}08`, borderBottom: `1px solid ${accentLight}`, flexShrink: 0 }}
+        sx={{ px: 2.5, py: 1.75, bgcolor: PORTAL.sky, borderBottom: `1px solid ${accentLight}`, flexShrink: 0 }}
       >
-        {Icon && <Icon sx={{ fontSize: 22, color: accentDark }} />}
+        {Icon && <Icon sx={{ fontSize: 22, color: accent }} />}
         <Typography variant="subtitle1" sx={{ fontWeight: 800, color: accentDark, lineHeight: 1.25 }}>
           {title}
         </Typography>
@@ -221,7 +221,7 @@ function LinkedStudentCard({ student: st }) {
         maxWidth: "none",
         alignSelf: "stretch",
         borderRadius: 2,
-        border: "1px solid #f1d5d5",
+        border: `1px solid ${accentLight}`,
         overflow: "hidden",
         bgcolor: "rgba(255,255,255,0.98)",
         boxShadow: "none",
@@ -421,21 +421,16 @@ export default function PortalProfilePage() {
       ? schoolPortalMediaUrl(st.profile_picture)
       : null;
 
-  const pageShellSx = () => ({
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    boxSizing: "border-box",
-    background: `linear-gradient(180deg, ${backgroundLight} 0%, #fff 48%)`,
-  });
+  const pageShellSx = () => portalPageShellSx();
 
   const heroBandSx = {
-    background: `linear-gradient(135deg, ${accentDark} 0%, ${accent} 52%, #EF4444 100%)`,
+    background: PORTAL.navyGradient,
     px: { xs: 2, sm: 3 },
     pt: { xs: 2, sm: 2.5 },
     pb: { xs: 8, sm: 10 },
     color: "#fff",
     position: "relative",
+    borderBottom: `1px solid ${PORTAL.borderGold}`,
   };
 
   const heroSummaryPaperSx = {
@@ -443,8 +438,8 @@ export default function PortalProfilePage() {
     p: { xs: 2.5, sm: 3 },
     mb: 3,
     border: `1px solid ${accentLight}`,
-    bgcolor: "rgba(255,255,255,0.98)",
-    boxShadow: `0 20px 50px -28px ${accent}66`,
+    bgcolor: PORTAL.warmWhite,
+    boxShadow: PORTAL.shadowMd,
   };
 
   return (
@@ -452,7 +447,7 @@ export default function PortalProfilePage() {
       <Box sx={{ flex: "1 1 auto", width: "100%", minHeight: 0 }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-            <CircularProgress sx={{ color: accent }} />
+            <CircularProgress sx={{ color: PORTAL.gold }} />
           </Box>
         ) : error ? (
           <Box sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
@@ -467,7 +462,7 @@ export default function PortalProfilePage() {
                 <Typography variant="overline" sx={{ opacity: 0.9, letterSpacing: 1 }}>
                   Student profile
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.15, mt: 0.5 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.15, mt: 0.5, fontFamily: PORTAL.fontDisplay }}>
                   {displayName}
                 </Typography>
                 {u.email ? (

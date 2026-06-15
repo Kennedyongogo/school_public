@@ -37,8 +37,15 @@ import {
   fetchSchoolPortalStudentExamResult,
 } from "../api";
 
-const accent = "#DC2626";
-const accentLight = "#FEE2E2";
+import {
+  PortalPageShell,
+  PortalPageHero,
+  PortalPageContent,
+  PortalSurfaceCard,
+  PortalLoading,
+  PortalEmptyState,
+} from "../components/Portal/portalUi";
+import { PORTAL, portalPrimaryButtonSx } from "../components/Portal/portalShared";
 
 function examSortTimestamp(row) {
   const candidates = [
@@ -140,32 +147,34 @@ export default function PortalExamsPage() {
   }, [result, selectedExam]);
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        pb: 3,
-        background: "linear-gradient(180deg, #FEF2F2 0%, #fff 45%)",
-      }}
-    >
-      <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}>
+    <PortalPageShell>
+      <PortalPageHero
+        fullWidth
+        icon={<QuizIcon />}
+        title="My exams"
+        subtitle="Open scheduled papers, join invigilation rooms, and review your results when published."
+      />
+
+      <PortalPageContent fullWidth>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress sx={{ color: accent }} />
-          </Box>
+          <PortalLoading label="Loading your exams…" />
         ) : error ? (
-          <Alert severity="error">{error}</Alert>
+          <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
         ) : sortedRows.length === 0 ? (
-          <Alert severity="info">No exams assigned to you yet.</Alert>
+          <PortalEmptyState
+            icon={<QuizIcon />}
+            title="No exams yet"
+            description="When your teachers schedule exams for your class, they will appear here with open and result links."
+          />
         ) : (
-          <Stack spacing={1.5}>
+          <Stack spacing={2}>
             {flashMessage ? (
               <Alert severity="success" onClose={() => navigate(location.pathname, { replace: true, state: {} })}>
                 {flashMessage}
               </Alert>
             ) : null}
             {sortedRows.map((row, idx) => (
-              <Card key={row.id || idx} elevation={0} sx={{ border: "1px solid #f1d5d5" }}>
-                <CardContent>
+              <PortalSurfaceCard key={row.id || idx} noStrip sx={{ "& > div:last-child": { p: { xs: 2, sm: 2.25 } } }}>
                   {(() => {
                     const alreadySubmitted =
                       row?.submission_status === "submitted" ||
@@ -192,8 +201,11 @@ export default function PortalExamsPage() {
                       (typeof row?.can_open !== "boolean" || row.can_open);
                     return (
                       <Stack spacing={1}>
-                        <Typography sx={{ fontWeight: 800 }}>
-                          {idx + 1}. {row.exam?.title || "Exam"}
+                        <Typography sx={{ fontFamily: PORTAL.fontDisplay, fontWeight: 700, fontSize: "1.25rem", color: PORTAL.navyDeep }}>
+                          {row.exam?.title || "Exam"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: PORTAL.inkSoft, fontWeight: 700 }}>
+                          EXAM {idx + 1}
                         </Typography>
                         {disqualified ? (
                           <Alert severity="error" sx={{ py: 0 }}>
@@ -266,7 +278,7 @@ export default function PortalExamsPage() {
                               });
                             }}
                             disabled={!canOpen}
-                            sx={{ bgcolor: accent, "&:hover": { bgcolor: "#b91c1c" } }}
+                            sx={portalPrimaryButtonSx()}
                           >
                             {openButtonLabel(row, {
                               alreadySubmitted,
@@ -284,8 +296,9 @@ export default function PortalExamsPage() {
                                 setDialogOpen(true);
                               }}
                               sx={{
-                                color: accent,
-                                "&:hover": { bgcolor: accentLight },
+                                color: PORTAL.gold,
+                                border: `1px solid ${PORTAL.border}`,
+                                "&:hover": { bgcolor: PORTAL.sky },
                                 "&:focus": { outline: "none" },
                               }}
                             >
@@ -296,13 +309,21 @@ export default function PortalExamsPage() {
                       </Stack>
                     );
                   })()}
-                </CardContent>
-              </Card>
+              </PortalSurfaceCard>
             ))}
           </Stack>
         )}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3, border: `1px solid ${PORTAL.border}`, overflow: "hidden" },
+          }}
+        >
+          <Box sx={{ height: 4, background: PORTAL.navyGradient }} />
+          <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: PORTAL.fontDisplay, fontWeight: 700, color: PORTAL.navyDeep }}>
             Exam Result: {selectedExam?.exam?.title}
             <IconButton
               onClick={() => setDialogOpen(false)}
@@ -313,20 +334,18 @@ export default function PortalExamsPage() {
           </DialogTitle>
           <DialogContent sx={{ p: 3 }}>
             {resultLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                <CircularProgress sx={{ color: accent }} />
-              </Box>
+              <PortalLoading label="Loading result…" />
             ) : result ? (
               <Stack spacing={3}>
-                <Card elevation={2} sx={{ border: `1px solid ${accentLight}`, bgcolor: "#fefefe" }}>
+                <Card elevation={0} sx={{ border: `1px solid ${PORTAL.border}`, bgcolor: PORTAL.warmWhite, borderRadius: 2 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                      <EmojiEventsIcon sx={{ color: accent, fontSize: 32 }} />
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: accent }}>
-                        Your Score
+                      <EmojiEventsIcon sx={{ color: PORTAL.gold, fontSize: 32 }} />
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: PORTAL.navyDeep, fontFamily: PORTAL.fontDisplay }}>
+                        Your score
                       </Typography>
                     </Stack>
-                    <Typography variant="h3" sx={{ fontWeight: 800, color: "#333", mb: 1 }}>
+                    <Typography variant="h3" sx={{ fontWeight: 800, color: PORTAL.navyDeep, mb: 1 }}>
                       {result.totalScore} / {result.totalMax}
                     </Typography>
                     <Typography variant="body1" sx={{ color: "text.secondary", mb: 2 }}>
@@ -347,15 +366,15 @@ export default function PortalExamsPage() {
                       sx={{
                         height: 8,
                         borderRadius: 4,
-                        bgcolor: "#e0e0e0",
-                        "& .MuiLinearProgress-bar": { bgcolor: accent },
+                        bgcolor: PORTAL.border,
+                        "& .MuiLinearProgress-bar": { bgcolor: PORTAL.gold },
                       }}
                     />
                   </CardContent>
                 </Card>
 
                 {result.grade ? (
-                  <Card elevation={1} sx={{ border: `1px solid ${accentLight}`, bgcolor: "#f9f9f9" }}>
+                  <Card elevation={0} sx={{ border: `1px solid ${PORTAL.border}`, bgcolor: PORTAL.sky, borderRadius: 2 }}>
                     <CardContent sx={{ textAlign: "center" }}>
                       <Typography variant="h6" sx={{ mb: 1, color: "text.secondary" }}>
                         Grade
@@ -395,13 +414,13 @@ export default function PortalExamsPage() {
                 ) : (
                   <>
                     <Divider />
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: "#333" }}>
-                      Question Breakdown
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: PORTAL.navyDeep }}>
+                      Question breakdown
                     </Typography>
                     {result.questions && result.questions.length > 0 ? (
                       <Stack spacing={1.5}>
                         {result.questions.map((q, i) => (
-                          <Card key={i} elevation={0} sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}>
+                          <Card key={i} elevation={0} sx={{ border: `1px solid ${PORTAL.border}`, borderRadius: 2 }}>
                             <CardContent sx={{ p: 2 }}>
                               <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
                                 Question {i + 1}: {q.question}
@@ -439,7 +458,7 @@ export default function PortalExamsPage() {
               </Stack>
             ) : (
               <Box sx={{ textAlign: "center", py: 4 }}>
-                <VisibilityIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+                <VisibilityIcon sx={{ fontSize: 48, color: PORTAL.gold, mb: 2 }} />
                 <Typography variant="h6" color="text.secondary">
                   Result not available yet
                 </Typography>
@@ -450,7 +469,7 @@ export default function PortalExamsPage() {
             )}
           </DialogContent>
         </Dialog>
-      </Box>
-    </Box>
+      </PortalPageContent>
+    </PortalPageShell>
   );
 }

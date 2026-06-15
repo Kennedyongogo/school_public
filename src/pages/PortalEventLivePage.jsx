@@ -19,6 +19,8 @@ import {
 import EventLiveConference from "../components/EventLive/EventLiveConference";
 import WaitingRoom from "../components/VideoConference/WaitingRoom";
 import VideoConference from "../components/VideoConference/VideoConference";
+import { PortalFullscreenChrome } from "../components/Portal/portalUi";
+import { PORTAL } from "../components/Portal/portalShared";
 import { useSocket } from "../hooks/useSocket";
 import { useEventLobby } from "../hooks/useEventLobby";
 
@@ -200,34 +202,24 @@ export default function PortalEventLivePage() {
   }, [navigate]);
 
   const pageBusy = loading;
+  const videoBusy = isLiveKit && (videoPrep || !liveKitCreds);
 
-  let body = null;
+  if (pageBusy || (admitted && videoBusy)) {
+    return (
+      <PortalFullscreenChrome
+        title={event?.title || "School event"}
+        onBack={() => void handleBack()}
+        busy
+        busyLabel={pageBusy ? "Opening event…" : "Joining video…"}
+      />
+    );
+  }
 
-  if (pageBusy) {
-    body = (
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={36} sx={{ color: "primary.light" }} />
-        <Typography>Opening event…</Typography>
-      </Box>
-    );
-  } else if (error && !admitted) {
-    body = (
-      <Alert severity="error" sx={{ m: 2 }}>
-        {error}
-      </Alert>
-    );
-  } else if (!joinWindow?.can_join) {
-    body = (
+  return (
+    <PortalFullscreenChrome title={event?.title || "School event"} onBack={() => void handleBack()}>
+      {error && !admitted ? (
+        <Alert severity="error" sx={{ m: 2, borderRadius: 2 }}>{error}</Alert>
+      ) : !joinWindow?.can_join ? (
       <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
         <Alert severity="info" sx={{ maxWidth: 480 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -239,38 +231,19 @@ export default function PortalEventLivePage() {
           {joinWindow?.closes_at ? (
             <Typography variant="body2">Closes: {formatWhen(joinWindow.closes_at)}</Typography>
           ) : null}
-          <Button sx={{ mt: 2 }} variant="outlined" onClick={() => navigate("/")}>
+          <Button variant="outlined" onClick={() => navigate("/")} sx={{ mt: 2, borderColor: PORTAL.borderGold, color: PORTAL.goldMuted }}>
             Back to home
           </Button>
         </Alert>
       </Box>
-    );
-  } else if (!session?.live_configured || !meetingId) {
-    body = (
-      <Alert severity="warning" sx={{ m: 2 }}>
-        This event does not have a video room configured yet.
-      </Alert>
-    );
-  } else if (admitted) {
-    body = (
-      <Box sx={{ flex: 1, minHeight: 0 }}>
-        {isLiveKit && (videoPrep || !liveKitCreds) ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              gap: 2,
-            }}
-          >
-            <CircularProgress size={36} sx={{ color: "primary.light" }} />
-            <Typography>Joining video…</Typography>
-          </Box>
-        ) : isLiveKit ? (
-          <EventLiveConference
+      ) : !session?.live_configured || !meetingId ? (
+        <Alert severity="warning" sx={{ m: 2, borderRadius: 2 }}>
+          This event does not have a video room configured yet.
+        </Alert>
+      ) : admitted ? (
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          {isLiveKit ? (
+            <EventLiveConference
             key={eventId}
             eventId={eventId}
             token={token}
@@ -294,42 +267,16 @@ export default function PortalEventLivePage() {
             showLobbyPanel={false}
           />
         )}
-      </Box>
-    );
-  } else {
-    body = (
-      <WaitingRoom
-        status={myStatus}
-        subjectName={event?.title}
-        error={lobbyError}
-        syncing={lobbySyncing}
-        hostNoun="staff"
-      />
-    );
-  }
-
-  return (
-    <Box
-      sx={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1300,
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "#0b1220",
-      }}
-    >
-      <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Toolbar variant="dense">
-          <IconButton edge="start" onClick={() => void handleBack()} aria-label="Back">
-            <ArrowBackRoundedIcon />
-          </IconButton>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, flex: 1 }} noWrap>
-            {event?.title || "School event"}
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      {body}
-    </Box>
+        </Box>
+      ) : (
+        <WaitingRoom
+          status={myStatus}
+          subjectName={event?.title}
+          error={lobbyError}
+          syncing={lobbySyncing}
+          hostNoun="staff"
+        />
+      )}
+    </PortalFullscreenChrome>
   );
 }

@@ -21,13 +21,33 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { schoolPortalMediaUrl } from "../../api";
 import { portalAnchoredDrawerPaperSx } from "./portalAnchoredDrawerSx";
+import { PORTAL } from "./portalShared";
 
-const BRAND = {
-  navy: "#0c2340",
-  navyDeep: "#08162b",
-  gold: "#c9a227",
-  goldMuted: "#e6cf6a",
-};
+const navBtnSx = (active) => ({
+  textTransform: "none",
+  fontWeight: 700,
+  color: active ? PORTAL.navyDeep : "#fff",
+  bgcolor: active ? PORTAL.goldMuted : "transparent",
+  minWidth: 96,
+  borderRadius: 2,
+  "&:hover": {
+    bgcolor: active ? PORTAL.gold : "rgba(255,255,255,0.12)",
+  },
+});
+
+const drawerItemSx = (selected) => ({
+  borderRadius: 2,
+  mb: 0.5,
+  fontWeight: selected ? 700 : 600,
+  color: selected ? PORTAL.navyDeep : PORTAL.inkMuted,
+  bgcolor: selected ? PORTAL.sky : "transparent",
+  border: selected ? `1px solid ${PORTAL.borderGold}` : "1px solid transparent",
+  "&.Mui-selected": {
+    bgcolor: PORTAL.sky,
+    borderColor: PORTAL.borderGold,
+  },
+  "&:hover": { bgcolor: PORTAL.sky },
+});
 
 /**
  * Private portal chrome: avatar + name (left), notifications + logout (right).
@@ -81,8 +101,8 @@ export default function PortalPrivateHeader({
         position="fixed"
         elevation={2}
         sx={{
-          bgcolor: BRAND.navyDeep,
-          background: `linear-gradient(120deg, ${BRAND.navyDeep} 0%, ${BRAND.navy} 55%, #122b4d 100%)`,
+          bgcolor: PORTAL.navyDeep,
+          background: PORTAL.navyGradient,
           borderBottom: `1px solid rgba(230, 207, 106, 0.22)`,
         }}
       >
@@ -102,7 +122,7 @@ export default function PortalPrivateHeader({
                 width: { xs: 34, sm: 40 },
                 height: { xs: 34, sm: 40 },
                 bgcolor: "rgba(230, 207, 106, 0.25)",
-                color: BRAND.goldMuted,
+                color: PORTAL.goldMuted,
                 fontWeight: 700,
                 border: `2px solid rgba(230, 207, 106, 0.45)`,
               }}
@@ -137,16 +157,7 @@ export default function PortalPrivateHeader({
               variant={currentNav === "profile" ? "contained" : "text"}
               size="small"
               onClick={onGoProfile}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                color: currentNav === "profile" ? BRAND.navyDeep : "#fff",
-                bgcolor: currentNav === "profile" ? BRAND.goldMuted : "transparent",
-                minWidth: 96,
-                "&:hover": {
-                  bgcolor: currentNav === "profile" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                },
-              }}
+              sx={navBtnSx(currentNav === "profile")}
             >
               Profile
             </Button>
@@ -155,16 +166,7 @@ export default function PortalPrivateHeader({
                 variant={currentNav === "classes" ? "contained" : "text"}
                 size="small"
                 onClick={onGoClasses}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  color: currentNav === "classes" ? BRAND.navyDeep : "#fff",
-                  bgcolor: currentNav === "classes" ? BRAND.goldMuted : "transparent",
-                  minWidth: 96,
-                  "&:hover": {
-                    bgcolor: currentNav === "classes" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                  },
-                }}
+                sx={navBtnSx(currentNav === "classes")}
               >
                 Classes
               </Button>
@@ -174,16 +176,7 @@ export default function PortalPrivateHeader({
                 variant={currentNav === "exams" ? "contained" : "text"}
                 size="small"
                 onClick={onGoExams}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  color: currentNav === "exams" ? BRAND.navyDeep : "#fff",
-                  bgcolor: currentNav === "exams" ? BRAND.goldMuted : "transparent",
-                  minWidth: 96,
-                  "&:hover": {
-                    bgcolor: currentNav === "exams" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                  },
-                }}
+                sx={navBtnSx(currentNav === "exams")}
               >
                 Exams
               </Button>
@@ -193,16 +186,7 @@ export default function PortalPrivateHeader({
                 variant={currentNav === "fees" ? "contained" : "text"}
                 size="small"
                 onClick={onGoFees}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  color: currentNav === "fees" ? BRAND.navyDeep : "#fff",
-                  bgcolor: currentNav === "fees" ? BRAND.goldMuted : "transparent",
-                  minWidth: 96,
-                  "&:hover": {
-                    bgcolor: currentNav === "fees" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                  },
-                }}
+                sx={{ ...navBtnSx(currentNav === "fees"), minWidth: 96 }}
               >
                 Fees
               </Button>
@@ -212,16 +196,7 @@ export default function PortalPrivateHeader({
                 variant={currentNav === "report-cards" ? "contained" : "text"}
                 size="small"
                 onClick={onGoReportCards}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  color: currentNav === "report-cards" ? BRAND.navyDeep : "#fff",
-                  bgcolor: currentNav === "report-cards" ? BRAND.goldMuted : "transparent",
-                  minWidth: 110,
-                  "&:hover": {
-                    bgcolor: currentNav === "report-cards" ? BRAND.gold : "rgba(255,255,255,0.12)",
-                  },
-                }}
+                sx={{ ...navBtnSx(currentNav === "report-cards"), minWidth: 110 }}
               >
                 Report cards
               </Button>
@@ -262,12 +237,12 @@ export default function PortalPrivateHeader({
                 flexShrink: 0,
                 fontWeight: 700,
                 textTransform: "none",
-                background: `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`,
-                color: BRAND.navyDeep,
+                background: `linear-gradient(145deg, ${PORTAL.goldMuted}, ${PORTAL.gold})`,
+                color: PORTAL.navyDeep,
                 boxShadow: "0 4px 14px rgba(201, 162, 39, 0.35)",
                 "&:hover": {
-                  background: `linear-gradient(145deg, ${BRAND.gold}, ${BRAND.goldMuted})`,
-                  color: BRAND.navyDeep,
+                  background: `linear-gradient(145deg, ${PORTAL.gold}, ${PORTAL.goldMuted})`,
+                  color: PORTAL.navyDeep,
                 },
               }}
             >
@@ -323,34 +298,34 @@ export default function PortalPrivateHeader({
       >
         <Box sx={{ p: 1.5 }}>
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-            <Typography sx={{ fontWeight: 800, color: BRAND.navy }}>Menu</Typography>
+            <Typography sx={{ fontWeight: 800, color: PORTAL.navy, fontFamily: PORTAL.fontDisplay, fontSize: "1.25rem" }}>Menu</Typography>
             <IconButton onClick={() => setMobileOpen(false)} aria-label="Close menu">
               <CloseIcon />
             </IconButton>
           </Box>
           <Divider sx={{ mb: 1 }} />
           <List dense disablePadding>
-            <ListItemButton onClick={goProfile} selected={currentNav === "profile"} sx={{ borderRadius: 1 }}>
+            <ListItemButton onClick={goProfile} selected={currentNav === "profile"} sx={drawerItemSx(currentNav === "profile")}>
               <ListItemText primary="Profile" />
             </ListItemButton>
             {typeof onGoClasses === "function" && (
-              <ListItemButton onClick={goClasses} selected={currentNav === "classes"} sx={{ borderRadius: 1 }}>
+              <ListItemButton onClick={goClasses} selected={currentNav === "classes"} sx={drawerItemSx(currentNav === "classes")}>
                 <ListItemText primary="Classes" />
               </ListItemButton>
             )}
-            {typeof onGoFees === "function" && (
-              <ListItemButton onClick={goFees} selected={currentNav === "fees"} sx={{ borderRadius: 1 }}>
-                <ListItemText primary="Fees" />
-              </ListItemButton>
-            )}
             {typeof onGoExams === "function" && (
-              <ListItemButton onClick={goExams} selected={currentNav === "exams"} sx={{ borderRadius: 1 }}>
+              <ListItemButton onClick={goExams} selected={currentNav === "exams"} sx={drawerItemSx(currentNav === "exams")}>
                 <ListItemText primary="Exams" />
               </ListItemButton>
             )}
             {typeof onGoReportCards === "function" && (
-              <ListItemButton onClick={goReportCards} selected={currentNav === "report-cards"} sx={{ borderRadius: 1 }}>
+              <ListItemButton onClick={goReportCards} selected={currentNav === "report-cards"} sx={drawerItemSx(currentNav === "report-cards")}>
                 <ListItemText primary="Report cards" />
+              </ListItemButton>
+            )}
+            {typeof onGoFees === "function" && (
+              <ListItemButton onClick={goFees} selected={currentNav === "fees"} sx={drawerItemSx(currentNav === "fees")}>
+                <ListItemText primary="Fees" />
               </ListItemButton>
             )}
           </List>
@@ -363,11 +338,11 @@ export default function PortalPrivateHeader({
             sx={{
               textTransform: "none",
               fontWeight: 700,
-              background: `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`,
-              color: BRAND.navyDeep,
+              background: `linear-gradient(145deg, ${PORTAL.goldMuted}, ${PORTAL.gold})`,
+              color: PORTAL.navyDeep,
               "&:hover": {
-                background: `linear-gradient(145deg, ${BRAND.gold}, ${BRAND.goldMuted})`,
-                color: BRAND.navyDeep,
+                background: `linear-gradient(145deg, ${PORTAL.gold}, ${PORTAL.goldMuted})`,
+                color: PORTAL.navyDeep,
               },
             }}
           >

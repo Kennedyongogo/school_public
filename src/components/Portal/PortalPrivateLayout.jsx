@@ -5,6 +5,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import PortalPrivateHeader from "./PortalPrivateHeader";
 import PortalReviewPromptDialog from "./PortalReviewPromptDialog";
 import { portalAnchoredDrawerPaperSx } from "./portalAnchoredDrawerSx";
+import { PORTAL, portalGhostButtonSx } from "./portalShared";
 import {
   clearSchoolPortalSession,
   fetchMyPortalReviewStatus,
@@ -147,7 +148,7 @@ export default function PortalPrivateLayout() {
   const portalLabel = user?.role === "student" ? "Student portal" : user?.role === "parent" ? "Parent portal" : "";
 
   return (
-    <Box sx={{ minHeight: "100vh", pt: { xs: "56px", sm: "64px" } }}>
+    <Box sx={{ minHeight: "100vh", pt: { xs: "56px", sm: "64px" }, bgcolor: PORTAL.cream }}>
       <PortalPrivateHeader
         displayName={user?.full_name || "Account"}
         profileImageUrl={headerAvatarSrc}
@@ -188,15 +189,26 @@ export default function PortalPrivateLayout() {
           "& .MuiDrawer-paper": portalAnchoredDrawerPaperSx,
         }}
       >
-        <Box sx={{ p: 1.5, width: "100%", boxSizing: "border-box" }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              Notifications
-            </Typography>
-            <IconButton aria-label="Close notifications" onClick={() => setNotificationDrawerOpen(false)} size="small">
-              <CloseRoundedIcon />
-            </IconButton>
-          </Stack>
+        <Box sx={{ p: 0, width: "100%", boxSizing: "border-box" }}>
+          <Box
+            sx={{
+              px: 2,
+              py: 1.5,
+              background: PORTAL.navyGradient,
+              color: "#fff",
+              borderBottom: `1px solid ${PORTAL.borderGold}`,
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: PORTAL.fontDisplay }}>
+                Notifications
+              </Typography>
+              <IconButton aria-label="Close notifications" onClick={() => setNotificationDrawerOpen(false)} size="small" sx={{ color: PORTAL.goldMuted }}>
+                <CloseRoundedIcon />
+              </IconButton>
+            </Stack>
+          </Box>
+          <Box sx={{ p: 1.5 }}>
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
             <Button
               size="small"
@@ -206,6 +218,7 @@ export default function PortalPrivateLayout() {
                 await markAllSchoolPortalNotificationsRead();
                 await refreshNotificationsOnly();
               }}
+              sx={portalGhostButtonSx()}
             >
               Mark all read
             </Button>
@@ -221,7 +234,13 @@ export default function PortalPrivateLayout() {
                 <ListItemButton
                   key={n.id}
                   alignItems="flex-start"
-                  sx={{ borderRadius: 1, mb: 0.5, bgcolor: n.is_read ? "transparent" : "action.hover" }}
+                  sx={{
+                    borderRadius: 2,
+                    mb: 0.5,
+                    bgcolor: n.is_read ? "transparent" : PORTAL.sky,
+                    border: n.is_read ? "1px solid transparent" : `1px solid ${PORTAL.border}`,
+                    "&:hover": { bgcolor: PORTAL.sky },
+                  }}
                   onClick={async () => {
                     try {
                       if (!n.is_read) {
@@ -259,6 +278,7 @@ export default function PortalPrivateLayout() {
               ))}
             </List>
           )}
+          </Box>
         </Box>
       </Drawer>
 
