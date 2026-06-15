@@ -169,6 +169,7 @@ export default function PortalExamsPage() {
                   {(() => {
                     const alreadySubmitted =
                       row?.submission_status === "submitted" ||
+                      row?.open_block_reason === "already_submitted" ||
                       Boolean(row?.attendance?.submitted_at);
                     const disqualified = Boolean(row?.attendance?.is_cancelled);
                     const scheduleElapsed =
@@ -187,7 +188,8 @@ export default function PortalExamsPage() {
                       !durationEnded &&
                       sessionOpen;
                     const canOpen =
-                      typeof row?.can_open === "boolean" ? row.can_open : canOpenSession;
+                      canOpenSession &&
+                      (typeof row?.can_open !== "boolean" || row.can_open);
                     return (
                       <Stack spacing={1}>
                         <Typography sx={{ fontWeight: 800 }}>

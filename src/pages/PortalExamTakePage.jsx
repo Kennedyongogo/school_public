@@ -335,7 +335,12 @@ export default function PortalExamTakePage() {
     return rows;
   }, [exam?.questions]);
 
-  const canAnswer = !examLocked && (!rules.requiresWebcam || webcamReady) && (!requiresRoom || roomConfirmed);
+  const isSubmitted = submission?.status === "submitted";
+  const canAnswer =
+    !isSubmitted &&
+    !examLocked &&
+    (!rules.requiresWebcam || webcamReady) &&
+    (!requiresRoom || roomConfirmed);
 
   useEffect(() => {
     const maybeCreateAttempt = async () => {
@@ -485,7 +490,7 @@ export default function PortalExamTakePage() {
   };
 
   const submitNow = async (reason = "manual_submit") => {
-    if (!submission?.id) return;
+    if (!submission?.id || submission.status === "submitted") return;
     if (reason !== "manual_submit") setAutoSubmitting(true);
     else setSubmitting(true);
     setError("");
@@ -495,6 +500,10 @@ export default function PortalExamTakePage() {
         await saveDraft({ throwOnError: false });
       }
       await submitSchoolPortalExam(submission.id, { submit_reason: reason });
+      const nowIso = new Date().toISOString();
+      setSubmission((s) =>
+        s ? { ...s, status: "submitted", submitted_at: s.submitted_at || nowIso } : s
+      );
       let attemptId = examAttemptId;
       if (!attemptId && schedule?.exam?.id && schedule?.id && submission?.student_id) {
         try {
@@ -998,10 +1007,20 @@ export default function PortalExamTakePage() {
           <Button
             variant="contained"
             onClick={() => void submitNow("manual_submit")}
-            disabled={submitting || autoSubmitting || (remainingSeconds != null && remainingSeconds <= 0) || !canAnswer}
+            disabled={
+              isSubmitted ||
+              submitting ||
+              autoSubmitting ||
+              (remainingSeconds != null && remainingSeconds <= 0) ||
+              !canAnswer
+            }
             sx={{ bgcolor: accent, "&:hover": { bgcolor: accentDark } }}
           >
-            {submitting || autoSubmitting ? "Submitting..." : "Submit exam"}
+            {isSubmitted
+              ? "Already submitted"
+              : submitting || autoSubmitting
+                ? "Submitting..."
+                : "Submit exam"}
           </Button>
         </Stack>
         ) : null}

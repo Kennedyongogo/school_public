@@ -381,7 +381,11 @@ export default function PortalPdfExamTakePage() {
             onClick={() => void handleSubmit()}
             sx={{ bgcolor: accent, "&:hover": { bgcolor: "#B91C1C" } }}
           >
-            {submitting ? "Submitting…" : "Submit exam"}
+            {submission?.status === "submitted"
+              ? "Already submitted"
+              : submitting
+                ? "Submitting…"
+                : "Submit exam"}
           </Button>
         </Stack>
       </Stack>
