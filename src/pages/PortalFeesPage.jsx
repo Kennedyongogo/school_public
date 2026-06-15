@@ -3,15 +3,11 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Grid,
   LinearProgress,
   Stack,
@@ -21,16 +17,23 @@ import {
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import LayersIcon from "@mui/icons-material/Layers";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import Swal from "sweetalert2";
 import {
   fetchMyParentFeeInvoices,
   postMyParentMpesaStkPush,
   fetchMpesaStkPushStatus,
 } from "../api";
-
-const accent = "#DC2626";
-const accentLight = "#FEE2E2";
-const accentDark = "#B91C1C";
+import {
+  PortalPageShell,
+  PortalPageHero,
+  PortalPageContent,
+  PortalSurfaceCard,
+  PortalLoading,
+  PortalEmptyState,
+  PortalPrimaryButton,
+} from "../components/Portal/portalUi";
+import { PORTAL, portalChipSx, portalPrimaryButtonSx } from "../components/Portal/portalShared";
 
 function getStoredUserPhone() {
   try {
@@ -43,25 +46,6 @@ function getStoredUserPhone() {
   }
 }
 
-const pageShellSx = {
-  minHeight: "100vh",
-  pb: 3,
-  width: "100%",
-  maxWidth: "none",
-  boxSizing: "border-box",
-  background: "linear-gradient(180deg, #FEF2F2 0%, #fff 45%)",
-};
-
-const fullWidthCardSx = {
-  width: "100%",
-  maxWidth: "none",
-  alignSelf: "stretch",
-  border: "1px solid #f1d5d5",
-  borderRadius: 2,
-  bgcolor: "rgba(255,255,255,0.98)",
-  boxShadow: "none",
-};
-
 function statusChipProps(status) {
   const s = String(status || "").toLowerCase();
   if (s === "paid") return { label: "Paid", color: "success" };
@@ -72,15 +56,28 @@ function statusChipProps(status) {
 
 function AmountCell({ label, value, highlight }) {
   return (
-    <Box sx={{ textAlign: { xs: "left", sm: "center" }, py: { xs: 0.5, sm: 0 } }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: "block" }}>
+    <Box
+      sx={{
+        textAlign: { xs: "left", sm: "center" },
+        py: { xs: 1, sm: 1.25 },
+        px: { xs: 1.5, sm: 2 },
+        borderRadius: 2,
+        bgcolor: highlight ? "rgba(201, 162, 39, 0.1)" : PORTAL.sky,
+        border: `1px solid ${highlight ? PORTAL.borderGold : PORTAL.border}`,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 800, display: "block", letterSpacing: "0.05em", textTransform: "uppercase", color: PORTAL.inkSoft, fontSize: "0.68rem" }}
+      >
         {label}
       </Typography>
       <Typography
         sx={{
           fontWeight: 800,
-          fontSize: { xs: "1.1rem", md: "1.2rem" },
-          color: highlight ? accent : "text.primary",
+          fontSize: { xs: "1.15rem", md: "1.25rem" },
+          color: highlight ? PORTAL.navyDeep : PORTAL.inkMuted,
+          mt: 0.35,
         }}
       >
         {value}
@@ -105,34 +102,28 @@ function HalfBreakdownPanel({ phase }) {
         minWidth: 0,
         width: "100%",
         p: { xs: 1.5, sm: 2 },
-        borderRadius: 1.5,
+        borderRadius: 2,
         bgcolor: "#fff",
-        border: `1px solid ${accentLight}`,
+        border: `1px solid ${PORTAL.border}`,
       }}
     >
       <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
-        <PaymentsIcon sx={{ fontSize: 18, color: accentDark }} />
-        <Typography sx={{ fontWeight: 800, color: accentDark }}>
-          {halfPhaseLabel(phase?.phase)}
+        <PaymentsIcon sx={{ fontSize: 18, color: PORTAL.gold }} />
+        <Typography sx={{ fontWeight: 800, color: PORTAL.navyDeep }}>{halfPhaseLabel(phase?.phase)}</Typography>
+        <Typography sx={{ fontWeight: 800, ml: "auto", color: PORTAL.navyDeep }}>
+          KES {phaseTotal.toLocaleString()}
         </Typography>
-        <Typography sx={{ fontWeight: 800, ml: "auto" }}>KES {phaseTotal.toLocaleString()}</Typography>
       </Stack>
 
       {items.length > 0 ? (
         <Stack spacing={0.75} component="ul" sx={{ m: 0, pl: 2.25, listStyle: "disc" }}>
           {items.map((it, i) => (
             <Box component="li" key={`${phase?.phase}-${i}-${it.name}`} sx={{ display: "list-item" }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="baseline"
-                spacing={1}
-                sx={{ width: "100%", pr: 0.5 }}
-              >
-                <Typography variant="body2" sx={{ fontWeight: 600, flex: 1, minWidth: 0 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ width: "100%", pr: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, flex: 1, minWidth: 0, color: PORTAL.inkMuted }}>
                   {it.name || "Fee item"}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: "nowrap", color: PORTAL.navyDeep }}>
                   KES {Number(it.amount || 0).toLocaleString()}
                 </Typography>
               </Stack>
@@ -140,17 +131,161 @@ function HalfBreakdownPanel({ phase }) {
           ))}
         </Stack>
       ) : (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: PORTAL.inkSoft }}>
           No line items listed for this half — total shown above.
         </Typography>
       )}
 
       {items.length > 0 && Math.abs(itemsSum - phaseTotal) > 0.02 ? (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+        <Typography variant="caption" sx={{ display: "block", mt: 1, color: PORTAL.inkSoft }}>
           Items subtotal: KES {itemsSum.toLocaleString()}
         </Typography>
       ) : null}
     </Box>
+  );
+}
+
+function FeeInvoiceCard({ inv, onPay }) {
+  const chip = statusChipProps(inv.status);
+  const termTotal = Number(inv.term_fee_amount || inv.amount_due || 0);
+  const paid = Number(inv.amount_paid || 0);
+  const balance = Number(inv.balance || 0);
+  const pct = termTotal > 0 ? Math.min(100, Math.round((paid / termTotal) * 100)) : 0;
+
+  return (
+    <PortalSurfaceCard sx={{ width: "100%" }}>
+      <Stack spacing={2.25} sx={{ width: "100%" }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          spacing={1.5}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography
+              sx={{
+                fontFamily: PORTAL.fontDisplay,
+                fontWeight: 700,
+                fontSize: { xs: "1.35rem", sm: "1.5rem" },
+                color: PORTAL.navyDeep,
+                lineHeight: 1.2,
+              }}
+            >
+              {inv.student?.name || "Student"}
+            </Typography>
+            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.75, flexWrap: "wrap" }}>
+              <ReceiptLongIcon sx={{ fontSize: 17, color: PORTAL.gold }} />
+              <Typography variant="body2" sx={{ color: PORTAL.inkMuted, fontWeight: 600 }}>
+                Invoice {inv.invoice_number}
+                {inv.status ? ` · ${inv.status}` : ""}
+              </Typography>
+            </Stack>
+          </Box>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Chip size="small" label={chip.label} color={chip.color} sx={{ fontWeight: 700 }} />
+            {inv.level_name ? (
+              <Chip
+                size="small"
+                icon={<LayersIcon sx={{ fontSize: "16px !important" }} />}
+                label={inv.level_name}
+                variant="outlined"
+                sx={{ fontWeight: 600, borderColor: PORTAL.border }}
+              />
+            ) : null}
+          </Stack>
+        </Stack>
+
+        <Box sx={{ width: "100%" }}>
+          <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+            <Typography variant="caption" sx={{ color: PORTAL.inkSoft, fontWeight: 700 }}>
+              Payment progress
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: PORTAL.navyDeep }}>
+              {pct}%
+            </Typography>
+          </Stack>
+          <LinearProgress
+            variant="determinate"
+            value={pct}
+            sx={{
+              width: "100%",
+              height: 10,
+              borderRadius: 5,
+              bgcolor: PORTAL.border,
+              "& .MuiLinearProgress-bar": {
+                borderRadius: 5,
+                bgcolor: pct >= 100 ? "#16a34a" : PORTAL.gold,
+              },
+            }}
+          />
+        </Box>
+
+        <Grid container spacing={1.5} sx={{ width: "100%", m: 0 }}>
+          <Grid item xs={12} sm={4}>
+            <AmountCell label="Term fee" value={`KES ${termTotal.toLocaleString()}`} />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <AmountCell label="Paid" value={`KES ${paid.toLocaleString()}`} />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <AmountCell label="Balance" value={`KES ${balance.toLocaleString()}`} highlight />
+          </Grid>
+        </Grid>
+
+        {Number(inv.credit_balance || 0) > 0.01 ? (
+          <Alert severity="success" sx={{ borderRadius: 2, width: "100%" }}>
+            Credit on this level: <strong>KES {Number(inv.credit_balance).toLocaleString()}</strong> (overpayment).
+            This counts toward fee requirements for this term/level.
+          </Alert>
+        ) : null}
+
+        {Array.isArray(inv.payment_breakdown) && inv.payment_breakdown.length > 0 ? (
+          <Box sx={{ width: "100%" }}>
+            <Typography
+              variant="caption"
+              sx={{ fontWeight: 800, display: "block", mb: 1.25, letterSpacing: "0.05em", textTransform: "uppercase", color: PORTAL.inkSoft }}
+            >
+              What each half includes
+            </Typography>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              sx={{
+                width: "100%",
+                p: { xs: 1.5, sm: 2 },
+                borderRadius: 2,
+                bgcolor: PORTAL.sky,
+                border: `1px solid ${PORTAL.border}`,
+                boxSizing: "border-box",
+              }}
+            >
+              {["first_half", "second_half"].map((phaseKey) => {
+                const ph =
+                  inv.payment_breakdown.find((p) => p.phase === phaseKey) ||
+                  inv.payment_breakdown.find((p) => String(p.phase).includes(phaseKey));
+                if (!ph) return null;
+                return <HalfBreakdownPanel key={phaseKey} phase={ph} />;
+              })}
+            </Stack>
+          </Box>
+        ) : null}
+
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" sx={{ pt: 0.5 }}>
+          <PortalPrimaryButton
+            disabled={balance <= 0}
+            onClick={() => onPay(inv)}
+            startIcon={<PaymentsIcon />}
+            sx={{
+              alignSelf: { xs: "stretch", sm: "flex-end" },
+              minWidth: { sm: 200 },
+              opacity: balance <= 0 ? 0.65 : 1,
+            }}
+          >
+            {balance <= 0 ? "Fully paid" : "Pay with M-Pesa"}
+          </PortalPrimaryButton>
+        </Stack>
+      </Stack>
+    </PortalSurfaceCard>
   );
 }
 
@@ -197,9 +332,15 @@ export default function PortalFeesPage() {
     setPhone(getStoredUserPhone());
   };
 
+  const openPayDialog = (inv) => {
+    setPayDlg(inv);
+    setAmount(String(Number(inv.balance || 0) || ""));
+    setPhone(getStoredUserPhone());
+  };
+
   const fireSwal = (options) =>
     Swal.fire({
-      confirmButtonColor: accent,
+      confirmButtonColor: PORTAL.gold,
       ...options,
       didOpen: (popup) => {
         const container = Swal.getContainer();
@@ -284,217 +425,91 @@ export default function PortalFeesPage() {
   };
 
   return (
-    <Box sx={pageShellSx}>
-      <Box
-        sx={{
-          px: { xs: 2, sm: 3 },
-          pt: 2,
-          width: "100%",
-          maxWidth: "none",
-          boxSizing: "border-box",
-        }}
-      >
+    <PortalPageShell>
+      <PortalPageHero
+        fullWidth
+        icon={<AccountBalanceWalletOutlinedIcon />}
+        title="School fees"
+        subtitle="Pay any amount toward your child's invoice. Partial payments are applied to the 1st half, then the 2nd half."
+        chip={
+          !loading && totals.count > 0 ? (
+            <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1.5 }}>
+              <Chip
+                size="small"
+                label={`${totals.count} invoice${totals.count === 1 ? "" : "s"}`}
+                sx={{ ...portalChipSx(), bgcolor: "rgba(255,255,255,0.12)", color: "#fff", borderColor: PORTAL.borderGold }}
+              />
+              <Chip
+                size="small"
+                icon={<PaymentsIcon sx={{ fontSize: "16px !important", color: `${PORTAL.goldMuted} !important` }} />}
+                label={
+                  totals.balance > 0
+                    ? `KES ${totals.balance.toLocaleString()} outstanding`
+                    : "All paid up"
+                }
+                sx={{ ...portalChipSx(), bgcolor: "rgba(255,255,255,0.12)", color: "#fff", borderColor: PORTAL.borderGold }}
+              />
+            </Stack>
+          ) : null
+        }
+      />
+
+      <PortalPageContent fullWidth>
         {error ? (
-          <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {error}
           </Alert>
         ) : null}
 
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress sx={{ color: accent }} />
-          </Box>
+          <PortalLoading label="Loading your invoices…" />
+        ) : invoices.length === 0 ? (
+          <PortalEmptyState
+            icon={<ReceiptLongIcon />}
+            title="No invoices yet"
+            description="The school will send an invoice when fees are ready for your linked students. You'll be able to pay securely with M-Pesa from here."
+          />
         ) : (
-          <Card elevation={0} sx={fullWidthCardSx}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 }, "&:last-child": { pb: { xs: 2, sm: 3 } } }}>
-              <Stack spacing={2.5} sx={{ width: "100%" }}>
-                <Box sx={{ width: "100%" }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: accentDark, mb: 0.5 }}>
-                    School fees
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ width: "100%" }}>
-                    Pay any amount toward your child&apos;s invoice. Partial payments are applied to the 1st half,
-                    then 2nd half.
-                  </Typography>
-                  {totals.count > 0 ? (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                      {totals.count} invoice{totals.count === 1 ? "" : "s"}
-                      {totals.balance > 0 ? ` · KES ${totals.balance.toLocaleString()} outstanding` : " · all paid up"}
-                    </Typography>
-                  ) : null}
-                </Box>
-
-                {invoices.length === 0 ? (
-                  <Alert severity="info" sx={{ borderRadius: 2, border: `1px solid ${accentLight}`, width: "100%" }}>
-                    No invoices available yet. The school will send an invoice when fees are ready for your linked
-                    students.
-                  </Alert>
-                ) : (
-                  invoices.map((inv, idx) => {
-                    const chip = statusChipProps(inv.status);
-                    const termTotal = Number(inv.term_fee_amount || inv.amount_due || 0);
-                    const paid = Number(inv.amount_paid || 0);
-                    const balance = Number(inv.balance || 0);
-                    const pct = termTotal > 0 ? Math.min(100, Math.round((paid / termTotal) * 100)) : 0;
-
-                    return (
-                      <Box key={inv.id || inv.invoice_number} sx={{ width: "100%" }}>
-                        {idx > 0 ? <Divider sx={{ mb: 2.5, borderColor: accentLight }} /> : null}
-
-                        <Stack spacing={2} sx={{ width: "100%" }}>
-                          <Stack
-                            direction={{ xs: "column", sm: "row" }}
-                            justifyContent="space-between"
-                            alignItems={{ xs: "flex-start", sm: "center" }}
-                            spacing={1.5}
-                            sx={{ width: "100%" }}
-                          >
-                            <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Typography sx={{ fontWeight: 800, fontSize: { xs: "1.1rem", sm: "1.2rem" } }}>
-                                {inv.student?.name || "Student"}
-                              </Typography>
-                              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.5, flexWrap: "wrap" }}>
-                                <ReceiptLongIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-                                <Typography variant="body2" color="text.secondary">
-                                  Invoice {inv.invoice_number}
-                                  {inv.status ? ` · ${inv.status}` : ""}
-                                </Typography>
-                              </Stack>
-                            </Box>
-                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                              <Chip size="small" label={chip.label} color={chip.color} sx={{ fontWeight: 700 }} />
-                              {inv.level_name ? (
-                                <Chip
-                                  size="small"
-                                  icon={<LayersIcon sx={{ fontSize: "16px !important" }} />}
-                                  label={inv.level_name}
-                                  variant="outlined"
-                                  sx={{ fontWeight: 600 }}
-                                />
-                              ) : null}
-                            </Stack>
-                          </Stack>
-
-                          <Box sx={{ width: "100%" }}>
-                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Payment progress
-                              </Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                                {pct}%
-                              </Typography>
-                            </Stack>
-                            <LinearProgress
-                              variant="determinate"
-                              value={pct}
-                              sx={{
-                                width: "100%",
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: accentLight,
-                                "& .MuiLinearProgress-bar": { bgcolor: pct >= 100 ? "#16a34a" : accent },
-                              }}
-                            />
-                          </Box>
-
-                          <Grid container spacing={2} sx={{ width: "100%", m: 0 }}>
-                            <Grid item xs={12} sm={4}>
-                              <AmountCell label="Term fee" value={`KES ${termTotal.toLocaleString()}`} />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <AmountCell label="Paid" value={`KES ${paid.toLocaleString()}`} />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <AmountCell label="Balance" value={`KES ${balance.toLocaleString()}`} highlight />
-                            </Grid>
-                          </Grid>
-
-                          {Number(inv.credit_balance || 0) > 0.01 ? (
-                            <Alert severity="success" sx={{ borderRadius: 1.5, width: "100%" }}>
-                              Credit on this level: <strong>KES {Number(inv.credit_balance).toLocaleString()}</strong>
-                              {" "}
-                              (overpayment). This counts toward fee requirements for this term/level.
-                            </Alert>
-                          ) : null}
-
-                          {Array.isArray(inv.payment_breakdown) && inv.payment_breakdown.length > 0 ? (
-                            <Box sx={{ width: "100%" }}>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ fontWeight: 700, display: "block", mb: 1 }}
-                              >
-                                What each half includes
-                              </Typography>
-                              <Stack
-                                direction={{ xs: "column", md: "row" }}
-                                spacing={2}
-                                sx={{
-                                  width: "100%",
-                                  p: { xs: 1.5, sm: 2 },
-                                  borderRadius: 1.5,
-                                  bgcolor: `${accent}06`,
-                                  border: `1px solid ${accentLight}`,
-                                  boxSizing: "border-box",
-                                }}
-                              >
-                                {["first_half", "second_half"].map((phaseKey) => {
-                                  const ph =
-                                    inv.payment_breakdown.find((p) => p.phase === phaseKey) ||
-                                    inv.payment_breakdown.find((p) => String(p.phase).includes(phaseKey));
-                                  if (!ph) return null;
-                                  return <HalfBreakdownPanel key={phaseKey} phase={ph} />;
-                                })}
-                              </Stack>
-                            </Box>
-                          ) : null}
-
-                          <Stack
-                            direction={{ xs: "column", sm: "row" }}
-                            justifyContent="flex-end"
-                            alignItems={{ xs: "stretch", sm: "center" }}
-                            sx={{ width: "100%", pt: 0.5 }}
-                          >
-                            <Button
-                              variant="contained"
-                              fullWidth={false}
-                              disabled={balance <= 0}
-                              onClick={() => {
-                                setPayDlg(inv);
-                                setAmount(String(balance || ""));
-                                setPhone(getStoredUserPhone());
-                              }}
-                              sx={{
-                                bgcolor: accent,
-                                fontWeight: 700,
-                                px: 4,
-                                alignSelf: { xs: "stretch", sm: "flex-end" },
-                                minWidth: { sm: 160 },
-                                "&:hover": { bgcolor: accentDark },
-                              }}
-                            >
-                              {balance <= 0 ? "Fully paid" : "Pay with M-Pesa"}
-                            </Button>
-                          </Stack>
-                        </Stack>
-                      </Box>
-                    );
-                  })
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+          <Stack spacing={2}>
+            {invoices.map((inv) => (
+              <FeeInvoiceCard key={inv.id || inv.invoice_number} inv={inv} onPay={openPayDialog} />
+            ))}
+          </Stack>
         )}
 
-        <Dialog open={Boolean(payDlg)} onClose={() => !paying && setPayDlg(null)} fullWidth maxWidth="xs">
-          <DialogTitle sx={{ fontWeight: 800 }}>Pay with M-Pesa</DialogTitle>
+        <Dialog
+          open={Boolean(payDlg)}
+          onClose={() => !paying && closePayDialog()}
+          fullWidth
+          maxWidth="xs"
+          PaperProps={{
+            sx: { borderRadius: 3, border: `1px solid ${PORTAL.border}`, overflow: "hidden" },
+          }}
+        >
+          <Box sx={{ height: 4, background: PORTAL.navyGradient }} />
+          <DialogTitle sx={{ fontWeight: 800, fontFamily: PORTAL.fontDisplay, color: PORTAL.navyDeep, pb: 1 }}>
+            Pay with M-Pesa
+          </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            <Typography variant="body2" sx={{ mb: 0.5, color: PORTAL.inkMuted, fontWeight: 600 }}>
               {payDlg?.student?.name || "Student"} · {payDlg?.invoice_number}
             </Typography>
-            <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: accent }}>
-              Balance: KES {Number(payDlg?.balance || 0).toLocaleString()}
-            </Typography>
+            <Box
+              sx={{
+                mb: 2.5,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: PORTAL.sky,
+                border: `1px solid ${PORTAL.border}`,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: PORTAL.inkSoft, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Balance due
+              </Typography>
+              <Typography sx={{ fontWeight: 800, fontSize: "1.35rem", color: PORTAL.navyDeep }}>
+                KES {Number(payDlg?.balance || 0).toLocaleString()}
+              </Typography>
+            </Box>
             <Stack spacing={2}>
               <TextField
                 fullWidth
@@ -514,21 +529,16 @@ export default function PortalFeesPage() {
               />
             </Stack>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setPayDlg(null)} disabled={paying}>
+          <DialogActions sx={{ px: 3, pb: 2.5, pt: 0 }}>
+            <Button onClick={closePayDialog} disabled={paying} sx={{ fontWeight: 600, color: PORTAL.inkMuted }}>
               Cancel
             </Button>
-            <Button
-              variant="contained"
-              disabled={paying}
-              onClick={() => void submitMpesaPay()}
-              sx={{ bgcolor: accent, fontWeight: 700 }}
-            >
+            <Button variant="contained" disableElevation disabled={paying} onClick={() => void submitMpesaPay()} sx={portalPrimaryButtonSx()}>
               {paying ? "Waiting for M-Pesa…" : "Send M-Pesa prompt"}
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
-    </Box>
+      </PortalPageContent>
+    </PortalPageShell>
   );
 }
