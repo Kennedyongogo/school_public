@@ -236,6 +236,36 @@ export async function postMyParentFeePayment(invoiceId, { amount, reference, not
   return data.data;
 }
 
+export async function postMyParentMpesaStkPush(invoiceId, { phone_number, amount } = {}) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/mpesa/fee-invoice/${encodeURIComponent(invoiceId)}/stk-push`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ phone_number, amount }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not start M-Pesa payment.");
+  return data.data;
+}
+
+export async function fetchMpesaStkPushStatus(checkoutRequestId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/mpesa/stk-push/${encodeURIComponent(checkoutRequestId)}`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not check payment status.");
+  return data.data;
+}
+
+export async function fetchMpesaConfigStatus() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/mpesa/status`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load M-Pesa status.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalStudentProfile() {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/students/me`, {

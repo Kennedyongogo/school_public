@@ -24,12 +24,24 @@ import LayersIcon from "@mui/icons-material/Layers";
 import Swal from "sweetalert2";
 import {
   fetchMyParentFeeInvoices,
-  postMyParentFeePayment,
+  postMyParentMpesaStkPush,
+  fetchMpesaStkPushStatus,
 } from "../api";
 
 const accent = "#DC2626";
 const accentLight = "#FEE2E2";
 const accentDark = "#B91C1C";
+
+function getStoredUserPhone() {
+  try {
+    const raw = localStorage.getItem("marketplace_user");
+    if (!raw) return "";
+    const user = JSON.parse(raw);
+    return String(user?.phone || "").trim();
+  } catch {
+    return "";
+  }
+}
 
 const pageShellSx = {
   minHeight: "100vh",
@@ -148,6 +160,7 @@ export default function PortalFeesPage() {
   const [error, setError] = useState("");
   const [payDlg, setPayDlg] = useState(null);
   const [amount, setAmount] = useState("");
+  const [phone, setPhone] = useState(() => getStoredUserPhone());
   const [paying, setPaying] = useState(false);
 
   const load = async () => {
@@ -176,51 +189,95 @@ export default function PortalFeesPage() {
     return { balance, count: invoices.length };
   }, [invoices]);
 
-  const submitPay = async () => {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const closePayDialog = () => {
+    setPayDlg(null);
+    setAmount("");
+    setPhone(getStoredUserPhone());
+  };
+
+  const fireSwal = (options) =>
+    Swal.fire({
+      confirmButtonColor: accent,
+      ...options,
+      didOpen: (popup) => {
+        const container = Swal.getContainer();
+        if (container) container.style.zIndex = "2000";
+        options.didOpen?.(popup);
+      },
+    });
+
+  const submitMpesaPay = async () => {
     if (!payDlg) return;
     const val = Number(amount);
+    const phoneVal = String(phone || "").trim();
+    if (!phoneVal) {
+      await fireSwal({ icon: "warning", title: "Enter your M-Pesa number" });
+      return;
+    }
     if (!Number.isFinite(val) || val <= 0) {
-      await Swal.fire({ icon: "warning", title: "Enter a valid amount" });
+      await fireSwal({ icon: "warning", title: "Enter a valid amount" });
       return;
     }
     setPaying(true);
     try {
-      const paymentResult = await postMyParentFeePayment(payDlg.id, { amount: val });
-      const receipt = paymentResult?.payment_receipt;
-      setPayDlg(null);
-      setAmount("");
+      const invoiceId = payDlg.id;
+      const stk = await postMyParentMpesaStkPush(invoiceId, {
+        phone_number: phoneVal,
+        amount: val,
+      });
+
+      closePayDialog();
+      await sleep(200);
+
+      await fireSwal({
+        icon: "info",
+        title: "Check your phone",
+        text: stk.message || "Enter your M-Pesa PIN on your phone to complete payment.",
+        timer: 4000,
+        showConfirmButton: false,
+      });
+
+      const checkoutId = stk.checkout_request_id;
+      let finalStatus = null;
+      for (let i = 0; i < 40; i += 1) {
+        await sleep(3000);
+        finalStatus = await fetchMpesaStkPushStatus(checkoutId);
+        if (finalStatus.status === "completed" || finalStatus.status === "failed") break;
+      }
+
       await load();
 
-      if (receipt?.has_excess && receipt.excess_from_payment > 0.01) {
-        await Swal.fire({
-          icon: "info",
-          title: "Excess payment recorded",
+      if (finalStatus?.status === "completed") {
+        await fireSwal({
+          icon: "success",
+          title: "Payment received",
           html: `
-            <p style="margin:0 0 12px;text-align:left">
-              You paid <strong>KES ${Number(receipt.amount_submitted || 0).toLocaleString()}</strong>.
-              <strong>KES ${Number(receipt.applied_to_invoice || 0).toLocaleString()}</strong> was applied to this invoice.
-            </p>
-            <p style="margin:0 0 12px;text-align:left">
-              <strong>KES ${Number(receipt.excess_from_payment || 0).toLocaleString()}</strong> is extra (overpayment).
-              Total credit on this level: <strong>KES ${Number(receipt.invoice_credit_balance || 0).toLocaleString()}</strong>.
-            </p>
-            <p style="margin:0;text-align:left;color:#4b5563">
-              ${receipt.carry_forward_message || "This credit counts toward your child's fee requirements for this term/level."}
+            <p style="margin:0;text-align:left">
+              M-Pesa receipt: <strong>${finalStatus.mpesa_receipt_number || "—"}</strong><br/>
+              Amount: <strong>KES ${Number(finalStatus.amount || val).toLocaleString()}</strong>
             </p>
           `,
-          confirmButtonText: "Got it",
+          confirmButtonText: "OK",
+        });
+      } else if (finalStatus?.status === "failed") {
+        await fireSwal({
+          icon: "error",
+          title: "Payment not completed",
+          text: finalStatus.result_desc || "The M-Pesa request was cancelled or failed.",
         });
       } else {
-        await Swal.fire({
-          icon: "success",
-          title: "Payment recorded",
-          text: "M-Pesa will be connected later; this records your payment for the school.",
-          timer: 2200,
-          showConfirmButton: false,
+        await fireSwal({
+          icon: "warning",
+          title: "Payment pending",
+          text: "We did not receive confirmation yet. If you completed payment on your phone, refresh this page in a moment.",
         });
       }
     } catch (e) {
-      await Swal.fire({ icon: "error", title: "Payment failed", text: e.message });
+      closePayDialog();
+      await sleep(200);
+      await fireSwal({ icon: "error", title: "M-Pesa payment failed", text: e.message });
     } finally {
       setPaying(false);
     }
@@ -405,6 +462,7 @@ export default function PortalFeesPage() {
                               onClick={() => {
                                 setPayDlg(inv);
                                 setAmount(String(balance || ""));
+                                setPhone(getStoredUserPhone());
                               }}
                               sx={{
                                 bgcolor: accent,
@@ -415,7 +473,7 @@ export default function PortalFeesPage() {
                                 "&:hover": { bgcolor: accentDark },
                               }}
                             >
-                              {balance <= 0 ? "Fully paid" : "Pay now (manual)"}
+                              {balance <= 0 ? "Fully paid" : "Pay with M-Pesa"}
                             </Button>
                           </Stack>
                         </Stack>
@@ -428,8 +486,8 @@ export default function PortalFeesPage() {
           </Card>
         )}
 
-        <Dialog open={Boolean(payDlg)} onClose={() => setPayDlg(null)} fullWidth maxWidth="xs">
-          <DialogTitle sx={{ fontWeight: 800 }}>Record payment</DialogTitle>
+        <Dialog open={Boolean(payDlg)} onClose={() => !paying && setPayDlg(null)} fullWidth maxWidth="xs">
+          <DialogTitle sx={{ fontWeight: 800 }}>Pay with M-Pesa</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
               {payDlg?.student?.name || "Student"} · {payDlg?.invoice_number}
@@ -437,24 +495,36 @@ export default function PortalFeesPage() {
             <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: accent }}>
               Balance: KES {Number(payDlg?.balance || 0).toLocaleString()}
             </Typography>
-            <TextField
-              fullWidth
-              label="Amount to pay (KES)"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              helperText="You may pay part or all of the balance."
-            />
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                label="M-Pesa phone number"
+                placeholder="07XX XXX XXX or 2547XXXXXXXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                helperText="Safaricom number that will receive the M-Pesa prompt."
+              />
+              <TextField
+                fullWidth
+                label="Amount to pay (KES)"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                helperText="You may pay part or all of the balance."
+              />
+            </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setPayDlg(null)}>Cancel</Button>
+            <Button onClick={() => setPayDlg(null)} disabled={paying}>
+              Cancel
+            </Button>
             <Button
               variant="contained"
               disabled={paying}
-              onClick={() => void submitPay()}
+              onClick={() => void submitMpesaPay()}
               sx={{ bgcolor: accent, fontWeight: 700 }}
             >
-              {paying ? "Saving…" : "Submit payment"}
+              {paying ? "Waiting for M-Pesa…" : "Send M-Pesa prompt"}
             </Button>
           </DialogActions>
         </Dialog>
