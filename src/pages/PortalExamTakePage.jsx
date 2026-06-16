@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -128,6 +128,9 @@ export default function PortalExamTakePage() {
   const mediaStreamRef = useRef(null);
   const autoSubmitRef = useRef(false);
   const creatingAttemptRef = useRef(false);
+  const saveTimerRef = useRef(null);
+  const answersRef = useRef({});
+  answersRef.current = answers;
 
   const deadline = useMemo(() => {
     if (!submission?.started_at || !exam?.duration_minutes) return null;
@@ -344,6 +347,53 @@ export default function PortalExamTakePage() {
     (!rules.requiresWebcam || webcamReady) &&
     (!requiresRoom || roomConfirmed);
 
+  const buildAnswerPayload = useCallback(
+    (answerMap) =>
+      questions.map((q) => {
+        const v = answerMap[q.id];
+        const isJson = Array.isArray(v) || (v && typeof v === "object");
+        return {
+          question_id: q.id,
+          answer_text: isJson ? null : v != null ? String(v) : "",
+          answer_json: isJson ? v : null,
+        };
+      }),
+    [questions]
+  );
+
+  const persistAnswers = useCallback(
+    async (answerMap, submissionId) => {
+      const sid = submissionId || submission?.id;
+      if (!sid || !questions.length || submission?.status === "submitted") return;
+      setSaving(true);
+      try {
+        const updated = await saveSchoolPortalExamAnswers(sid, buildAnswerPayload(answerMap ?? answersRef.current));
+        setSubmission((s) => ({ ...s, answers: updated?.answers || s?.answers || [] }));
+      } catch {
+        // Non-blocking autosave
+      } finally {
+        setSaving(false);
+      }
+    },
+    [submission?.id, submission?.status, questions.length, buildAnswerPayload]
+  );
+
+  const queueSave = useCallback(
+    (answerMap) => {
+      if (!submission?.id || submission?.status === "submitted") return;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => void persistAnswers(answerMap), 800);
+    },
+    [persistAnswers, submission?.id, submission?.status]
+  );
+
+  useEffect(
+    () => () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    },
+    []
+  );
+
   useEffect(() => {
     const maybeCreateAttempt = async () => {
       if (!canAnswer) return;
@@ -412,7 +462,11 @@ export default function PortalExamTakePage() {
   }, [examAttemptId, submission?.status, schedule?.proctoring_mode]);
 
   const upsertAnswer = (questionId, value) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    setAnswers((prev) => {
+      const next = { ...prev, [questionId]: value };
+      queueSave(next);
+      return next;
+    });
   };
 
   const handleFileUpload = async (question, file) => {
@@ -466,20 +520,15 @@ export default function PortalExamTakePage() {
   };
 
   const saveDraft = async ({ throwOnError = false } = {}) => {
-    if (!submission?.id || !questions.length) return;
+    if (!submission?.id || !questions.length) return false;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
     setSaving(true);
     setError("");
     try {
-      const payload = questions.map((q) => {
-        const v = answers[q.id];
-        const isJson = Array.isArray(v) || (v && typeof v === "object");
-        return {
-          question_id: q.id,
-          answer_text: isJson ? null : v != null ? String(v) : "",
-          answer_json: isJson ? v : null,
-        };
-      });
-      const updated = await saveSchoolPortalExamAnswers(submission.id, payload);
+      const updated = await saveSchoolPortalExamAnswers(submission.id, buildAnswerPayload(answersRef.current));
       setSubmission((s) => ({ ...s, answers: updated?.answers || s?.answers || [] }));
       return true;
     } catch (e) {
@@ -735,6 +784,11 @@ export default function PortalExamTakePage() {
                     ).padStart(2, "0")}`}
                     size="small"
                   />
+                ) : null}
+                {saving ? (
+                  <Typography variant="caption" color="text.secondary">
+                    Saving…
+                  </Typography>
                 ) : null}
               </Stack>
             </Stack>

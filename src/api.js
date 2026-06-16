@@ -357,6 +357,18 @@ export async function fetchSchoolPortalStudentReportCards({ page = 1, limit = 20
   };
 }
 
+export async function fetchSchoolPortalStudentReportCardPdf(cardId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/student/report-cards/${encodeURIComponent(cardId)}/pdf`, {
+    headers: { ...getMarketplaceAuthHeaders(), Accept: "application/pdf" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not load report card PDF.");
+  }
+  return res.blob();
+}
+
 export async function createSchoolPortalExamSubmission(examId) {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/submissions`, {

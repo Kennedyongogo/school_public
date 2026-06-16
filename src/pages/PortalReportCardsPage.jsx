@@ -30,8 +30,8 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import {
   fetchSchoolPortalStudentProfile,
   fetchSchoolPortalStudentReportCards,
+  fetchSchoolPortalStudentReportCardPdf,
   fetchSchoolPortalUser,
-  schoolPortalMediaUrl,
 } from "../api";
 
 import {
@@ -71,6 +71,22 @@ export default function PortalReportCardsPage() {
   const [total, setTotal] = useState(0);
   const [profile, setProfile] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [openingPdfId, setOpeningPdfId] = useState(null);
+
+  const openReportCardPdf = async (cardId) => {
+    setOpeningPdfId(cardId);
+    setError("");
+    try {
+      const blob = await fetchSchoolPortalStudentReportCardPdf(cardId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(e.message || "Could not open report card PDF.");
+    } finally {
+      setOpeningPdfId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -153,7 +169,6 @@ export default function PortalReportCardsPage() {
           <>
             <Stack spacing={2}>
               {rows.map((card, index) => {
-                const pdfUrl = card.pdf_url ? schoolPortalMediaUrl(card.pdf_url) : null;
                 const expanded = expandedId === card.id;
                 const lineCount = card.lines?.length ?? 0;
                 return (
@@ -233,18 +248,21 @@ export default function PortalReportCardsPage() {
                         </Box>
 
                         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                          {pdfUrl ? (
-                            <PortalPrimaryButton
-                              size="small"
-                              startIcon={<DownloadOutlinedIcon />}
-                              href={pdfUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{ flex: 1 }}
-                            >
-                              Open PDF
-                            </PortalPrimaryButton>
-                          ) : null}
+                          <PortalPrimaryButton
+                            size="small"
+                            startIcon={
+                              openingPdfId === card.id ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <DownloadOutlinedIcon />
+                              )
+                            }
+                            disabled={openingPdfId === card.id}
+                            onClick={() => void openReportCardPdf(card.id)}
+                            sx={{ flex: 1 }}
+                          >
+                            {openingPdfId === card.id ? "Opening…" : "Open PDF"}
+                          </PortalPrimaryButton>
                           {lineCount > 0 ? (
                             <IconButton
                               size="small"
