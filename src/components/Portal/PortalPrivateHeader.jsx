@@ -65,6 +65,7 @@ export default function PortalPrivateHeader({
   onGoExams,
   onGoReportCards,
   onGoFees,
+  onGoReceipts,
 }) {
   const imgSrc = profileImageUrl ? schoolPortalMediaUrl(profileImageUrl) : null;
   const initial = (displayName || "?").trim().charAt(0).toUpperCase() || "?";
@@ -89,6 +90,10 @@ export default function PortalPrivateHeader({
   const goFees = () => {
     setMobileOpen(false);
     if (typeof onGoFees === "function") onGoFees();
+  };
+  const goReceipts = () => {
+    setMobileOpen(false);
+    if (typeof onGoReceipts === "function") onGoReceipts();
   };
   const logout = () => {
     setMobileOpen(false);
@@ -189,6 +194,16 @@ export default function PortalPrivateHeader({
                 sx={{ ...navBtnSx(currentNav === "fees"), minWidth: 96 }}
               >
                 Fees
+              </Button>
+            )}
+            {typeof onGoReceipts === "function" && (
+              <Button
+                variant={currentNav === "receipts" ? "contained" : "text"}
+                size="small"
+                onClick={onGoReceipts}
+                sx={{ ...navBtnSx(currentNav === "receipts"), minWidth: 100 }}
+              >
+                Receipts
               </Button>
             )}
             {typeof onGoReportCards === "function" && (
@@ -326,6 +341,11 @@ export default function PortalPrivateHeader({
             {typeof onGoFees === "function" && (
               <ListItemButton onClick={goFees} selected={currentNav === "fees"} sx={drawerItemSx(currentNav === "fees")}>
                 <ListItemText primary="Fees" />
+              </ListItemButton>
+            )}
+            {typeof onGoReceipts === "function" && (
+              <ListItemButton onClick={goReceipts} selected={currentNav === "receipts"} sx={drawerItemSx(currentNav === "receipts")}>
+                <ListItemText primary="Receipts" />
               </ListItemButton>
             )}
           </List>

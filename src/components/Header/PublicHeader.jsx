@@ -15,8 +15,9 @@ import {
   Divider,
   Fade,
   Slide,
+  Stack,
 } from "@mui/material";
-import { Home, Menu as MenuIcon, Close, Groups } from "@mui/icons-material";
+import { Home, Menu as MenuIcon, Close, Groups, HowToRegOutlined } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import BrandLogoMark from "../common/BrandLogoMark";
 import { BRAND as BRAND_SHARED } from "../../brand";
@@ -197,15 +198,18 @@ export default function PublicHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname, navItems, isNavigating, hasScrolled, isHeroVisible]);
 
+  const isHomePage = location.pathname === "/";
+  const isHeaderTransparent = isHomePage && isAtTop;
   const isActive = (path) => location.pathname === path;
+  const onTransparentHeader = isHeaderTransparent;
+  const headerActionColor =
+    (isHeaderTransparent && isHeaderVisible) || (!scrolled && isHomePage)
+      ? "white"
+      : BRAND.navy;
 
   // Split nav items - on home page, show all on right when not in hero, otherwise all on right
-  const isHomePage = location.pathname === "/";
   const leftNavItems = []; // No left nav items - all go to right
   const rightNavItems = navItems; // All nav items on the right
-
-  // Check if header is transparent (on home page or services page when at absolute top)
-  const isHeaderTransparent = isHomePage && isAtTop;
 
   const handleNavigateToSection = (item) => {
     setMobileMenuOpen(false);
@@ -495,15 +499,50 @@ export default function PublicHeader() {
               })}
             </Box>
 
-            {/* Login — far right */}
+            {/* Apply admission + Login — far right */}
             <Box
               sx={{
                 display: { xs: "none", md: "flex" },
                 alignItems: "center",
                 flex: "0 0 auto",
                 justifyContent: "flex-end",
+                gap: 1,
               }}
             >
+              <Button
+                variant="outlined"
+                startIcon={<HowToRegOutlined sx={{ fontSize: "1.1rem !important" }} />}
+                onClick={() => navigate("/admission/apply")}
+                sx={{
+                  px: 2,
+                  py: 1.05,
+                  fontSize: "0.875rem",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  color: headerActionColor,
+                  borderColor: onTransparentHeader ? "rgba(255,255,255,0.55)" : BRAND.surfaceBorder,
+                  textTransform: "none",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.3s ease",
+                  backgroundColor: location.pathname.startsWith("/admission")
+                    ? onTransparentHeader
+                      ? "rgba(255,255,255,0.12)"
+                      : "rgba(12, 35, 64, 0.06)"
+                    : "transparent",
+                  "&:focus": { outline: "none" },
+                  "&:focus-visible": { outline: "none" },
+                  "&:hover": {
+                    borderColor: onTransparentHeader ? "#fff" : BRAND.gold,
+                    color: onTransparentHeader ? "#fff" : BRAND.navyDeep,
+                    backgroundColor: onTransparentHeader
+                      ? "rgba(255,255,255,0.14)"
+                      : "rgba(201, 162, 39, 0.12)",
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                Apply admission
+              </Button>
               <Button
                 variant="contained"
                 onClick={() => navigate("/login")}
@@ -735,41 +774,69 @@ export default function PublicHeader() {
             })}
           </List>
           <Divider sx={{ my: 1.5, borderColor: BRAND.surfaceBorder }} />
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={() => {
-              setMobileMenuOpen(false);
-              navigate("/login");
-            }}
-            sx={{
-              px: 3,
-              py: 1.5,
-              fontSize: "0.875rem",
-              fontWeight: 700,
-              borderRadius: 2,
-              background: `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`,
-              color: BRAND.navyDeep,
-              textTransform: "none",
-              border: `1px solid rgba(255,255,255,0.35)`,
-              boxShadow: "0 4px 14px rgba(12, 35, 64, 0.2)",
-              transition: "all 0.3s ease",
-              "&:focus": {
-                outline: "none",
+          <Stack spacing={1}>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<HowToRegOutlined />}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate("/admission/apply");
+              }}
+              sx={{
+                px: 3,
+                py: 1.35,
+                fontSize: "0.875rem",
+                fontWeight: 700,
+                borderRadius: 2,
+                color: BRAND.navy,
+                borderColor: BRAND.surfaceBorder,
+                textTransform: "none",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  borderColor: BRAND.gold,
+                  backgroundColor: "rgba(201, 162, 39, 0.1)",
+                },
+              }}
+            >
+              Apply admission
+            </Button>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => {
+                setMobileMenuOpen(false);
+                navigate("/login");
+              }}
+              sx={{
+                px: 3,
+                py: 1.5,
+                fontSize: "0.875rem",
+                fontWeight: 700,
+                borderRadius: 2,
+                background: `linear-gradient(145deg, ${BRAND.goldMuted}, ${BRAND.gold})`,
+                color: BRAND.navyDeep,
+                textTransform: "none",
+                border: `1px solid rgba(255,255,255,0.35)`,
                 boxShadow: "0 4px 14px rgba(12, 35, 64, 0.2)",
-              },
-              "&:focus-visible": {
-                outline: "none",
-              },
-              "&:hover": {
-                background: BRAND.goldMuted,
-                transform: "translateY(-2px)",
-                boxShadow: "0 6px 18px rgba(12, 35, 64, 0.26)",
-              },
-            }}
-          >
-            Login
-          </Button>
+                transition: "all 0.3s ease",
+                "&:focus": {
+                  outline: "none",
+                  boxShadow: "0 4px 14px rgba(12, 35, 64, 0.2)",
+                },
+                "&:focus-visible": {
+                  outline: "none",
+                },
+                "&:hover": {
+                  background: BRAND.goldMuted,
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 18px rgba(12, 35, 64, 0.26)",
+                },
+              }}
+            >
+              Login
+            </Button>
+          </Stack>
         </Box>
       </Drawer>
 

@@ -10,6 +10,7 @@ import {
   DialogTitle,
   Grid,
   LinearProgress,
+  CircularProgress,
   Stack,
   TextField,
   Typography,
@@ -17,10 +18,14 @@ import {
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import LayersIcon from "@mui/icons-material/Layers";
+import HistoryIcon from "@mui/icons-material/History";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import Swal from "sweetalert2";
 import {
   fetchMyParentFeeInvoices,
+  fetchMyParentFeeInvoicePdf,
+  fetchMyParentFeeReceiptPdf,
   postMyParentMpesaStkPush,
   fetchMpesaStkPushStatus,
 } from "../api";
@@ -145,7 +150,116 @@ function HalfBreakdownPanel({ phase }) {
   );
 }
 
-function FeeInvoiceCard({ inv, onPay }) {
+function paymentMethodLabel(method) {
+  const m = String(method || "").toLowerCase();
+  if (m === "mpesa") return "M-Pesa";
+  if (m === "portal") return "Parent portal";
+  if (m === "manual") return "Cash / bank";
+  return method || "—";
+}
+
+function formatPaymentDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function PaymentHistoryPanel({ payments, onDownloadReceipt, downloadingReceiptId }) {
+  const rows = Array.isArray(payments) ? payments : [];
+
+  return (
+    <Box sx={{ width: "100%" }}>
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 800, display: "block", mb: 1.25, letterSpacing: "0.05em", textTransform: "uppercase", color: PORTAL.inkSoft }}
+      >
+        Payment history
+      </Typography>
+      <Box
+        sx={{
+          width: "100%",
+          p: { xs: 1.5, sm: 2 },
+          borderRadius: 2,
+          bgcolor: PORTAL.sky,
+          border: `1px solid ${PORTAL.border}`,
+          boxSizing: "border-box",
+        }}
+      >
+        {rows.length === 0 ? (
+          <Typography variant="body2" sx={{ color: PORTAL.inkSoft }}>
+            No payments recorded yet.
+          </Typography>
+        ) : (
+          <Stack spacing={1}>
+            {rows.map((payment) => (
+              <Box
+                key={payment.id || `${payment.paid_at}-${payment.amount}`}
+                sx={{
+                  p: 1.25,
+                  borderRadius: 2,
+                  bgcolor: "#fff",
+                  border: `1px solid ${PORTAL.border}`,
+                }}
+              >
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  spacing={1}
+                >
+                  <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0 }}>
+                    <HistoryIcon sx={{ fontSize: 17, color: PORTAL.gold }} />
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, color: PORTAL.navyDeep }}>
+                        KES {Number(payment.amount || 0).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: PORTAL.inkMuted, fontWeight: 600 }}>
+                        {paymentMethodLabel(payment.payment_method)} · {formatPaymentDate(payment.paid_at)}
+                      </Typography>
+                      {payment.receipt_number ? (
+                        <Typography variant="caption" sx={{ color: PORTAL.inkSoft, fontWeight: 600 }}>
+                          Receipt {payment.receipt_number}
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {payment.reference ? (
+                      <Typography variant="body2" sx={{ color: PORTAL.inkSoft, fontWeight: 600 }}>
+                        Ref: {payment.reference}
+                      </Typography>
+                    ) : null}
+                    {payment.id ? (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={downloadingReceiptId === payment.id}
+                        onClick={() => onDownloadReceipt(payment)}
+                        startIcon={
+                          downloadingReceiptId === payment.id ? (
+                            <CircularProgress size={14} color="inherit" />
+                          ) : (
+                            <DownloadOutlinedIcon />
+                          )
+                        }
+                        sx={{ fontWeight: 700, borderColor: PORTAL.border, color: PORTAL.navyDeep }}
+                      >
+                        Receipt PDF
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+function FeeInvoiceCard({ inv, onPay, onDownload, downloading, onDownloadReceipt, downloadingReceiptId }) {
   const chip = statusChipProps(inv.status);
   const termTotal = Number(inv.term_fee_amount || inv.amount_due || 0);
   const paid = Number(inv.amount_paid || 0);
@@ -270,7 +384,28 @@ function FeeInvoiceCard({ inv, onPay }) {
           </Box>
         ) : null}
 
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" sx={{ pt: 0.5 }}>
+        <PaymentHistoryPanel
+          payments={inv.payments}
+          onDownloadReceipt={onDownloadReceipt}
+          downloadingReceiptId={downloadingReceiptId}
+        />
+
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" spacing={1.25} sx={{ pt: 0.5 }}>
+          <Button
+            variant="outlined"
+            disabled={downloading}
+            onClick={() => onDownload(inv)}
+            startIcon={downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadOutlinedIcon />}
+            sx={{
+              alignSelf: { xs: "stretch", sm: "flex-end" },
+              minWidth: { sm: 180 },
+              fontWeight: 700,
+              borderColor: PORTAL.border,
+              color: PORTAL.navyDeep,
+            }}
+          >
+            {downloading ? "Preparing PDF…" : "Download invoice"}
+          </Button>
           <PortalPrimaryButton
             disabled={balance <= 0}
             onClick={() => onPay(inv)}
@@ -297,6 +432,8 @@ export default function PortalFeesPage() {
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState(() => getStoredUserPhone());
   const [paying, setPaying] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [downloadingReceiptId, setDownloadingReceiptId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -336,6 +473,38 @@ export default function PortalFeesPage() {
     setPayDlg(inv);
     setAmount(String(Number(inv.balance || 0) || ""));
     setPhone(getStoredUserPhone());
+  };
+
+  const downloadInvoicePdf = async (inv) => {
+    if (!inv?.id) return;
+    setDownloadingId(inv.id);
+    setError("");
+    try {
+      const blob = await fetchMyParentFeeInvoicePdf(inv.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(e.message || "Could not download invoice PDF.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const downloadReceiptPdf = async (payment) => {
+    if (!payment?.id) return;
+    setDownloadingReceiptId(payment.id);
+    setError("");
+    try {
+      const blob = await fetchMyParentFeeReceiptPdf(payment.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(e.message || "Could not download receipt PDF.");
+    } finally {
+      setDownloadingReceiptId(null);
+    }
   };
 
   const fireSwal = (options) =>
@@ -391,17 +560,24 @@ export default function PortalFeesPage() {
       await load();
 
       if (finalStatus?.status === "completed") {
-        await fireSwal({
+        const paymentId = finalStatus.fee_payment_id;
+        const result = await fireSwal({
           icon: "success",
           title: "Payment received",
           html: `
             <p style="margin:0;text-align:left">
               M-Pesa receipt: <strong>${finalStatus.mpesa_receipt_number || "—"}</strong><br/>
-              Amount: <strong>KES ${Number(finalStatus.amount || val).toLocaleString()}</strong>
+              Amount: <strong>KES ${Number(finalStatus.amount || val).toLocaleString()}</strong><br/>
+              Your school payment receipt is ready to download.
             </p>
           `,
-          confirmButtonText: "OK",
+          showCancelButton: Boolean(paymentId),
+          confirmButtonText: paymentId ? "Download receipt PDF" : "OK",
+          cancelButtonText: "Close",
         });
+        if (paymentId && result.isConfirmed) {
+          await downloadReceiptPdf({ id: paymentId });
+        }
       } else if (finalStatus?.status === "failed") {
         await fireSwal({
           icon: "error",
@@ -472,7 +648,15 @@ export default function PortalFeesPage() {
         ) : (
           <Stack spacing={2}>
             {invoices.map((inv) => (
-              <FeeInvoiceCard key={inv.id || inv.invoice_number} inv={inv} onPay={openPayDialog} />
+              <FeeInvoiceCard
+                key={inv.id || inv.invoice_number}
+                inv={inv}
+                onPay={openPayDialog}
+                onDownload={downloadInvoicePdf}
+                downloading={downloadingId === inv.id}
+                onDownloadReceipt={downloadReceiptPdf}
+                downloadingReceiptId={downloadingReceiptId}
+              />
             ))}
           </Stack>
         )}

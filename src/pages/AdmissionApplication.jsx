@@ -2,18 +2,14 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  CircularProgress,
   Alert,
   Chip,
   Stack,
   Skeleton,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { fetchPublicCurricula, fetchPublicFeeStructures } from "../api";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
@@ -158,32 +154,20 @@ function CurriculumCard({ curriculum, onApply, onViewFees }) {
           </Box>
         )}
 
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mt: "auto", pt: 0.5 }}
-        >
-          <Typography variant="caption" sx={{ color: HOME.inkSoft, fontWeight: 600 }}>
-            {curriculum.feeStructure ? "Fee structure available" : "Contact school for fees"}
-          </Typography>
+        <Box sx={{ mt: "auto", pt: 1.5 }}>
           {curriculum.feeStructure ? (
-            <Tooltip title="View fee structure">
-              <IconButton
-                onClick={() => onViewFees(curriculum.id)}
-                aria-label="View fee structure"
-                sx={{
-                  color: HOME.navyDeep,
-                  border: `1px solid ${HOME.border}`,
-                  bgcolor: HOME.sky,
-                  "&:hover": { bgcolor: HOME.gold, color: HOME.navyDeep, borderColor: HOME.gold },
-                }}
-              >
-                <InfoOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          ) : null}
-        </Stack>
+            <HomeGhostButton
+              onClick={() => onViewFees(curriculum.id)}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              View fee structure
+            </HomeGhostButton>
+          ) : (
+            <Typography variant="caption" sx={{ color: HOME.inkSoft, fontWeight: 600 }}>
+              Contact school for fees
+            </Typography>
+          )}
+        </Box>
       </Box>
     </Box>
   );

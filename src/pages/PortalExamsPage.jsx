@@ -66,11 +66,15 @@ function sortExamsLatestFirst(list) {
   return [...list].sort((a, b) => examSortTimestamp(b) - examSortTimestamp(a));
 }
 
-function formatDateTime(iso) {
+function formatDateTime(iso, timezone = "Africa/Nairobi") {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
-  return d.toLocaleString();
+  try {
+    return d.toLocaleString(undefined, { timeZone: timezone || "Africa/Nairobi" });
+  } catch {
+    return d.toLocaleString();
+  }
 }
 
 function openButtonLabel(row, { alreadySubmitted, durationEnded, scheduleElapsed, disqualified, canOpen }) {
@@ -233,7 +237,7 @@ export default function PortalExamsPage() {
                         <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
                           <Typography variant="body2">
                             <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />
-                            {formatDateTime(row.start_time)} - {formatDateTime(row.end_time)}
+                            {formatDateTime(row.start_time, row.timezone)} - {formatDateTime(row.end_time, row.timezone)}
                           </Typography>
                           <Typography variant="body2">
                             <PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "text-bottom" }} />

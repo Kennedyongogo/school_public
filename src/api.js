@@ -224,6 +224,40 @@ export async function fetchMyParentFeeInvoices() {
   return Array.isArray(data.data) ? data.data : [];
 }
 
+export async function fetchMyParentFeeInvoicePdf(invoiceId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/fee-invoices/me/${encodeURIComponent(invoiceId)}/pdf`, {
+    headers: { ...getMarketplaceAuthHeaders(), Accept: "application/pdf" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not load invoice PDF.");
+  }
+  return res.blob();
+}
+
+export async function fetchMyParentFeeReceipts() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/fee-receipts/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load payment receipts.");
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function fetchMyParentFeeReceiptPdf(receiptId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/fee-receipts/me/${encodeURIComponent(receiptId)}/pdf`, {
+    headers: { ...getMarketplaceAuthHeaders(), Accept: "application/pdf" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not load receipt PDF.");
+  }
+  return res.blob();
+}
+
 export async function postMyParentFeePayment(invoiceId, { amount, reference, notes } = {}) {
   const base = getBaseUrl();
   const res = await fetch(`${base}/api/fee-invoices/me/${encodeURIComponent(invoiceId)}/payments`, {

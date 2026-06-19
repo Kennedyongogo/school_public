@@ -168,6 +168,8 @@ export default function PortalPrivateLayout() {
             ? "report-cards"
             : location.pathname.startsWith("/portal/fees")
             ? "fees"
+            : location.pathname.startsWith("/portal/receipts")
+            ? "receipts"
             : "profile"
         }
         onGoProfile={() => navigate("/portal")}
@@ -178,6 +180,7 @@ export default function PortalPrivateLayout() {
         })}
         {...(user?.role === "parent" && {
           onGoFees: () => navigate("/portal/fees"),
+          onGoReceipts: () => navigate("/portal/receipts"),
         })}
       />
 

@@ -23,6 +23,7 @@ const PortalClassesPage = lazy(() => import("./pages/PortalClassesPage"));
 const PortalExamsPage = lazy(() => import("./pages/PortalExamsPage"));
 const PortalReportCardsPage = lazy(() => import("./pages/PortalReportCardsPage"));
 const PortalFeesPage = lazy(() => import("./pages/PortalFeesPage"));
+const PortalReceiptsPage = lazy(() => import("./pages/PortalReceiptsPage"));
 const PortalExamTakeRouter = lazy(() => import("./pages/PortalExamTakeRouter"));
 const PortalExamInvigilationPage = lazy(() => import("./pages/PortalExamInvigilationPage"));
 const PortalLiveMeetingPage = lazy(() => import("./pages/PortalLiveMeetingPage"));
@@ -47,9 +48,7 @@ function ScrollToTop() {
 
 function AppLayout() {
   const location = useLocation();
-  const hideHeader =
-    location.pathname === "/login" ||
-    location.pathname.startsWith("/portal");
+  const hideHeader = location.pathname.startsWith("/portal");
 
   return (
     <>
@@ -91,6 +90,7 @@ function AppLayout() {
               <Route path="exams/:scheduleId" element={<PortalExamTakeRouter />} />
               <Route path="report-cards" element={<PortalReportCardsPage />} />
               <Route path="fees" element={<PortalFeesPage />} />
+              <Route path="receipts" element={<PortalReceiptsPage />} />
             </Route>
             <Route path="/admission/apply" element={<AdmissionApplication />} />
             <Route path="/admission/select" element={<CurriculumSelection />} />
