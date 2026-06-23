@@ -48,7 +48,8 @@ function ScrollToTop() {
 
 function AppLayout() {
   const location = useLocation();
-  const hideHeader = location.pathname.startsWith("/portal");
+  const hideHeader =
+    location.pathname.startsWith("/portal") || location.pathname === "/login";
 
   return (
     <>

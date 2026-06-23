@@ -97,6 +97,17 @@ export default function MarketplaceLogin() {
     return () => window.clearInterval(id);
   }, [heroUrls.length]);
 
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
+
   const swalGold = { confirmButtonColor: HOME.gold };
 
   const handleLogin = async (e) => {
@@ -169,9 +180,9 @@ export default function MarketplaceLogin() {
       sx={{
         display: "flex",
         flexDirection: { xs: "column", lg: "row" },
-        minHeight: "100vh",
-        height: { lg: "100vh" },
-        maxHeight: { lg: "100vh" },
+        height: "100dvh",
+        maxHeight: "100dvh",
+        minHeight: 0,
         overflow: "hidden",
         bgcolor: HOME.cream,
         fontFamily: HOME.fontBody,
@@ -347,113 +358,149 @@ export default function MarketplaceLogin() {
         sx={{
           flex: 1,
           minHeight: 0,
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          px: { xs: 1.25, sm: 2 },
-          py: { xs: 3, sm: 4 },
           bgcolor: HOME.cream,
-          overflow: "auto",
-          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Box sx={{ position: "absolute", top: { xs: 12, sm: 16 }, left: { xs: 12, sm: 16 } }}>
-          <HomeGhostButton onClick={() => navigate("/")} startIcon={<ArrowBack />} sx={{ fontSize: "0.9rem" }}>
+        <Box sx={{ flexShrink: 0, px: { xs: 1.25, sm: 2 }, pt: { xs: 1.25, sm: 1.5 }, pb: 0.5 }}>
+          <HomeGhostButton onClick={() => navigate("/")} startIcon={<ArrowBack />} sx={{ fontSize: "0.875rem" }}>
             Back to home
           </HomeGhostButton>
         </Box>
 
-        <Box sx={{ display: { xs: "flex", lg: "none" }, flexDirection: "column", alignItems: "center", mb: 2, mt: 5 }}>
-          <BrandLogoMark size={56} sx={{ height: 48, maxWidth: 280 }} />
-        </Box>
-
         <Box
           sx={{
-            width: "100%",
-            maxWidth: 460,
-            borderRadius: 3,
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            px: { xs: 1.25, sm: 2 },
+            pb: { xs: 1.25, sm: 1.5 },
             overflow: "hidden",
-            bgcolor: "#fff",
-            border: `1px solid ${HOME.border}`,
-            boxShadow: HOME.shadowLg,
           }}
         >
-          <Box sx={{ height: 4, background: HOME.navyGradient }} />
-
-          <Box sx={{ p: { xs: 2, sm: 2.5 }, pb: 1.5 }}>
-            <Typography
-              sx={{
-                fontFamily: HOME.fontDisplay,
-                fontWeight: 700,
-                fontSize: { xs: "1.65rem", sm: "1.85rem" },
-                color: HOME.navyDeep,
-                textAlign: "center",
-                mb: 0.5,
-              }}
-            >
-              Welcome back
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: HOME.inkMuted, textAlign: "center", mb: 2, lineHeight: 1.6 }}
-            >
-              Sign in to your school portal
-            </Typography>
-
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              <Tabs
-                value={roleTab}
-                onChange={(_, v) => setRoleTab(v)}
-                sx={{
-                  minHeight: 44,
-                  bgcolor: "rgba(12, 35, 64, 0.06)",
-                  borderRadius: "999px",
-                  p: 0.5,
-                  border: `1px solid ${HOME.border}`,
-                  mb: 2,
-                  "& .MuiTabs-indicator": { display: "none" },
-                  "& .MuiTabs-flexContainer": { gap: 0.5 },
-                }}
-              >
-                {["Parent login", "Student login"].map((label, i) => (
-                  <Tab
-                    key={label}
-                    label={label}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 700,
-                      fontSize: "0.88rem",
-                      fontFamily: HOME.fontBody,
-                      minHeight: 38,
-                      px: { xs: 2, sm: 2.5 },
-                      borderRadius: "999px",
-                      color: HOME.navy,
-                      opacity: roleTab === i ? 1 : 0.65,
-                      bgcolor: roleTab === i ? "#fff" : "transparent",
-                      boxShadow: roleTab === i ? HOME.shadowSm : "none",
-                      transition: "all 0.2s ease",
-                      "&.Mui-selected": { color: HOME.navyDeep },
-                    }}
-                  />
-                ))}
-              </Tabs>
-            </Box>
-
-            <Typography variant="body2" sx={{ color: HOME.inkMuted, mb: 2, lineHeight: 1.65, fontSize: "0.92rem" }}>
-              {roleTab === 0
-                ? "Access fees, report cards, events, and school updates for your family."
-                : "Access classes, exams, schedules, and learning resources."}
-            </Typography>
+          <Box
+            sx={{
+              display: { xs: "flex", lg: "none" },
+              flexDirection: "column",
+              alignItems: "center",
+              mb: { xs: 1, sm: 1.25 },
+              flexShrink: 0,
+            }}
+          >
+            <BrandLogoMark size={48} sx={{ height: 40, maxWidth: 240 }} />
           </Box>
 
           <Box
-            component="form"
-            onSubmit={handleLogin}
-            sx={{ px: { xs: 2, sm: 2.5 }, pb: { xs: 2.5, sm: 3 }, display: "flex", flexDirection: "column", gap: 1.75 }}
+            sx={{
+              width: "100%",
+              maxWidth: 420,
+              flexShrink: 1,
+              minHeight: 0,
+              borderRadius: 3,
+              overflow: "hidden",
+              bgcolor: "#fff",
+              border: `1px solid ${HOME.border}`,
+              boxShadow: HOME.shadowLg,
+            }}
           >
+            <Box sx={{ height: 4, background: HOME.navyGradient }} />
+
+            <Box sx={{ p: { xs: 1.75, sm: 2 }, pb: 1 }}>
+              <Typography
+                sx={{
+                  fontFamily: HOME.fontDisplay,
+                  fontWeight: 700,
+                  fontSize: { xs: "1.45rem", sm: "1.6rem" },
+                  color: HOME.navyDeep,
+                  textAlign: "center",
+                  mb: 0.25,
+                }}
+              >
+                Welcome back
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: HOME.inkMuted, textAlign: "center", mb: 1.25, lineHeight: 1.5, fontSize: "0.875rem" }}
+              >
+                Sign in to your school portal
+              </Typography>
+
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                <Tabs
+                  value={roleTab}
+                  onChange={(_, v) => setRoleTab(v)}
+                  sx={{
+                    minHeight: 40,
+                    bgcolor: "rgba(12, 35, 64, 0.06)",
+                    borderRadius: "999px",
+                    p: 0.4,
+                    border: `1px solid ${HOME.border}`,
+                    mb: 1.25,
+                    "& .MuiTabs-indicator": { display: "none" },
+                    "& .MuiTabs-flexContainer": { gap: 0.5 },
+                  }}
+                >
+                  {["Parent login", "Student login"].map((label, i) => (
+                    <Tab
+                      key={label}
+                      label={label}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        fontSize: "0.84rem",
+                        fontFamily: HOME.fontBody,
+                        minHeight: 34,
+                        py: 0.5,
+                        px: { xs: 1.75, sm: 2.25 },
+                        borderRadius: "999px",
+                        color: HOME.navy,
+                        opacity: roleTab === i ? 1 : 0.65,
+                        bgcolor: roleTab === i ? "#fff" : "transparent",
+                        boxShadow: roleTab === i ? HOME.shadowSm : "none",
+                        transition: "all 0.2s ease",
+                        "&.Mui-selected": { color: HOME.navyDeep },
+                      }}
+                    />
+                  ))}
+                </Tabs>
+              </Box>
+
+              <Typography
+                variant="body2"
+                sx={{
+                  color: HOME.inkMuted,
+                  mb: 0,
+                  lineHeight: 1.5,
+                  fontSize: "0.84rem",
+                  textAlign: "center",
+                }}
+              >
+                {roleTab === 0
+                  ? "Access fees, report cards, events, and school updates for your family."
+                  : "Access classes, exams, schedules, and learning resources."}
+              </Typography>
+            </Box>
+
+            <Box
+              component="form"
+              onSubmit={handleLogin}
+              sx={{
+                px: { xs: 1.75, sm: 2 },
+                pb: { xs: 2, sm: 2.25 },
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.25,
+              }}
+            >
             <TextField
               fullWidth
+              size="small"
               type="email"
               label="Email or username"
               placeholder="you@family.com"
@@ -462,7 +509,7 @@ export default function MarketplaceLogin() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <AccountCircle sx={{ color: HOME.gold }} />
+                    <AccountCircle sx={{ color: HOME.gold, fontSize: 20 }} />
                   </InputAdornment>
                 ),
               }}
@@ -470,6 +517,7 @@ export default function MarketplaceLogin() {
             />
             <TextField
               fullWidth
+              size="small"
               type={showPassword ? "text" : "password"}
               label="Password"
               placeholder="••••••••"
@@ -478,7 +526,7 @@ export default function MarketplaceLogin() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Lock sx={{ color: HOME.gold }} />
+                    <Lock sx={{ color: HOME.gold, fontSize: 20 }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -490,7 +538,7 @@ export default function MarketplaceLogin() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       sx={{ color: HOME.navy }}
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -519,16 +567,17 @@ export default function MarketplaceLogin() {
               type="submit"
               fullWidth
               disabled={loginLoading}
-              sx={{ py: 1.35, fontSize: "1rem", mt: 0.5 }}
+              sx={{ py: 1.1, fontSize: "0.95rem", mt: 0.25 }}
             >
               {loginLoading ? (
-                <CircularProgress size={24} sx={{ color: HOME.navyDeep }} />
+                <CircularProgress size={22} sx={{ color: HOME.navyDeep }} />
               ) : roleTab === 0 ? (
                 "Sign in as parent"
               ) : (
                 "Sign in as student"
               )}
             </HomePrimaryButton>
+            </Box>
           </Box>
         </Box>
       </Box>
