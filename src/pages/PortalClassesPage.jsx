@@ -138,6 +138,7 @@ export default function PortalClassesPage() {
                       lesson_date: row.lesson_date,
                       starts_at: row.starts_at,
                       ends_at: row.ends_at,
+                      timezone: row.timezone,
                       session_status: row.live_session?.session_status,
                     });
               const canJoin = joinWin.can_join;

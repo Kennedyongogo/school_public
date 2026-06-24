@@ -1,10 +1,26 @@
 const EARLY_JOIN_MINUTES = 15;
+const DEFAULT_SCHEDULE_TIMEZONE = "Africa/Nairobi";
 
-function parseClockOnDate(dateOnly, timeValue) {
-  if (!dateOnly) return null;
-  const dateStr = String(dateOnly).slice(0, 10);
-  const timeStr = timeValue != null && String(timeValue).trim() !== "" ? String(timeValue).slice(0, 8) : "00:00:00";
-  const d = new Date(`${dateStr}T${timeStr}`);
+const TZ_OFFSETS = {
+  "Africa/Nairobi": "+03:00",
+  "Africa/Kampala": "+03:00",
+  "Africa/Addis_Ababa": "+03:00",
+  "Africa/Dar_es_Salaam": "+03:00",
+};
+
+function normalizeTimeToHms(timeValue) {
+  if (timeValue == null || String(timeValue).trim() === "") return "00:00:00";
+  let s = String(timeValue).trim();
+  if (s.length === 5) s = `${s}:00`;
+  return s.slice(0, 8);
+}
+
+function lessonSlotToDate(lessonDate, timeValue, timezone = DEFAULT_SCHEDULE_TIMEZONE) {
+  if (!lessonDate) return null;
+  const dateStr = String(lessonDate).slice(0, 10);
+  const timeStr = normalizeTimeToHms(timeValue);
+  const offset = TZ_OFFSETS[timezone] || TZ_OFFSETS[DEFAULT_SCHEDULE_TIMEZONE];
+  const d = new Date(`${dateStr}T${timeStr}${offset}`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -13,6 +29,7 @@ export function getLessonJoinWindow({
   starts_at,
   ends_at,
   session_status,
+  timezone = DEFAULT_SCHEDULE_TIMEZONE,
   early_minutes = EARLY_JOIN_MINUTES,
 }) {
   if (session_status === "ended" || session_status === "cancelled") {
@@ -22,8 +39,10 @@ export function getLessonJoinWindow({
     };
   }
 
-  const slotStart = parseClockOnDate(lesson_date, starts_at);
-  const slotEnd = parseClockOnDate(lesson_date, ends_at || starts_at);
+  const scheduleTimezone =
+    timezone != null && String(timezone).trim() !== "" ? String(timezone).trim() : DEFAULT_SCHEDULE_TIMEZONE;
+  const slotStart = lessonSlotToDate(lesson_date, starts_at, scheduleTimezone);
+  const slotEnd = lessonSlotToDate(lesson_date, ends_at || starts_at, scheduleTimezone);
 
   if (!slotStart || !slotEnd) {
     return { can_join: true, reason: null };
