@@ -28,6 +28,7 @@ import {
   fetchMyParentFeeReceiptPdf,
   postMyParentMpesaStkPush,
   fetchMpesaStkPushStatus,
+  getPortalAuthUser,
 } from "../api";
 import {
   PortalPageShell,
@@ -41,14 +42,8 @@ import {
 import { PORTAL, portalChipSx, portalPrimaryButtonSx } from "../components/Portal/portalShared";
 
 function getStoredUserPhone() {
-  try {
-    const raw = localStorage.getItem("marketplace_user");
-    if (!raw) return "";
-    const user = JSON.parse(raw);
-    return String(user?.phone || "").trim();
-  } catch {
-    return "";
-  }
+  const user = getPortalAuthUser();
+  return user?.phone ? String(user.phone).trim() : "";
 }
 
 function statusChipProps(status) {

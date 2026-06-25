@@ -6,6 +6,7 @@ import {
   fetchSchoolPortalExamScheduleLiveKitToken,
   fetchSchoolPortalExamScheduleRoom,
   fetchSchoolPortalUser,
+  getPortalAuthToken,
 } from "../api";
 import LiveKitConference from "../components/VideoConference/LiveKitConference";
 import WaitingRoom from "../components/VideoConference/WaitingRoom";
@@ -29,7 +30,7 @@ export default function PortalExamInvigilationPage() {
   const [videoPrep, setVideoPrep] = useState(false);
   const leaveRecordedRef = useRef(false);
 
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const { socket } = useSocket(token);
   const wantsFreshJoin = location.state?.freshJoin === true;
 

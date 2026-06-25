@@ -12,6 +12,7 @@ import {
   fetchSchoolPortalNotifications,
   fetchSchoolPortalStudentProfile,
   fetchSchoolPortalUser,
+  hasPortalSession,
   markAllSchoolPortalNotificationsRead,
   markSchoolPortalNotificationRead,
   schoolPortalMediaUrl,
@@ -56,8 +57,7 @@ export default function PortalPrivateLayout() {
   const lastUnreadRef = useRef(null);
 
   useEffect(() => {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
-    if (!token) {
+    if (!hasPortalSession()) {
       navigate("/login", { replace: true });
       return;
     }
@@ -146,9 +146,16 @@ export default function PortalPrivateLayout() {
   }, [student, user]);
 
   const portalLabel = user?.role === "student" ? "Student portal" : user?.role === "parent" ? "Parent portal" : "";
+  const isExamResultPage = /\/portal\/exams\/[^/]+\/result\/?$/.test(location.pathname);
 
   return (
-    <Box sx={{ minHeight: "100vh", pt: { xs: "56px", sm: "64px" }, bgcolor: PORTAL.cream }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        pt: { xs: "56px", sm: "64px" },
+        bgcolor: isExamResultPage ? "transparent" : PORTAL.cream,
+      }}
+    >
       <PortalPrivateHeader
         displayName={user?.full_name || "Account"}
         profileImageUrl={headerAvatarSrc}

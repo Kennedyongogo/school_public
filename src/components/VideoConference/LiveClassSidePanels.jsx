@@ -46,13 +46,14 @@ export default function LiveClassSidePanels({
   isTeacher,
   userName,
   showLobbyPanel,
+  showChatPanel = true,
   isNarrow,
   mobilePanel,
 }) {
   if (!liveClassId || !token) return null;
 
   const showRoster = isTeacher && showLobbyPanel && (!isNarrow || mobilePanel === "roster");
-  const showChat = !isNarrow || mobilePanel === "chat";
+  const showChat = showChatPanel && (!isNarrow || mobilePanel === "chat");
   const useStackedDesktop = !isNarrow && isTeacher && showLobbyPanel && showRoster && showChat;
 
   if (useStackedDesktop) {

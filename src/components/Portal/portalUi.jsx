@@ -44,25 +44,26 @@ export function PortalPageContent({ children, maxWidth = 1100, fullWidth = false
   );
 }
 
-export function PortalPageHero({ icon, title, subtitle, chip, fullWidth = false }) {
+export function PortalPageHero({ icon, title, subtitle, chip, fullWidth = false, compact = false }) {
   return (
     <Box
       sx={{
         background: PORTAL.navyGradient,
         color: "#fff",
         px: { xs: 1.5, sm: 2, md: 2.5 },
-        py: { xs: 2.5, sm: 3 },
-        mb: { xs: 2, md: 2.5 },
+        py: compact ? { xs: 1.25, sm: 1.5 } : { xs: 2.5, sm: 3 },
+        mb: compact ? { xs: 1, md: 1.25 } : { xs: 2, md: 2.5 },
         borderBottom: `1px solid ${PORTAL.borderGold}`,
+        flexShrink: 0,
       }}
     >
       <Box sx={{ ...(fullWidth ? { width: "100%" } : { maxWidth: 1100, mx: "auto", width: "100%" }) }}>
-        <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        <Stack direction="row" spacing={compact ? 1 : 1.5} alignItems="flex-start">
           {icon ? (
             <Box
               sx={{
-                width: 48,
-                height: 48,
+                width: compact ? 40 : 48,
+                height: compact ? 40 : 48,
                 borderRadius: 2,
                 flexShrink: 0,
                 display: "flex",
@@ -81,14 +82,21 @@ export function PortalPageHero({ icon, title, subtitle, chip, fullWidth = false 
               sx={{
                 fontFamily: PORTAL.fontDisplay,
                 fontWeight: 700,
-                fontSize: { xs: "1.65rem", sm: "1.9rem" },
+                fontSize: compact ? { xs: "1.35rem", sm: "1.5rem" } : { xs: "1.65rem", sm: "1.9rem" },
                 lineHeight: 1.15,
               }}
             >
               {title}
             </Typography>
             {subtitle ? (
-              <Typography sx={{ mt: 0.75, opacity: 0.88, fontSize: portalBodyFontSize, lineHeight: 1.6 }}>
+              <Typography
+                sx={{
+                  mt: compact ? 0.35 : 0.75,
+                  opacity: 0.88,
+                  fontSize: compact ? { xs: "0.88rem", md: "0.95rem" } : portalBodyFontSize,
+                  lineHeight: 1.45,
+                }}
+              >
                 {subtitle}
               </Typography>
             ) : null}

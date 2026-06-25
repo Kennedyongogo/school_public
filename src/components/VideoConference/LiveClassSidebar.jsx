@@ -76,6 +76,7 @@ export default function LiveClassSidebar({
   userName,
   embedded = false,
   variant = "sidebar",
+  fillParent = false,
 }) {
   const isDock = variant === "dock";
   const chatListHeight = chatListViewportPx(isTeacher);
@@ -137,16 +138,16 @@ export default function LiveClassSidebar({
         width: "100%",
         maxWidth: "100%",
         minWidth: 0,
-        flex: isDock ? "0 0 auto" : "1 1 auto",
-        height: isDock ? "auto" : "100%",
-        maxHeight: isDock ? "none" : "100%",
-        borderLeft: isDock || embedded ? 0 : { md: 1 },
+        flex: fillParent ? 1 : isDock ? "0 0 auto" : "1 1 auto",
+        height: fillParent ? "100%" : isDock ? "auto" : "100%",
+        maxHeight: fillParent ? "100%" : isDock ? "none" : "100%",
+        borderLeft: isDock || embedded || fillParent ? 0 : { md: 1 },
         borderColor: "divider",
         display: "flex",
         flexDirection: "column",
-        minHeight: isDock ? 0 : 0,
+        minHeight: fillParent ? 0 : isDock ? 0 : 0,
         overflow: "hidden",
-        flexShrink: isDock ? 0 : undefined,
+        flexShrink: fillParent ? undefined : isDock ? 0 : undefined,
         ...sidebarSurfaceSx,
       }}
     >
@@ -272,9 +273,13 @@ export default function LiveClassSidebar({
           ...scrollBodySx,
           px: 1.5,
           py: 1,
-          height: chatListHeight,
-          minHeight: chatListHeight,
-          maxHeight: chatListHeight,
+          ...(fillParent
+            ? { flex: 1, minHeight: 0, maxHeight: "none", height: "auto" }
+            : {
+                height: chatListHeight,
+                minHeight: chatListHeight,
+                maxHeight: chatListHeight,
+              }),
         }}
       >
         {loading ? (

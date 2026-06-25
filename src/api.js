@@ -2,6 +2,24 @@
  * Public API helpers for contact, quote, and consultation submissions.
  * Uses VITE_API_URL in production if set; otherwise same-origin (dev proxy).
  */
+import {
+  clearSchoolPortalSession,
+  getPortalAuthToken,
+  getPortalAuthUser,
+  hasPortalSession,
+  savePortalSession,
+  updatePortalSessionUser,
+} from "./utils/portalAuthStorage";
+
+export {
+  clearSchoolPortalSession,
+  getPortalAuthToken,
+  getPortalAuthUser,
+  hasPortalSession,
+  savePortalSession,
+  updatePortalSessionUser,
+};
+
 const getBaseUrl = () => {
   const env = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL;
   return env ? String(env).replace(/\/$/, "") : "";
@@ -133,7 +151,7 @@ export async function postNewsletter(body) {
 }
 
 function getMarketplaceAuthHeaders() {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const headers = { "Content-Type": "application/json", Accept: "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
@@ -310,9 +328,10 @@ export async function fetchSchoolPortalStudentProfile() {
   return data.data;
 }
 
-export async function fetchSchoolPortalStudentTimetableLessons() {
+export async function fetchSchoolPortalStudentTimetableLessons({ date } = {}) {
   const base = getBaseUrl();
-  const res = await fetch(`${base}/api/school-portal/student/timetable-lessons`, {
+  const qs = date ? `?date=${encodeURIComponent(String(date).slice(0, 10))}` : "";
+  const res = await fetch(`${base}/api/school-portal/student/timetable-lessons${qs}`, {
     headers: getMarketplaceAuthHeaders(),
   });
   const data = await res.json().catch(() => ({}));
@@ -373,8 +392,38 @@ export async function fetchSchoolPortalStudentExamResult(examScheduleId) {
     headers: getMarketplaceAuthHeaders(),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Could not load exam result.");
+  if (!res.ok) {
+    const err = new Error(data.message || "Could not load exam result.");
+    err.code = data.code || null;
+    err.status = res.status;
+    throw err;
+  }
   return data.data;
+}
+
+export async function fetchSchoolPortalStudentExamResultPdf(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/school-portal/student/exam-results/${encodeURIComponent(examScheduleId)}/pdf`, {
+    headers: { ...getMarketplaceAuthHeaders(), Accept: "application/pdf" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not download exam result PDF.");
+  }
+  return res.blob();
+}
+
+export async function fetchSchoolPortalStudentExamAnsweredPdf(examScheduleId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/school-portal/student/exam-results/${encodeURIComponent(examScheduleId)}/answered-pdf`,
+    { headers: { ...getMarketplaceAuthHeaders(), Accept: "application/pdf" } }
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not download answered exam PDF.");
+  }
+  return res.blob();
 }
 
 export async function fetchSchoolPortalStudentReportCards({ page = 1, limit = 20 } = {}) {
@@ -466,7 +515,7 @@ export async function fetchSchoolPortalMyExamSubmission(examId) {
 /** Upload one file for a file_upload exam question (student JWT). */
 export async function uploadSchoolPortalExamAnswerFile(submissionId, questionId, file) {
   const base = getBaseUrl();
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const formData = new FormData();
   formData.append("exam_answer_file", file);
   const res = await fetch(
@@ -508,7 +557,7 @@ export async function submitSchoolPortalExam(submissionId, payload = null) {
 
 export async function fetchSchoolPortalExamPdfTemplateBlob(examId) {
   const base = getBaseUrl();
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const res = await fetch(`${base}/api/exams/${encodeURIComponent(examId)}/pdf-template`, {
     headers: token ? { Authorization: `Bearer ${token}`, Accept: "application/pdf" } : { Accept: "application/pdf" },
   });
@@ -533,7 +582,7 @@ export async function saveSchoolPortalExamPdfAnswers(submissionId, fieldValues) 
 
 export async function uploadSchoolPortalExamPdfWorkingPaper(submissionId, file) {
   const base = getBaseUrl();
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const formData = new FormData();
   formData.append("exam_pdf_working_paper", file);
   const res = await fetch(
@@ -689,7 +738,7 @@ export async function postSchoolPortalLiveSessionLeave(body) {
  */
 export function beaconSchoolPortalLiveSessionLeave(body) {
   const base = getBaseUrl();
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const payload =
     typeof body === "string"
       ? { join_url: body }
@@ -826,13 +875,6 @@ export async function fetchSchoolPortalLiveKitToken(liveClassId) {
   return data.data;
 }
 
-export function clearSchoolPortalSession() {
-  if (typeof localStorage === "undefined") return;
-  localStorage.removeItem("marketplace_token");
-  localStorage.removeItem("marketplace_user");
-  localStorage.removeItem("portal_login_role");
-}
-
 /**
  * Get current marketplace user + profile (requires token).
  */
@@ -858,7 +900,7 @@ export async function getMarketplaceMe() {
  */
 export async function uploadMarketplaceProfilePhoto(file) {
   const base = getBaseUrl();
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const formData = new FormData();
   formData.append("profile_photo", file);
   const res = await fetch(`${base}/api/marketplace/upload-photo`, {
@@ -1048,9 +1090,8 @@ export async function createListing(bodyOrFormData) {
   const base = getBaseUrl();
   const isFormData = bodyOrFormData instanceof FormData;
   const headers = { Accept: "application/json" };
-  if (typeof localStorage !== "undefined" && localStorage.getItem("marketplace_token")) {
-    headers.Authorization = `Bearer ${localStorage.getItem("marketplace_token")}`;
-  }
+  const token = getPortalAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (!isFormData) headers["Content-Type"] = "application/json";
   const res = await fetch(`${base}/api/marketplace/listings`, {
     method: "POST",
@@ -1076,9 +1117,8 @@ export async function updateListing(id, bodyOrFormData) {
   const base = getBaseUrl();
   const isFormData = bodyOrFormData instanceof FormData;
   const headers = { Accept: "application/json" };
-  if (typeof localStorage !== "undefined" && localStorage.getItem("marketplace_token")) {
-    headers.Authorization = `Bearer ${localStorage.getItem("marketplace_token")}`;
-  }
+  const token = getPortalAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (!isFormData) headers["Content-Type"] = "application/json";
   const res = await fetch(`${base}/api/marketplace/listings/${id}`, {
     method: "PATCH",

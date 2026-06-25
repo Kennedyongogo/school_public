@@ -25,6 +25,7 @@ import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import ArrowCarousel from "./ArrowCarousel";
 import { HOME, homeBodyFontSize } from "./homeShared";
 import { HomeSectionHeader, HomeSectionShell, HomePrimaryButton } from "./homeUi";
+import { hasPortalSession } from "../../api";
 
 const BRAND = HOME;
 
@@ -695,8 +696,7 @@ function LoadingGallery({ ariaLabel = "Loading" }) {
 
 export default function SchoolNewsEventsSection() {
   const navigate = useNavigate();
-  const hasPortalToken =
-    typeof localStorage !== "undefined" && !!localStorage.getItem("marketplace_token");
+  const hasPortalToken = hasPortalSession();
 
   const handleJoinEvent = useCallback(
     (eventItem) => {

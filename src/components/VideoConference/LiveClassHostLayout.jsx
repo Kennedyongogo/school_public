@@ -27,6 +27,7 @@ const halfColumnSx = {
 export default function LiveClassHostLayout({
   isTeacher,
   showLobbyPanel,
+  showChatPanel = true,
   isNarrow,
   mobilePanel,
   onMobilePanelChange,
@@ -110,7 +111,9 @@ export default function LiveClassHostLayout({
           {isTeacher && showLobbyPanel ? (
             <Tab icon={<GroupsRoundedIcon fontSize="small" />} iconPosition="start" label="Roster" value="roster" sx={{ minHeight: 40, fontSize: "0.75rem" }} />
           ) : null}
-          <Tab icon={<ForumRoundedIcon fontSize="small" />} iconPosition="start" label="Chat" value="chat" sx={{ minHeight: 40, fontSize: "0.75rem" }} />
+          {showChatPanel ? (
+            <Tab icon={<ForumRoundedIcon fontSize="small" />} iconPosition="start" label="Chat" value="chat" sx={{ minHeight: 40, fontSize: "0.75rem" }} />
+          ) : null}
         </Tabs>
       ) : null}
       <Box
@@ -137,6 +140,7 @@ export default function LiveClassHostLayout({
           isTeacher={isTeacher}
           userName={userName}
           showLobbyPanel={showLobbyPanel}
+          showChatPanel={showChatPanel}
           isNarrow={isNarrow}
           mobilePanel={mobilePanel}
         />

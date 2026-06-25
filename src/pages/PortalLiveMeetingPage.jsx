@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import {
+  beaconSchoolPortalLiveSessionLeave,
+  hasPortalSession,
   postSchoolPortalLiveSessionJoin,
   postSchoolPortalLiveSessionLeave,
-  beaconSchoolPortalLiveSessionLeave,
 } from "../api";
 import { PortalFullscreenChrome } from "../components/Portal/portalUi";
 import { PORTAL } from "../components/Portal/portalShared";
@@ -32,9 +33,7 @@ export default function PortalLiveMeetingPage() {
   };
 
   useEffect(() => {
-    const token =
-      typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
-    if (!token) {
+    if (!hasPortalSession()) {
       navigate("/login", { replace: true });
     }
   }, [navigate]);

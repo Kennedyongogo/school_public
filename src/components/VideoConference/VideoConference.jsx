@@ -17,6 +17,7 @@ export default function VideoConference({
   iceServers,
   onLeave,
   showLobbyPanel = true,
+  showChatPanel = true,
 }) {
   const localVideoRef = useRef(null);
   const [micOn, setMicOn] = useState(true);
@@ -244,6 +245,7 @@ export default function VideoConference({
       <LiveClassHostLayout
         isTeacher={isTeacher}
         showLobbyPanel={showLobbyPanel}
+        showChatPanel={showChatPanel}
         isNarrow={isNarrow}
         mobilePanel={mobilePanel}
         onMobilePanelChange={setMobilePanel}

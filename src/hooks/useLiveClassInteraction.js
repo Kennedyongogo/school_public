@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getPortalAuthUser } from "../utils/portalAuthStorage";
 import { getApiBaseUrl } from "../utils/apiBaseUrl";
 
 function authHeaders(token) {
@@ -37,8 +38,7 @@ export function useLiveClassInteraction({ liveClassId, token, socket, isTeacher 
       setRaisedHands(hands);
       setReactions(Array.isArray(data.data?.reactions) ? data.data.reactions : []);
       try {
-        const raw = localStorage.getItem("marketplace_user") || localStorage.getItem("user") || "{}";
-        const me = JSON.parse(raw);
+        const me = getPortalAuthUser();
         userIdRef.current = me?.id || null;
         setMyHandRaised(hands.some((h) => String(h.user_id) === String(me?.id)));
       } catch {

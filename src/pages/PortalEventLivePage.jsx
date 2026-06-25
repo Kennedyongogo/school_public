@@ -15,6 +15,7 @@ import {
   fetchEventLiveKitToken,
   fetchEventLiveSession,
   fetchSchoolPortalUser,
+  getPortalAuthToken,
 } from "../api";
 import EventLiveConference from "../components/EventLive/EventLiveConference";
 import WaitingRoom from "../components/VideoConference/WaitingRoom";
@@ -52,7 +53,7 @@ export default function PortalEventLivePage() {
   const [videoPrep, setVideoPrep] = useState(false);
   const leaveRecordedRef = useRef(false);
 
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
+  const token = getPortalAuthToken();
   const { socket } = useSocket(token);
 
   const {

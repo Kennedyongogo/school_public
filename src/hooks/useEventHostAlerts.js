@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { getPortalAuthUser } from "../utils/portalAuthStorage";
 import {
   playAdmittedAlert,
   playChatAlert,
@@ -24,12 +25,7 @@ function authHeaders(token) {
 }
 
 function getLocalUserId() {
-  try {
-    const raw = localStorage.getItem("user") || localStorage.getItem("marketplace_user") || "{}";
-    return JSON.parse(raw)?.id || null;
-  } catch {
-    return null;
-  }
+  return getPortalAuthUser()?.id || null;
 }
 
 const NOTIFY_TAG = "event-live-host";

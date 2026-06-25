@@ -29,7 +29,9 @@ import {
   fetchSchoolPortalParentProfile,
   fetchSchoolPortalStudentProfile,
   clearSchoolPortalSession,
+  hasPortalSession,
   schoolPortalMediaUrl,
+  updatePortalSessionUser,
 } from "../api";
 import { PORTAL, portalPageShellSx } from "../components/Portal/portalShared";
 
@@ -336,9 +338,7 @@ export default function PortalProfilePage() {
   const [detail, setDetail] = useState(null);
 
   const load = useCallback(async () => {
-    const token =
-      typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
-    if (!token) {
+    if (!hasPortalSession()) {
       navigate("/login", { replace: true });
       return;
     }
@@ -369,7 +369,7 @@ export default function PortalProfilePage() {
         }
       }
 
-      localStorage.setItem("marketplace_user", JSON.stringify(me));
+      updatePortalSessionUser(me);
     } catch (e) {
       setError(e.message || "Could not load your account.");
       if (/session|expired|401|403/i.test(e.message || "")) {

@@ -25,7 +25,7 @@ import {
   ArrowBack,
 } from "@mui/icons-material";
 import Swal from "sweetalert2";
-import { loginMarketplaceUser } from "../api";
+import { loginMarketplaceUser, savePortalSession } from "../api";
 import BrandLogoMark from "../components/common/BrandLogoMark";
 import { HOME, homeGlassSx } from "../components/Home/homeShared";
 import { HomeGhostButton, HomePrimaryButton } from "../components/Home/homeUi";
@@ -152,9 +152,11 @@ export default function MarketplaceLogin() {
         });
         return;
       }
-      localStorage.setItem("marketplace_token", token);
-      localStorage.setItem("marketplace_user", JSON.stringify(user));
-      localStorage.setItem("portal_login_role", roleTab === 0 ? "parent" : "student");
+      savePortalSession({
+        token,
+        user,
+        portalLoginRole: roleTab === 0 ? "parent" : "student",
+      });
       Swal.fire({
         icon: "success",
         title: "Welcome back!",

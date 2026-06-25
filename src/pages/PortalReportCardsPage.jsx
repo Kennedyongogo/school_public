@@ -32,6 +32,7 @@ import {
   fetchSchoolPortalStudentReportCards,
   fetchSchoolPortalStudentReportCardPdf,
   fetchSchoolPortalUser,
+  hasPortalSession,
 } from "../api";
 
 import {
@@ -107,8 +108,7 @@ export default function PortalReportCardsPage() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("marketplace_token") : null;
-    if (!token) {
+    if (!hasPortalSession()) {
       navigate("/login", { replace: true });
       return;
     }

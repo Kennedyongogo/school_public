@@ -23,7 +23,7 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Swal from "sweetalert2";
 import ExamInvigilationVideoDock from "../components/VideoConference/ExamInvigilationVideoDock";
-import { PORTAL, portalPageShellSx, portalPrimaryButtonSx } from "../components/Portal/portalShared";
+import { PORTAL, portalPrimaryButtonSx } from "../components/Portal/portalShared";
 import {
   createSchoolPortalExamSubmission,
   fetchSchoolPortalMyExamSubmission,
@@ -722,7 +722,7 @@ export default function PortalExamTakePage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "calc(100vh - 64px)", width: "100%" }}>
         <CircularProgress sx={{ color: accent }} />
       </Box>
     );
@@ -730,70 +730,92 @@ export default function PortalExamTakePage() {
 
   if (error) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ width: "100%", px: { xs: 1.5, sm: 2 }, py: 2 }}>
         <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
+  const edgePad = { xs: 1.5, sm: 2, md: 2.5 };
+
   return (
-    <Box sx={{ ...portalPageShellSx(), pb: 3 }}>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "100%",
+        minHeight: "calc(100vh - 64px)",
+        bgcolor: "#f8fafc",
+        pb: showPaper && isLiveKitInvigilation && roomConfirmed ? 26 : 3,
+        boxSizing: "border-box",
+      }}
+    >
       <Box
         sx={{
-          px: { xs: 2, sm: 3 },
-          pt: 2,
-          maxWidth: 900,
-          mx: "auto",
-          pb: showPaper && isLiveKitInvigilation && roomConfirmed ? 26 : 0,
+          position: "sticky",
+          top: { xs: 56, sm: 64 },
+          zIndex: 20,
+          width: "100%",
+          borderBottom: `1px solid ${cardBorder}`,
+          bgcolor: "#fff",
+          boxShadow: "0 4px 18px rgba(15, 23, 42, 0.06)",
         }}
       >
-        <Card elevation={0} sx={{ border: `1px solid ${cardBorder}`, mb: 2, borderRadius: 3, overflow: "hidden" }}>
-          <Box sx={{ height: 4, background: PORTAL.navyGradient }} />
-          <CardContent>
-            <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: PORTAL.fontDisplay, color: PORTAL.navyDeep }}>
-                  {exam?.title || "Exam"}
+        <Box sx={{ height: 4, background: PORTAL.navyGradient, width: "100%" }} />
+        <Box sx={{ px: edgePad, py: { xs: 1.25, sm: 1.5 } }}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", md: "center" }}
+            spacing={1.25}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 800, fontFamily: PORTAL.fontDisplay, color: PORTAL.navyDeep, lineHeight: 1.25 }}
+              >
+                {exam?.title || "Exam"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Class: {schedule?.curriculum_class?.name || "—"}
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap sx={{ justifyContent: { xs: "flex-start", md: "flex-end" } }}>
+              <Chip label={`Duration: ${exam?.duration_minutes || 0} min`} size="small" />
+              {isActivityMonitorMode(schedule) || rules.preventTabSwitch ? (
+                <Chip
+                  label={`Tab switches: ${tabSwitchCount}`}
+                  size="small"
+                  color={tabSwitchCount > 0 ? "warning" : "default"}
+                  title={
+                    rules.preventTabSwitch
+                      ? "Tab switches are enforced"
+                      : "Recorded for your teacher (allowed in monitored mode)"
+                  }
+                />
+              ) : null}
+              {rules.requiresWebcam ? (
+                <Chip label={webcamReady ? "Webcam: On" : "Webcam: Required"} size="small" color={webcamReady ? "success" : "error"} />
+              ) : null}
+              {remainingSeconds != null ? (
+                <Chip
+                  color={remainingSeconds < 300 ? "error" : "default"}
+                  label={`Time left: ${String(Math.floor(remainingSeconds / 60)).padStart(2, "0")}:${String(
+                    remainingSeconds % 60
+                  ).padStart(2, "0")}`}
+                  size="small"
+                />
+              ) : null}
+              {saving ? (
+                <Typography variant="caption" color="text.secondary">
+                  Saving…
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Class: {schedule?.curriculum_class?.name || "—"}
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip label={`Duration: ${exam?.duration_minutes || 0} min`} size="small" />
-                {isActivityMonitorMode(schedule) || rules.preventTabSwitch ? (
-                  <Chip
-                    label={`Tab switches: ${tabSwitchCount}`}
-                    size="small"
-                    color={tabSwitchCount > 0 ? "warning" : "default"}
-                    title={
-                      rules.preventTabSwitch
-                        ? "Tab switches are enforced"
-                        : "Recorded for your teacher (allowed in monitored mode)"
-                    }
-                  />
-                ) : null}
-                {rules.requiresWebcam ? (
-                  <Chip label={webcamReady ? "Webcam: On" : "Webcam: Required"} size="small" color={webcamReady ? "success" : "error"} />
-                ) : null}
-                {remainingSeconds != null ? (
-                  <Chip
-                    color={remainingSeconds < 300 ? "error" : "default"}
-                    label={`Time left: ${String(Math.floor(remainingSeconds / 60)).padStart(2, "0")}:${String(
-                      remainingSeconds % 60
-                    ).padStart(2, "0")}`}
-                    size="small"
-                  />
-                ) : null}
-                {saving ? (
-                  <Typography variant="caption" color="text.secondary">
-                    Saving…
-                  </Typography>
-                ) : null}
-              </Stack>
+              ) : null}
             </Stack>
-          </CardContent>
-        </Card>
+          </Stack>
+        </Box>
+      </Box>
+
+      <Box sx={{ width: "100%", px: edgePad, pt: 1.5 }}>
         {webcamError ? <Alert severity="warning" sx={{ mb: 1.5 }}>{webcamError}</Alert> : null}
         {requiresRoom ? (
           <Alert severity={roomConfirmed ? "success" : "info"} sx={{ mb: 1.5 }}>
@@ -853,7 +875,7 @@ export default function PortalExamTakePage() {
         ) : null}
 
         {showPaper ? (
-        <Stack spacing={1.5}>
+        <Stack spacing={1.5} sx={{ width: "100%" }}>
           {questions.map((q, idx) => {
             const qType = q.question_type || "short_text";
             const opts = normalizeOptions(q);
@@ -866,15 +888,25 @@ export default function PortalExamTakePage() {
             const uploadedFiles =
               qType === "file_upload" && v && typeof v === "object" && Array.isArray(v.files) ? v.files : [];
             return (
-              <Card key={q.id} elevation={0} sx={{ border: `1px solid ${cardBorder}`, borderRadius: 2 }}>
-                <CardContent>
-                  <Typography sx={{ fontWeight: 700, mb: 1 }}>
+              <Card
+                key={q.id}
+                elevation={0}
+                sx={{
+                  width: "100%",
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: 2,
+                  bgcolor: "#fff",
+                }}
+              >
+                <CardContent sx={{ px: { xs: 1.75, sm: 2.5 }, py: { xs: 1.75, sm: 2 } }}>
+                  <Typography sx={{ fontWeight: 700, mb: 1.25, fontSize: { xs: "1rem", md: "1.05rem" }, lineHeight: 1.45 }}>
                     {idx + 1}. {q.question_text}
                   </Typography>
                   {qType === "true_false" ? (
                     <RadioGroup
                       value={String(v || "")}
                       onChange={(e) => upsertAnswer(q.id, e.target.value)}
+                      sx={{ flexDirection: { xs: "column", sm: "row" }, flexWrap: "wrap", gap: { xs: 0, sm: 1 } }}
                     >
                       <FormControlLabel value="True" disabled={!canAnswer} control={<Radio size="small" />} label="True" />
                       <FormControlLabel value="False" disabled={!canAnswer} control={<Radio size="small" />} label="False" />
@@ -883,6 +915,7 @@ export default function PortalExamTakePage() {
                     <RadioGroup
                       value={String(v || "")}
                       onChange={(e) => upsertAnswer(q.id, e.target.value)}
+                      sx={{ flexDirection: { xs: "column", sm: "row" }, flexWrap: "wrap", gap: { xs: 0, sm: 1 } }}
                     >
                       {opts.map((o) => (
                         <FormControlLabel
@@ -895,7 +928,7 @@ export default function PortalExamTakePage() {
                       ))}
                     </RadioGroup>
                   ) : qType === "multi_select" ? (
-                    <Stack spacing={0.25}>
+                    <Stack direction={{ xs: "column", sm: "row" }} flexWrap="wrap" useFlexGap spacing={{ xs: 0.25, sm: 1 }}>
                       {opts.map((o) => {
                         const selectedValues = Array.isArray(v) ? v : [];
                         const checked = selectedValues.includes(o);
@@ -1024,12 +1057,12 @@ export default function PortalExamTakePage() {
                   ) : (
                     <TextField
                       fullWidth
-                      size="small"
                       multiline
                       minRows={qType === "essay" || qType === "long_text" ? 4 : 2}
                       value={typeof v === "string" ? v : ""}
                       onChange={(e) => upsertAnswer(q.id, e.target.value)}
                       disabled={!canAnswer}
+                      sx={{ "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
                     />
                   )}
                 </CardContent>
@@ -1040,7 +1073,12 @@ export default function PortalExamTakePage() {
         ) : null}
 
         {showPaper ? (
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          justifyContent="flex-end"
+          sx={{ mt: 2, width: "100%", pt: 1, borderTop: `1px solid ${cardBorder}` }}
+        >
           <Button variant="outlined" onClick={() => navigate("/portal/exams")}>
             Back
           </Button>

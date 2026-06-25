@@ -52,6 +52,7 @@ export default function LiveKitConference({
   role = "student",
   onLeave,
   showLobbyPanel = true,
+  showChatPanel = true,
   liveKitCredentials = null,
   mediaMode = "optional",
 }) {
@@ -378,6 +379,7 @@ export default function LiveKitConference({
             <LiveClassHostLayout
               isTeacher={isTeacher}
               showLobbyPanel={showLobbyPanel}
+              showChatPanel={showChatPanel}
               isNarrow={isNarrow}
               mobilePanel={mobilePanel}
               onMobilePanelChange={setMobilePanel}
@@ -399,7 +401,7 @@ export default function LiveKitConference({
                     "& .lk-control-bar": { display: "none !important" },
                   }}
                 >
-                  <LiveKitVideoRoom />
+                  <LiveKitVideoRoom isTeacher={isTeacher} studentClassView={!examScheduleId} />
                 </Box>
               }
             />
