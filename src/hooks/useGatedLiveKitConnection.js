@@ -6,6 +6,12 @@ export const LIVEKIT_MAX_CONNECT_ATTEMPTS = 3;
 export const LIVEKIT_RETRY_DELAY_MS = 8000;
 export const LIVEKIT_RATE_LIMIT_COOLDOWN_MS = 120000;
 
+/**
+ * Prevents LiveKit connection spam (429 rate limits + multi-region fallback storms).
+ * - prepareConnection picks one edge before connect
+ * - connect={connectEnabled} instead of always true
+ * - maxRetries: 0 on the SDK join path
+ */
 export function useGatedLiveKitConnection() {
   const [connectAttempt, setConnectAttempt] = useState(0);
   const room = useMemo(() => new Room(), [connectAttempt]);
@@ -16,7 +22,8 @@ export function useGatedLiveKitConnection() {
   const preparedTokenRef = useRef(null);
   const lastAttemptAtRef = useRef(0);
   const failureCountRef = useRef(0);
-  const preparingRef = useRef(false);
+  /** Bumped on unmount/disable so in-flight prepare (e.g. React StrictMode) cannot block the next attempt. */
+  const prepareGenerationRef = useRef(0);
 
   const connectOptions = useMemo(
     () => ({
@@ -27,19 +34,24 @@ export function useGatedLiveKitConnection() {
     []
   );
 
-  const disableConnect = useCallback(() => {
-    setConnectEnabled(false);
+  const invalidatePrepare = useCallback(() => {
+    prepareGenerationRef.current += 1;
   }, []);
+
+  const disableConnect = useCallback(() => {
+    invalidatePrepare();
+    setConnectEnabled(false);
+  }, [invalidatePrepare]);
 
   const resetSession = useCallback(() => {
     failureCountRef.current = 0;
     setAttemptsExhausted(false);
     setRateLimitUntil(0);
     preparedTokenRef.current = null;
-    preparingRef.current = false;
     lastAttemptAtRef.current = 0;
+    invalidatePrepare();
     setConnectEnabled(false);
-  }, []);
+  }, [invalidatePrepare]);
 
   const onConnectionSuccess = useCallback(() => {
     failureCountRef.current = 0;
@@ -76,12 +88,13 @@ export function useGatedLiveKitConnection() {
 
   const prepareAndEnableConnect = useCallback(
     async (serverUrl, lkToken) => {
-      if (!room || !serverUrl || !lkToken) return;
-      if (preparingRef.current) return;
-      if (Date.now() < rateLimitUntil) return;
+      if (!room || !serverUrl || !lkToken) return { ok: false, error: "Missing LiveKit session." };
+      if (Date.now() < rateLimitUntil) {
+        return { ok: false, error: "LiveKit rate limit cooldown active." };
+      }
       if (failureCountRef.current >= LIVEKIT_MAX_CONNECT_ATTEMPTS) {
         setAttemptsExhausted(true);
-        return;
+        return { ok: false, error: "Connection attempts exhausted." };
       }
 
       const now = Date.now();
@@ -90,25 +103,36 @@ export function useGatedLiveKitConnection() {
         connectAttempt > 0 &&
         now - lastAttemptAtRef.current < LIVEKIT_RETRY_DELAY_MS
       ) {
-        return;
+        return { ok: false, error: "Retry delay active." };
       }
 
-      preparingRef.current = true;
+      const gen = ++prepareGenerationRef.current;
       lastAttemptAtRef.current = now;
       setConnectEnabled(false);
 
       try {
         if (preparedTokenRef.current !== lkToken) {
           await room.prepareConnection(serverUrl, lkToken);
+          if (gen !== prepareGenerationRef.current) {
+            return { ok: false, cancelled: true };
+          }
           preparedTokenRef.current = lkToken;
         }
-        if (Date.now() < rateLimitUntil) return;
+        if (gen !== prepareGenerationRef.current) {
+          return { ok: false, cancelled: true };
+        }
+        if (Date.now() < rateLimitUntil) {
+          return { ok: false, error: "LiveKit rate limit cooldown active." };
+        }
         setConnectEnabled(true);
+        return { ok: true };
       } catch (err) {
-        console.warn("LiveKit prepareConnection:", err?.message || err);
-        onConnectionFailure(String(err?.message || err));
-      } finally {
-        preparingRef.current = false;
+        if (gen !== prepareGenerationRef.current) {
+          return { ok: false, cancelled: true };
+        }
+        const message = String(err?.message || err);
+        onConnectionFailure(message);
+        return { ok: false, error: message };
       }
     },
     [room, rateLimitUntil, onConnectionFailure, connectAttempt]
@@ -119,7 +143,7 @@ export function useGatedLiveKitConnection() {
     setAttemptsExhausted(false);
     setRateLimitUntil(0);
     preparedTokenRef.current = null;
-    preparingRef.current = false;
+    invalidatePrepare();
     lastAttemptAtRef.current = 0;
     setConnectEnabled(false);
     try {
@@ -131,12 +155,13 @@ export function useGatedLiveKitConnection() {
     }
     setConnectAttempt((n) => n + 1);
     return true;
-  }, [room]);
+  }, [room, invalidatePrepare]);
 
   const retryConnect = useCallback(() => {
     if (!canRetryNow()) return false;
     setConnectEnabled(false);
     preparedTokenRef.current = null;
+    invalidatePrepare();
     try {
       if (room.state !== "disconnected") {
         room.disconnect(true);
@@ -146,7 +171,7 @@ export function useGatedLiveKitConnection() {
     }
     setConnectAttempt((n) => n + 1);
     return true;
-  }, [canRetryNow, room]);
+  }, [canRetryNow, room, invalidatePrepare]);
 
   return {
     room,
@@ -155,6 +180,7 @@ export function useGatedLiveKitConnection() {
     connectOptions,
     prepareAndEnableConnect,
     disableConnect,
+    invalidatePrepare,
     onConnectionSuccess,
     onConnectionFailure,
     retryConnect,

@@ -391,7 +391,7 @@ export default function PortalLiveClassPage() {
 
   const pageBusy = loading;
 
-  const videoBusy = admitted && isLiveKit && (videoPrep || !liveKitCreds);
+  const videoBusy = admitted && isLiveKit && videoPrep && !liveKitCreds;
 
   const showSession = !!room && !pageBusy;
 

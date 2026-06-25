@@ -66,6 +66,7 @@ export default function LiveKitConference({
     connectOptions,
     prepareAndEnableConnect,
     disableConnect,
+    invalidatePrepare,
     onConnectionSuccess,
     onConnectionFailure,
     retryConnect,
@@ -130,18 +131,80 @@ export default function LiveKitConference({
     };
   }, [token, liveClassId, examScheduleId, videoContextId, liveKitCredentials?.token, liveKitCredentials?.url]);
 
+  const prepareRetryTimerRef = useRef(null);
+  const roomRef = useRef(room);
+  roomRef.current = room;
+
   useEffect(() => {
     if (!lkToken || !serverUrl || !room) return undefined;
     let active = true;
-    (async () => {
+
+    const runPrepare = async () => {
       if (!active) return;
-      await prepareAndEnableConnect(serverUrl, lkToken);
-    })();
+      const result = await prepareAndEnableConnect(serverUrl, lkToken);
+      if (!active || !result) return;
+      if (result.cancelled) {
+        prepareRetryTimerRef.current = window.setTimeout(() => {
+          if (active) void runPrepare();
+        }, 200);
+        return;
+      }
+      if (!result.ok && result.error && result.error !== "Retry delay active.") {
+        const msg = result.error;
+        disableConnect();
+        const failureKind = onConnectionFailure(msg);
+        if (failureKind === "rate_limit") {
+          setConnectionError(
+            "LiveKit rate limit (HTTP 429): too many connection attempts. Wait about 2 minutes, then click Retry once."
+          );
+        } else if (failureKind === "exhausted") {
+          setConnectionError(
+            `Could not connect after ${LIVEKIT_MAX_CONNECT_ATTEMPTS} attempts. Reload the page or wait before Retry.`
+          );
+        } else {
+          const base = msg || "LiveKit connection error.";
+          setConnectionError(
+            isLiveKitNetworkTimeoutError(msg) ? `${base} ${LIVEKIT_SLOW_NETWORK_HINT}` : base
+          );
+        }
+        if (reportedErrorRef.current !== msg) {
+          reportedErrorRef.current = msg;
+          reportLiveKitConnectionError({
+            token,
+            message: msg,
+            context: examScheduleId ? "exam" : "live-class",
+            contextId: videoContextId,
+            serverUrl,
+          });
+        }
+      }
+    };
+
+    void runPrepare();
+
     return () => {
       active = false;
-      disableConnect();
+      if (prepareRetryTimerRef.current) {
+        clearTimeout(prepareRetryTimerRef.current);
+        prepareRetryTimerRef.current = null;
+      }
+      invalidatePrepare();
     };
-  }, [lkToken, serverUrl, room, connectAttempt, prepareAndEnableConnect, disableConnect]);
+  }, [lkToken, serverUrl, room, connectAttempt, prepareAndEnableConnect, invalidatePrepare, disableConnect, onConnectionFailure, token, examScheduleId, videoContextId, serverUrl]);
+
+  useEffect(() => {
+    return () => {
+      invalidatePrepare();
+      disableConnect();
+      try {
+        if (roomRef.current && roomRef.current.state !== ConnectionState.Disconnected) {
+          roomRef.current.disconnect(true);
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    };
+  }, [disableConnect, invalidatePrepare]);
 
   useEffect(() => {
     if (!connectionError) {
