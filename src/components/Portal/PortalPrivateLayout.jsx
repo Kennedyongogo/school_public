@@ -12,6 +12,7 @@ import {
   fetchSchoolPortalNotifications,
   fetchSchoolPortalStudentProfile,
   fetchSchoolPortalUser,
+  fetchStudentTermStatus,
   hasPortalSession,
   markAllSchoolPortalNotificationsRead,
   markSchoolPortalNotificationRead,
@@ -50,6 +51,7 @@ export default function PortalPrivateLayout() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [student, setStudent] = useState(null);
+  const [termStatus, setTermStatus] = useState(null);
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
   const [portalUnreadCount, setPortalUnreadCount] = useState(0);
   const [portalNotifications, setPortalNotifications] = useState([]);
@@ -72,8 +74,15 @@ export default function PortalPrivateLayout() {
           } catch {
             setStudent(null);
           }
+          try {
+            const status = await fetchStudentTermStatus();
+            setTermStatus(status || null);
+          } catch {
+            setTermStatus(null);
+          }
         } else {
           setStudent(null);
+          setTermStatus(null);
         }
       } catch {
         clearSchoolPortalSession();
@@ -147,6 +156,16 @@ export default function PortalPrivateLayout() {
 
   const portalLabel = user?.role === "student" ? "Student portal" : user?.role === "parent" ? "Parent portal" : "";
   const isExamResultPage = /\/portal\/exams\/[^/]+\/result\/?$/.test(location.pathname);
+  const studentPortalUnlocked = user?.role !== "student" || Boolean(termStatus?.portal_unlocked);
+
+  useEffect(() => {
+    if (user?.role !== "student") return;
+    if (termStatus == null) return;
+    if (termStatus.portal_unlocked) return;
+    const path = location.pathname.replace(/\/$/, "") || "/portal";
+    if (path === "/portal") return;
+    navigate("/portal", { replace: true });
+  }, [user?.role, termStatus, location.pathname, navigate]);
 
   return (
     <Box
@@ -182,7 +201,7 @@ export default function PortalPrivateLayout() {
             : "profile"
         }
         onGoProfile={() => navigate("/portal")}
-        {...(user?.role === "student" && {
+        {...(user?.role === "student" && studentPortalUnlocked && {
           onGoClasses: () => navigate("/portal/classes"),
           onGoExams: () => navigate("/portal/exams"),
           onGoAssignments: () => navigate("/portal/assignments"),
@@ -303,7 +322,11 @@ export default function PortalPrivateLayout() {
         student={student}
       />
 
-      <Outlet />
+      <Outlet context={{ termStatus, setTermStatus, reloadTermStatus: async () => {
+        if (user?.role !== "student") return;
+        const status = await fetchStudentTermStatus();
+        setTermStatus(status || null);
+      } }} />
     </Box>
   );
 }

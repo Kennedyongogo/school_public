@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -34,6 +34,7 @@ import {
   updatePortalSessionUser,
 } from "../api";
 import { PORTAL, portalPageShellSx } from "../components/Portal/portalShared";
+import PortalStartTermCard from "../components/Portal/PortalStartTermCard";
 
 const accent = PORTAL.gold;
 const accentDark = PORTAL.navyDeep;
@@ -332,6 +333,7 @@ function LinkedStudentCard({ student: st }) {
 
 export default function PortalProfilePage() {
   const navigate = useNavigate();
+  const { termStatus, reloadTermStatus } = useOutletContext() || {};
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
@@ -442,6 +444,8 @@ export default function PortalProfilePage() {
     boxShadow: PORTAL.shadowMd,
   };
 
+  const showStartTermCard = Boolean(termStatus && !termStatus.portal_unlocked);
+
   return (
     <Box sx={pageShellSx}>
       <Box sx={{ flex: "1 1 auto", width: "100%", minHeight: 0 }}>
@@ -474,7 +478,32 @@ export default function PortalProfilePage() {
               </Box>
             </Box>
 
-            <Box sx={{ px: { xs: 2, sm: 3 }, pb: 4, mt: { xs: -6, sm: -7 } }}>
+            {showStartTermCard ? (
+              <Box
+                sx={{
+                  px: { xs: 2, sm: 3 },
+                  pt: 2,
+                  pb: 1,
+                  position: "relative",
+                  zIndex: 2,
+                }}
+              >
+                <PortalStartTermCard
+                  termStatus={termStatus}
+                  onStarted={async () => {
+                    await reloadTermStatus?.();
+                  }}
+                />
+              </Box>
+            ) : null}
+
+            <Box
+              sx={{
+                px: { xs: 2, sm: 3 },
+                pb: 4,
+                mt: showStartTermCard ? 0 : { xs: -6, sm: -7 },
+              }}
+            >
               <Paper elevation={0} sx={heroSummaryPaperSx}>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems={{ xs: "center", sm: "flex-start" }}>
                   <Avatar

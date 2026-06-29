@@ -328,6 +328,27 @@ export async function fetchSchoolPortalStudentProfile() {
   return data.data;
 }
 
+export async function fetchStudentTermStatus() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/students/me/term-status`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load term status.");
+  return data.data;
+}
+
+export async function startStudentTerm() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/students/me/start-term`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not start term.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalStudentTimetableLessons({ date } = {}) {
   const base = getBaseUrl();
   const qs = date ? `?date=${encodeURIComponent(String(date).slice(0, 10))}` : "";
