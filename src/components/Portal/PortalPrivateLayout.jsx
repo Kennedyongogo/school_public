@@ -171,6 +171,8 @@ export default function PortalPrivateLayout() {
             ? "classes"
             : location.pathname.startsWith("/portal/exams")
             ? "exams"
+            : location.pathname.startsWith("/portal/assignments")
+            ? "assignments"
             : location.pathname.startsWith("/portal/report-cards")
             ? "report-cards"
             : location.pathname.startsWith("/portal/fees")
@@ -183,6 +185,7 @@ export default function PortalPrivateLayout() {
         {...(user?.role === "student" && {
           onGoClasses: () => navigate("/portal/classes"),
           onGoExams: () => navigate("/portal/exams"),
+          onGoAssignments: () => navigate("/portal/assignments"),
           onGoReportCards: () => navigate("/portal/report-cards"),
         })}
         {...(user?.role === "parent" && {

@@ -555,6 +555,128 @@ export async function submitSchoolPortalExam(submissionId, payload = null) {
   return data.data;
 }
 
+export async function fetchSchoolPortalStudentAssignments() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/student/my`, { headers: getMarketplaceAuthHeaders() });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load assignments.");
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function createSchoolPortalAssignmentSubmission(assignmentId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/${encodeURIComponent(assignmentId)}/submissions`, {
+    method: "POST",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not start assignment.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalMyAssignmentSubmission(assignmentId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/${encodeURIComponent(assignmentId)}/submissions/me`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load assignment.");
+  return { submission: data.data, assignment: data.assignment, access: data.access || {} };
+}
+
+export async function saveSchoolPortalAssignmentAnswers(submissionId, answers) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/submissions/${encodeURIComponent(submissionId)}/answers`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ answers }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not save answers.");
+  return data.data;
+}
+
+export async function submitSchoolPortalAssignment(submissionId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/submissions/${encodeURIComponent(submissionId)}/submit`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not submit assignment.");
+  return data.data;
+}
+
+export async function uploadSchoolPortalAssignmentAnswerFile(submissionId, questionId, file) {
+  const base = getBaseUrl();
+  const token = getPortalAuthToken();
+  const formData = new FormData();
+  formData.append("assignment_answer_file", file);
+  const res = await fetch(
+    `${base}/api/assignments/submissions/${encodeURIComponent(submissionId)}/answers/${encodeURIComponent(questionId)}/upload`,
+    {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not upload file.");
+  return data.data;
+}
+
+export async function saveSchoolPortalAssignmentPdfAnswers(submissionId, fieldValues) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/submissions/${encodeURIComponent(submissionId)}/pdf-answers`, {
+    method: "PUT",
+    headers: getMarketplaceAuthHeaders(),
+    body: JSON.stringify({ field_values: fieldValues }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not save answers.");
+  return data.data;
+}
+
+export async function uploadSchoolPortalAssignmentPdfWorkingPaper(submissionId, file) {
+  const base = getBaseUrl();
+  const token = getPortalAuthToken();
+  const formData = new FormData();
+  formData.append("assignment_pdf_working_paper", file);
+  const res = await fetch(`${base}/api/assignments/submissions/${encodeURIComponent(submissionId)}/pdf-working-papers`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not upload file.");
+  return data.data;
+}
+
+export async function deleteSchoolPortalAssignmentPdfWorkingPaper(submissionId, fileId) {
+  const base = getBaseUrl();
+  const res = await fetch(
+    `${base}/api/assignments/submissions/${encodeURIComponent(submissionId)}/pdf-working-papers/${encodeURIComponent(fileId)}`,
+    { method: "DELETE", headers: getMarketplaceAuthHeaders() }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not remove file.");
+  return data.data;
+}
+
+export async function fetchSchoolPortalStudentAssignmentFeedback(assignmentId) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/assignments/student/${encodeURIComponent(assignmentId)}/feedback`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || "Could not load feedback.");
+    err.code = data.code || null;
+    throw err;
+  }
+  return data.data;
+}
+
 export async function fetchSchoolPortalExamPdfTemplateBlob(examId) {
   const base = getBaseUrl();
   const token = getPortalAuthToken();

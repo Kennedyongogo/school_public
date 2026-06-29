@@ -27,6 +27,9 @@ const PortalFeesPage = lazy(() => import("./pages/PortalFeesPage"));
 const PortalReceiptsPage = lazy(() => import("./pages/PortalReceiptsPage"));
 const PortalExamResultPage = lazy(() => import("./pages/PortalExamResultPage"));
 const PortalExamTakeRouter = lazy(() => import("./pages/PortalExamTakeRouter"));
+const PortalAssignmentsPage = lazy(() => import("./pages/PortalAssignmentsPage"));
+const PortalAssignmentTakeRouter = lazy(() => import("./pages/PortalAssignmentTakeRouter"));
+const PortalAssignmentFeedbackPage = lazy(() => import("./pages/PortalAssignmentFeedbackPage"));
 const PortalExamInvigilationPage = lazy(() => import("./pages/PortalExamInvigilationPage"));
 const PortalLiveMeetingPage = lazy(() => import("./pages/PortalLiveMeetingPage"));
 const PortalLiveClassPage = lazy(() => import("./pages/PortalLiveClassPage"));
@@ -93,6 +96,9 @@ function AppLayout() {
               <Route path="exams" element={<PortalExamsPage />} />
               <Route path="exams/:scheduleId/result" element={<PortalExamResultPage />} />
               <Route path="exams/:scheduleId" element={<PortalExamTakeRouter />} />
+              <Route path="assignments" element={<PortalAssignmentsPage />} />
+              <Route path="assignments/:assignmentId/feedback" element={<PortalAssignmentFeedbackPage />} />
+              <Route path="assignments/:assignmentId" element={<PortalAssignmentTakeRouter />} />
               <Route path="report-cards" element={<PortalReportCardsPage />} />
               <Route path="fees" element={<PortalFeesPage />} />
               <Route path="receipts" element={<PortalReceiptsPage />} />

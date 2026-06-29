@@ -63,6 +63,7 @@ export default function PortalPrivateHeader({
   onGoProfile,
   onGoClasses,
   onGoExams,
+  onGoAssignments,
   onGoReportCards,
   onGoFees,
   onGoReceipts,
@@ -82,6 +83,10 @@ export default function PortalPrivateHeader({
   const goExams = () => {
     setMobileOpen(false);
     if (typeof onGoExams === "function") onGoExams();
+  };
+  const goAssignments = () => {
+    setMobileOpen(false);
+    if (typeof onGoAssignments === "function") onGoAssignments();
   };
   const goReportCards = () => {
     setMobileOpen(false);
@@ -184,6 +189,16 @@ export default function PortalPrivateHeader({
                 sx={navBtnSx(currentNav === "exams")}
               >
                 Exams
+              </Button>
+            )}
+            {typeof onGoAssignments === "function" && (
+              <Button
+                variant={currentNav === "assignments" ? "contained" : "text"}
+                size="small"
+                onClick={goAssignments}
+                sx={navBtnSx(currentNav === "assignments")}
+              >
+                Assignments
               </Button>
             )}
             {typeof onGoFees === "function" && (
@@ -331,6 +346,11 @@ export default function PortalPrivateHeader({
             {typeof onGoExams === "function" && (
               <ListItemButton onClick={goExams} selected={currentNav === "exams"} sx={drawerItemSx(currentNav === "exams")}>
                 <ListItemText primary="Exams" />
+              </ListItemButton>
+            )}
+            {typeof onGoAssignments === "function" && (
+              <ListItemButton onClick={goAssignments} selected={currentNav === "assignments"} sx={drawerItemSx(currentNav === "assignments")}>
+                <ListItemText primary="Assignments" />
               </ListItemButton>
             )}
             {typeof onGoReportCards === "function" && (

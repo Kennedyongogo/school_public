@@ -18,6 +18,7 @@ import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import {
   fetchSchoolPortalStudentExamResult,
   fetchSchoolPortalStudentExamResultPdf,
@@ -27,6 +28,25 @@ import {
 } from "../api";
 import { PortalLoading } from "../components/Portal/portalUi";
 import { PORTAL, portalPrimaryButtonSx } from "../components/Portal/portalShared";
+import StablePdfIframe from "../components/Exam/StablePdfIframe";
+
+const mediaUrl = (path) => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  return path.startsWith("/") ? path : `/${path}`;
+};
+
+const isImageMime = (mime, name) => {
+  const m = String(mime || "").toLowerCase();
+  if (m.startsWith("image/")) return true;
+  return /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(String(name || ""));
+};
+
+const isPdfMime = (mime, name) => {
+  const m = String(mime || "").toLowerCase();
+  if (m === "application/pdf") return true;
+  return String(name || "").toLowerCase().endsWith(".pdf");
+};
 
 const EDGE_PAD = { xs: 1, sm: 1.5, md: 2 };
 
@@ -258,8 +278,15 @@ function downloadBlob(blob, filename) {
 }
 
 function QuestionCard({ index, question, answer, score, maxScore, comment }) {
-  const perfect = maxScore > 0 && score === maxScore;
-  const pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
+  const hasScore = score != null && Number.isFinite(Number(score));
+  const hasMax = maxScore != null && Number(maxScore) > 0;
+  const perfect = hasScore && hasMax && score === maxScore;
+  const pct = hasScore && hasMax ? (score / maxScore) * 100 : null;
+  const scoreLabel = hasMax
+    ? `${hasScore ? score : "—"} / ${maxScore}`
+    : hasScore
+      ? `${score} marks`
+      : null;
 
   return (
     <Box
@@ -321,7 +348,7 @@ function QuestionCard({ index, question, answer, score, maxScore, comment }) {
         <Chip
           size="small"
           icon={perfect ? <CheckCircleOutlineRoundedIcon sx={{ fontSize: "16px !important" }} /> : undefined}
-          label={`${score} / ${maxScore}`}
+          label={scoreLabel || "Feedback"}
           sx={{
             fontWeight: 800,
             flexShrink: 0,
@@ -360,19 +387,21 @@ function QuestionCard({ index, question, answer, score, maxScore, comment }) {
             </Box>
           ) : null}
 
-          <Box>
-            <Box sx={{ height: 6, borderRadius: 999, bgcolor: alpha(PORTAL.navyDeep, 0.08), overflow: "hidden" }}>
-              <Box
-                sx={{
-                  height: "100%",
-                  width: `${pct}%`,
-                  borderRadius: 999,
-                  bgcolor: perfect ? "#16a34a" : PORTAL.gold,
-                  transition: "width 0.6s ease",
-                }}
-              />
+          {pct != null ? (
+            <Box>
+              <Box sx={{ height: 6, borderRadius: 999, bgcolor: alpha(PORTAL.navyDeep, 0.08), overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    height: "100%",
+                    width: `${pct}%`,
+                    borderRadius: 999,
+                    bgcolor: perfect ? "#16a34a" : PORTAL.gold,
+                    transition: "width 0.6s ease",
+                  }}
+                />
+              </Box>
             </Box>
-          </Box>
+          ) : null}
 
           {comment ? (
             <Box
@@ -394,6 +423,178 @@ function QuestionCard({ index, question, answer, score, maxScore, comment }) {
               </Stack>
               <Typography sx={{ whiteSpace: "pre-wrap", color: PORTAL.ink, lineHeight: 1.65, fontStyle: "italic" }}>
                 {comment}
+              </Typography>
+            </Box>
+          ) : null}
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
+function WorkingPaperCard({ index, paper }) {
+  const studentUrl = mediaUrl(paper.studentFileUrl);
+  const marked = paper.markedReturn || null;
+  const markedUrl = marked?.url ? mediaUrl(marked.url) : "";
+
+  return (
+    <Box
+      sx={{
+        borderRadius: 3,
+        bgcolor: "#fff",
+        border: `1px solid ${PORTAL.border}`,
+        boxShadow: PORTAL.shadowSm,
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        sx={{
+          px: { xs: 2, sm: 2.5 },
+          py: 1.75,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 1.5,
+          borderBottom: `1px solid ${PORTAL.border}`,
+          bgcolor: alpha(PORTAL.sky, 0.55),
+        }}
+      >
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            flexShrink: 0,
+            display: "grid",
+            placeItems: "center",
+            color: PORTAL.navyDeep,
+            bgcolor: "#fff",
+            border: `1px solid ${PORTAL.borderGold}`,
+          }}
+        >
+          <AttachFileOutlinedIcon sx={{ fontSize: 20 }} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: PORTAL.fontDisplay,
+              fontWeight: 700,
+              fontSize: { xs: "1.1rem", sm: "1.2rem" },
+              color: PORTAL.navyDeep,
+            }}
+          >
+            {paper.name || `Working paper ${index + 1}`}
+          </Typography>
+        </Box>
+        {markedUrl ? (
+          <Chip size="small" label="Marked copy available" color="success" variant="outlined" sx={{ fontWeight: 700 }} />
+        ) : null}
+      </Box>
+
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 2 }}>
+        <Stack spacing={1.75}>
+          {studentUrl ? (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                href={studentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<DownloadOutlinedIcon />}
+              >
+                Your upload
+              </Button>
+            </Stack>
+          ) : null}
+
+          {isImageMime(paper.mime, paper.name) && studentUrl ? (
+            <Box
+              component="img"
+              src={studentUrl}
+              alt={paper.name || `Working paper ${index + 1}`}
+              sx={{
+                width: "100%",
+                maxHeight: 280,
+                objectFit: "contain",
+                borderRadius: 2,
+                border: `1px solid ${PORTAL.border}`,
+                bgcolor: PORTAL.warmWhite,
+              }}
+            />
+          ) : isPdfMime(paper.mime, paper.name) && studentUrl ? (
+            <Box sx={{ height: 320, borderRadius: 2, overflow: "hidden", border: `1px solid ${PORTAL.border}` }}>
+              <StablePdfIframe src={studentUrl} title={`Your upload ${index + 1}`} height={320} />
+            </Box>
+          ) : null}
+
+          {markedUrl ? (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: alpha("#16a34a", 0.06),
+                border: `1px solid ${alpha("#16a34a", 0.2)}`,
+              }}
+            >
+              <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: "0.07em", color: "#15803d", textTransform: "uppercase" }}>
+                Teacher marked copy
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ mt: 1, mb: markedUrl ? 1 : 0 }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  component="a"
+                  href={markedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<DownloadOutlinedIcon />}
+                  sx={portalPrimaryButtonSx()}
+                >
+                  {marked.name || "Download marked file"}
+                </Button>
+              </Stack>
+              {isImageMime(marked.mime, marked.name) ? (
+                <Box
+                  component="img"
+                  src={markedUrl}
+                  alt={marked.name || "Marked paper"}
+                  sx={{
+                    width: "100%",
+                    maxHeight: 280,
+                    objectFit: "contain",
+                    borderRadius: 2,
+                    border: `1px solid ${alpha("#16a34a", 0.2)}`,
+                  }}
+                />
+              ) : isPdfMime(marked.mime, marked.name) ? (
+                <Box sx={{ height: 320, borderRadius: 2, overflow: "hidden", border: `1px solid ${alpha("#16a34a", 0.2)}` }}>
+                  <StablePdfIframe src={markedUrl} title={`Marked paper ${index + 1}`} height={320} />
+                </Box>
+              ) : null}
+            </Box>
+          ) : null}
+
+          {paper.markerComment ? (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: alpha(PORTAL.gold, 0.08),
+                borderLeft: `4px solid ${PORTAL.gold}`,
+              }}
+            >
+              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.75 }}>
+                <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 17, color: PORTAL.goldMuted }} />
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 800, letterSpacing: "0.07em", color: PORTAL.navyDeep, textTransform: "uppercase" }}
+                >
+                  Teacher feedback
+                </Typography>
+              </Stack>
+              <Typography sx={{ whiteSpace: "pre-wrap", color: PORTAL.ink, lineHeight: 1.65, fontStyle: "italic" }}>
+                {paper.markerComment}
               </Typography>
             </Box>
           ) : null}
@@ -452,11 +653,6 @@ export default function PortalExamResultPage() {
   useEffect(() => {
     void loadResult();
   }, [navigate, scheduleId]);
-
-  const isPdfResultView = useMemo(() => {
-    if (!result) return false;
-    return result.showQuestionBreakdown === false || String(result.examType || "") === "pdf_form";
-  }, [result]);
 
   const percentage = useMemo(() => {
     if (!result) return 0;
@@ -786,19 +982,20 @@ export default function PortalExamResultPage() {
                   {result.gradeRemarks ? (
                     <Typography sx={{ color: PORTAL.inkMuted, fontSize: "0.95rem", lineHeight: 1.55, maxWidth: 260 }}>
                       {result.gradeRemarks}
+                      {result.points != null && !String(result.gradeRemarks || "").includes("point")
+                        ? ` · ${Number(result.points).toFixed(2)} points`
+                        : ""}
+                    </Typography>
+                  ) : result.points != null ? (
+                    <Typography sx={{ color: PORTAL.inkMuted, fontSize: "0.95rem", lineHeight: 1.55 }}>
+                      {Number(result.points).toFixed(2)} points
                     </Typography>
                   ) : null}
                 </Box>
               ) : null}
             </Box>
 
-            {isPdfResultView ? (
-              <Alert severity="info" sx={{ borderRadius: 3, width: "100%", boxShadow: PORTAL.shadowSm }}>
-                This was a PDF exam. Your teacher awarded an overall score — individual question marks are not shown
-                here. Use PDF for your graded summary
-                {result.canDownloadAnsweredPdf ? ", or Paper for the answer sheet you submitted." : "."}
-              </Alert>
-            ) : (
+            {result.showQuestionBreakdown && result.questions?.length ? (
               <Box sx={{ width: "100%" }}>
                 <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 2 }}>
                   <Box sx={{ width: 4, height: 28, borderRadius: 999, bgcolor: PORTAL.gold }} />
@@ -812,36 +1009,66 @@ export default function PortalExamResultPage() {
                   >
                     Question breakdown
                   </Typography>
-                  {result.questions?.length ? (
-                    <Chip
-                      size="small"
-                      label={`${result.questions.length} questions`}
-                      sx={{ fontWeight: 700, bgcolor: alpha(PORTAL.gold, 0.14), border: `1px solid ${PORTAL.borderGold}` }}
-                    />
-                  ) : null}
+                  <Chip
+                    size="small"
+                    label={`${result.questions.length} questions`}
+                    sx={{ fontWeight: 700, bgcolor: alpha(PORTAL.gold, 0.14), border: `1px solid ${PORTAL.borderGold}` }}
+                  />
                 </Stack>
 
-                {result.questions && result.questions.length > 0 ? (
-                  <Stack spacing={2}>
-                    {result.questions.map((q, i) => (
-                      <QuestionCard
-                        key={i}
-                        index={i}
-                        question={q.question}
-                        answer={q.answer}
-                        score={q.score}
-                        maxScore={q.maxScore}
-                        comment={q.comment}
-                      />
-                    ))}
-                  </Stack>
-                ) : (
-                  <Typography sx={{ textAlign: "center", color: PORTAL.inkMuted, py: 3 }}>
-                    No question details available.
-                  </Typography>
-                )}
+                <Stack spacing={2}>
+                  {result.questions.map((q, i) => (
+                    <QuestionCard
+                      key={i}
+                      index={i}
+                      question={q.question}
+                      answer={q.answer}
+                      score={q.score}
+                      maxScore={q.maxScore}
+                      comment={q.comment}
+                    />
+                  ))}
+                </Stack>
               </Box>
-            )}
+            ) : null}
+
+            {result.showWorkingPapers && result.workingPapers?.length ? (
+              <Box sx={{ width: "100%" }}>
+                <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 2 }}>
+                  <Box sx={{ width: 4, height: 28, borderRadius: 999, bgcolor: PORTAL.gold }} />
+                  <Typography
+                    sx={{
+                      fontFamily: PORTAL.fontDisplay,
+                      fontWeight: 700,
+                      fontSize: { xs: "1.45rem", sm: "1.65rem" },
+                      color: PORTAL.navyDeep,
+                    }}
+                  >
+                    Uploaded working papers
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={`${result.workingPapers.length} file${result.workingPapers.length === 1 ? "" : "s"}`}
+                    sx={{ fontWeight: 700, bgcolor: alpha(PORTAL.gold, 0.14), border: `1px solid ${PORTAL.borderGold}` }}
+                  />
+                </Stack>
+                <Stack spacing={2}>
+                  {result.workingPapers.map((paper, i) => (
+                    <WorkingPaperCard key={paper.id || `paper-${i}`} index={i} paper={paper} />
+                  ))}
+                </Stack>
+              </Box>
+            ) : null}
+
+            {result.isPdfExam &&
+            !result.questions?.length &&
+            !result.workingPapers?.length &&
+            !result.canDownloadAnsweredPdf ? (
+              <Alert severity="info" sx={{ borderRadius: 3, width: "100%", boxShadow: PORTAL.shadowSm }}>
+                Your overall score and grade are shown above. Your teacher did not add per-question or uploaded-paper
+                feedback for this exam.
+              </Alert>
+            ) : null}
           </Stack>
         )}
       </Box>
