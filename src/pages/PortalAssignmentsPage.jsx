@@ -9,6 +9,7 @@ import {
   fetchSchoolPortalUser,
   hasPortalSession,
 } from "../api";
+import { formatWallClockDateTime } from "../utils/scheduleTime";
 import {
   PortalPageShell,
   PortalPageHero,
@@ -83,7 +84,7 @@ export default function PortalAssignmentsPage() {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {row.assignment_type === "pdf_form" ? "PDF-style" : "Online"} · Due:{" "}
-                      {row.due_date ? new Date(row.due_date).toLocaleString() : "No due date"}
+                      {row.due_date ? formatWallClockDateTime(row.due_date) : "No due date"}
                     </Typography>
                     {row.retained_by_submission ? (
                       <Alert severity="info" sx={{ py: 0 }}>

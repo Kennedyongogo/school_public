@@ -677,6 +677,19 @@ export async function fetchSchoolPortalStudentAssignmentFeedback(assignmentId) {
   return data.data;
 }
 
+export async function fetchSchoolPortalAssignmentPdfTemplateBlob(assignmentId) {
+  const base = getBaseUrl();
+  const token = getPortalAuthToken();
+  const res = await fetch(`${base}/api/assignments/${encodeURIComponent(assignmentId)}/pdf-template`, {
+    headers: token ? { Authorization: `Bearer ${token}`, Accept: "application/pdf" } : { Accept: "application/pdf" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Could not load assignment PDF.");
+  }
+  return res.blob();
+}
+
 export async function fetchSchoolPortalExamPdfTemplateBlob(examId) {
   const base = getBaseUrl();
   const token = getPortalAuthToken();
