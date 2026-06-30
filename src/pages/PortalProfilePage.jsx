@@ -35,6 +35,7 @@ import {
 } from "../api";
 import { PORTAL, portalPageShellSx } from "../components/Portal/portalShared";
 import PortalStartTermCard from "../components/Portal/PortalStartTermCard";
+import PortalPlacementJourney from "../components/Portal/PortalPlacementJourney";
 
 const accent = PORTAL.gold;
 const accentDark = PORTAL.navyDeep;
@@ -603,6 +604,10 @@ export default function PortalProfilePage() {
                     <Field label="Enrollment date" value={formatDdMmYyyy(st.enrollment_date)} placeholder="—" />
                   </DetailCard>
                 </Box>
+              </Box>
+
+              <Box sx={{ mb: 2.5 }}>
+                <PortalPlacementJourney />
               </Box>
 
               <Box sx={(theme) => profileCardsGridSx(theme, {})}>

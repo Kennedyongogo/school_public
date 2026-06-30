@@ -57,6 +57,33 @@ export default function PortalPrivateLayout() {
   const [portalNotifications, setPortalNotifications] = useState([]);
   const [reviewPromptOpen, setReviewPromptOpen] = useState(false);
   const lastUnreadRef = useRef(null);
+  const wasPortalUnlockedRef = useRef(null);
+
+  const applyTermStatus = useCallback((status) => {
+    const next = status || null;
+    const nowUnlocked = Boolean(next?.portal_unlocked);
+    const wasUnlocked = wasPortalUnlockedRef.current;
+
+    if (wasUnlocked === true && !nowUnlocked) {
+      void fetchSchoolPortalStudentProfile()
+        .then((row) => setStudent(row || null))
+        .catch(() => setStudent(null));
+    }
+
+    wasPortalUnlockedRef.current = nowUnlocked;
+    setTermStatus(next);
+    return next;
+  }, []);
+
+  const reloadTermStatus = useCallback(async () => {
+    if (user?.role !== "student") return null;
+    try {
+      const status = await fetchStudentTermStatus();
+      return applyTermStatus(status);
+    } catch {
+      return null;
+    }
+  }, [applyTermStatus, user?.role]);
 
   useEffect(() => {
     if (!hasPortalSession()) {
@@ -76,12 +103,13 @@ export default function PortalPrivateLayout() {
           }
           try {
             const status = await fetchStudentTermStatus();
-            setTermStatus(status || null);
+            applyTermStatus(status);
           } catch {
-            setTermStatus(null);
+            applyTermStatus(null);
           }
         } else {
           setStudent(null);
+          wasPortalUnlockedRef.current = null;
           setTermStatus(null);
         }
       } catch {
@@ -90,7 +118,31 @@ export default function PortalPrivateLayout() {
       }
     };
     void load();
-  }, [navigate]);
+  }, [applyTermStatus, navigate]);
+
+  useEffect(() => {
+    if (user?.role !== "student") return undefined;
+    let cancelled = false;
+
+    const poll = async () => {
+      if (cancelled) return;
+      await reloadTermStatus();
+    };
+
+    void poll();
+    const intervalId = setInterval(() => void poll(), 45000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void poll();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [reloadTermStatus, user?.role]);
 
   useEffect(() => {
     if (!user) return;
@@ -322,11 +374,13 @@ export default function PortalPrivateLayout() {
         student={student}
       />
 
-      <Outlet context={{ termStatus, setTermStatus, reloadTermStatus: async () => {
-        if (user?.role !== "student") return;
-        const status = await fetchStudentTermStatus();
-        setTermStatus(status || null);
-      } }} />
+      <Outlet
+        context={{
+          termStatus,
+          setTermStatus,
+          reloadTermStatus,
+        }}
+      />
     </Box>
   );
 }

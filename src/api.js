@@ -349,6 +349,16 @@ export async function startStudentTerm() {
   return data.data;
 }
 
+export async function fetchMyPlacementRegister() {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/students/me/placement-register`, {
+    headers: getMarketplaceAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Could not load your school journey.");
+  return data.data;
+}
+
 export async function fetchSchoolPortalStudentTimetableLessons({ date } = {}) {
   const base = getBaseUrl();
   const qs = date ? `?date=${encodeURIComponent(String(date).slice(0, 10))}` : "";

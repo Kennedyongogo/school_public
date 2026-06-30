@@ -20,6 +20,7 @@ export default function PortalStartTermCard({ termStatus, onStarted }) {
   if (!termStatus || termStatus.portal_unlocked) return null;
 
   const term = termStatus.term;
+  const classSchedule = termStatus.class_schedule;
   const canStart = Boolean(termStatus.can_start_term);
 
   const handleStart = async () => {
@@ -64,11 +65,11 @@ export default function PortalStartTermCard({ termStatus, onStarted }) {
         <EventAvailableRoundedIcon sx={{ color: PORTAL.gold, fontSize: 32 }} />
         <Box sx={{ flex: 1 }}>
           <Typography sx={{ fontWeight: 800, color: PORTAL.navyDeep, fontSize: "1.05rem" }}>
-            Start your term
+            Start {term?.name || "your term"}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.55 }}>
             {termStatus.message ||
-              "Begin your current term to unlock classes, exams, assignments, and report cards."}
+              "Begin your assigned term to unlock classes, exams, assignments, and report cards."}
           </Typography>
         </Box>
         {canStart ? (
@@ -86,7 +87,7 @@ export default function PortalStartTermCard({ termStatus, onStarted }) {
               "&:hover": { bgcolor: PORTAL.goldMuted },
             }}
           >
-            {loading ? "Starting…" : "Start term"}
+            {loading ? "Starting…" : `Start ${term?.name || "term"}`}
           </Button>
         ) : null}
       </Stack>
@@ -95,15 +96,20 @@ export default function PortalStartTermCard({ termStatus, onStarted }) {
         <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 2, borderRadius: "0 0 12px 12px" }}>
           <Stack direction="row" flexWrap="wrap" gap={1}>
             <Chip size="small" label={term.name} sx={{ fontWeight: 700 }} />
-            <Chip size="small" variant="outlined" label={`Starts ${formatDate(term.start_date)}`} />
-            <Chip size="small" variant="outlined" label={`Ends ${formatDate(term.end_date)}`} />
+            {classSchedule?.start_date || classSchedule?.end_date ? (
+              <Chip
+                size="small"
+                variant="outlined"
+                label={`Class schedule ${formatDate(classSchedule.start_date)} – ${formatDate(classSchedule.end_date)}`}
+              />
+            ) : null}
             {term.term_ended ? (
-              <Chip size="small" color="warning" label="Term ended" sx={{ fontWeight: 700 }} />
+              <Chip size="small" color="warning" label="Registration ended" sx={{ fontWeight: 700 }} />
             ) : null}
           </Stack>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1.25 }}>
-            Your start date is recorded when you click the button — you can begin on the official start date or any day
-            before the term ends.
+            You can start {term.name} anytime after admission — even mid-year when the class calendar is on a later
+            term. Your personal start date is recorded when you click the button.
           </Typography>
         </Box>
       ) : null}
